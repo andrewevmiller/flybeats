@@ -28,7 +28,8 @@ from torch.utils.data import DataLoader
 
 from build import build_model, device_of, get_subgraph, load_config
 from dataset import build_dataset
-from metrics import beat_alignment_error, groove_similarity, onset_f_measure
+from metrics import (beat_alignment_error, groove_similarity, onset_f_measure,
+                     onset_f_sweep)
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -142,12 +143,13 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
         ref = y.numpy()
         steps = min(prob.shape[1], ref.shape[1])
         for i in range(prob.shape[0]):
-            for t in sweep:
-                m = onset_f_measure(prob[i, :steps], ref[i, :steps], step_ms,
-                                    tolerance_s=tol, threshold=t)
-                by_thr[t].append(m["f_measure"])
-                if t == fixed and not np.isnan(m["mean_dev_ms"]):
-                    dev_all.append(m["mean_dev_ms"])
+            fs = onset_f_sweep(prob[i, :steps], ref[i, :steps], step_ms, sweep, tol)
+            for t, f in fs.items():
+                by_thr[t].append(f)
+            m = onset_f_measure(prob[i, :steps], ref[i, :steps], step_ms,
+                                tolerance_s=tol, threshold=fixed)
+            if not np.isnan(m["mean_dev_ms"]):
+                dev_all.append(m["mean_dev_ms"])
             bpm = float(tempo[i])
             if bpm > 0:
                 ba = beat_alignment_error(prob[i, :steps], step_ms, bpm)

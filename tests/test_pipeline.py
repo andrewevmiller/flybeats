@@ -268,3 +268,20 @@ def test_relative_corpus_path_resolves_against_the_repo_root():
         assert str(D.ROOT) in str(e), str(e)
     except Exception:
         pass          # corpus present: nothing to assert
+
+
+def test_sweep_matches_the_per_threshold_measure():
+    """The fast sweep must agree exactly with computing each threshold alone."""
+    from metrics import onset_f_measure, onset_f_sweep
+    from dataset import smooth_onsets
+
+    classes = ["kick", "snare", "hat_closed"]
+    events = [(i * 0.25, classes[i % 3]) for i in range(16)]
+    ref = smooth_onsets(events, classes, 800, 5.0)
+    pred = np.clip(ref * 0.8 + 0.15 * np.random.default_rng(0).random(ref.shape), 0, 1)
+
+    thresholds = [0.1, 0.3, 0.5, 0.7]
+    fast = onset_f_sweep(pred, ref, 5.0, thresholds)
+    for t in thresholds:
+        slow = onset_f_measure(pred, ref, 5.0, threshold=t)["f_measure"]
+        assert abs(fast[t] - slow) < 1e-9, f"threshold {t}: {fast[t]} vs {slow}"

@@ -78,6 +78,30 @@ def onset_f_measure(pred_act: np.ndarray, ref_act: np.ndarray, step_ms: float,
     }
 
 
+def onset_f_sweep(pred_act: np.ndarray, ref_act: np.ndarray, step_ms: float,
+                  thresholds, tolerance_s: float = 0.05) -> dict[float, float]:
+    """Onset F at several peak-picking thresholds, in one pass.
+
+    The reference onsets do not depend on the threshold, so picking them once
+    and reusing them across the sweep avoids doing that work n_thresholds times
+    -- which is the whole extra cost of sweeping rather than fixing a value.
+    """
+    n_cls = pred_act.shape[1]
+    ref = [peak_pick(ref_act[:, c], step_ms, threshold=0.5) for c in range(n_cls)]
+
+    out = {}
+    for thr in thresholds:
+        tp = fp = fn = 0
+        for c in range(n_cls):
+            p = peak_pick(pred_act[:, c], step_ms, thr)
+            a, b, d, _ = match_onsets(p, ref[c], tolerance_s)
+            tp, fp, fn = tp + a, fp + b, fn + d
+        prec = tp / max(tp + fp, 1)
+        rec = tp / max(tp + fn, 1)
+        out[thr] = 2 * prec * rec / max(prec + rec, 1e-9)
+    return out
+
+
 def beat_alignment_error(pred_act: np.ndarray, step_ms: float, tempo_bpm: float) -> float:
     """RMS distance from predicted onsets to the nearest grid line, in ms.
 
