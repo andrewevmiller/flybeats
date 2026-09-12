@@ -290,7 +290,7 @@ def main(argv=None) -> int:
             tr = train_mod.run_epoch(model, train_loader, opt, cfg, device, train=True)
             ev = train_mod.evaluate(model, val_loader, cfg, device)
             print(f"  ep{ep:>3} loss {tr['loss']:.4f} | onset_F {ev['onset_f']:.4f} "
-                  f"| groove {ev['groove_sim']:.3f}")
+                  f"@thr {ev['best_threshold']:.2f} | groove {ev['groove_sim']:.3f}")
 
         ev = train_mod.evaluate(model, val_loader, cfg, device)
         results.append({"arm": arm, "params": n_par, **ev})
@@ -312,11 +312,16 @@ def main(argv=None) -> int:
 
 
 def format_table(rows: list[dict]) -> str:
-    head = f"{'arm':<16}{'params':>12}{'onset F':>10}{'groove':>9}{'beat ms':>10}{'dev ms':>9}"
+    head = (f"{'arm':<16}{'params':>12}{'onset F':>10}{'@thr':>7}{'groove':>9}"
+            f"{'beat ms':>10}{'dev ms':>9}")
     lines = [head, "-" * len(head)]
     for r in rows:
         lines.append(f"{r['arm']:<16}{r['params']:>12,}{r['onset_f']:>10.4f}"
+                     f"{r.get('best_threshold', float('nan')):>7.2f}"
                      f"{r['groove_sim']:>9.3f}{r['beat_align_ms']:>10.1f}{r['mean_dev_ms']:>9.1f}")
+    lines.append("\nonset F is reported at each arm's best peak-picking threshold, "
+                 "chosen on this split;\na single fixed threshold would score arms "
+                 "at a point that suits whichever one\nhappens to sit at that output scale.")
     return "\n".join(lines)
 
 

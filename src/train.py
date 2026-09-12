@@ -112,9 +112,27 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
 
 @torch.no_grad()
 def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
+    """Score the model, sweeping the peak-picking threshold.
+
+    A single fixed threshold makes onset F a function of the model's output
+    *scale* as much as its timing: during a sanity run the loss fell
+    monotonically while F at a fixed 0.3 bounced between 0.41 and 0.65. Worse,
+    for Phase 4 it is unfair -- arms that settle at different output scales get
+    scored at a point that suits one of them. So F is reported at its best
+    threshold per model (chosen on this split, and the threshold is reported
+    alongside so the choice is visible), with the fixed-threshold value kept as
+    ``onset_f_fixed`` for continuity.
+    """
     model.eval()
     step_ms = cfg["audio"]["step_ms"]
-    f_all, ba_all, gs_all, dev_all = [], [], [], []
+    tol = cfg["eval"].get("tolerance_s", 0.05)
+    fixed = cfg["eval"].get("threshold", 0.3)
+    sweep = cfg["eval"].get("threshold_sweep", [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6])
+    if fixed not in sweep:
+        sweep = sorted(sweep + [fixed])
+
+    by_thr = {t: [] for t in sweep}
+    ba_all, gs_all, dev_all = [], [], []
 
     for wav, y, style, tempo in loader:
         wav = wav.to(device)
@@ -124,27 +142,31 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
         ref = y.numpy()
         steps = min(prob.shape[1], ref.shape[1])
         for i in range(prob.shape[0]):
-            m = onset_f_measure(prob[i, :steps], ref[i, :steps], step_ms,
-                                tolerance_s=cfg["eval"].get("tolerance_s", 0.05),
-                                threshold=cfg["eval"].get("threshold", 0.3))
-            f_all.append(m["f_measure"])
-            if not np.isnan(m["mean_dev_ms"]):
-                dev_all.append(m["mean_dev_ms"])
-            t = float(tempo[i])
-            if t > 0:
-                ba = beat_alignment_error(prob[i, :steps], step_ms, t)
-                gs = groove_similarity(prob[i, :steps], ref[i, :steps], step_ms, t)
+            for t in sweep:
+                m = onset_f_measure(prob[i, :steps], ref[i, :steps], step_ms,
+                                    tolerance_s=tol, threshold=t)
+                by_thr[t].append(m["f_measure"])
+                if t == fixed and not np.isnan(m["mean_dev_ms"]):
+                    dev_all.append(m["mean_dev_ms"])
+            bpm = float(tempo[i])
+            if bpm > 0:
+                ba = beat_alignment_error(prob[i, :steps], step_ms, bpm)
+                gs = groove_similarity(prob[i, :steps], ref[i, :steps], step_ms, bpm)
                 if not np.isnan(ba):
                     ba_all.append(ba)
                 if not np.isnan(gs):
                     gs_all.append(gs)
 
+    means = {t: (float(np.mean(v)) if v else 0.0) for t, v in by_thr.items()}
+    best_t = max(means, key=means.get)
     return {
-        "onset_f": float(np.mean(f_all)) if f_all else 0.0,
+        "onset_f": means[best_t],
+        "onset_f_fixed": means[fixed],
+        "best_threshold": best_t,
         "beat_align_ms": float(np.mean(ba_all)) if ba_all else float("nan"),
         "groove_sim": float(np.mean(gs_all)) if gs_all else float("nan"),
         "mean_dev_ms": float(np.mean(dev_all)) if dev_all else float("nan"),
-        "n_clips": len(f_all),
+        "n_clips": len(by_thr[fixed]),
     }
 
 
@@ -211,7 +233,9 @@ def main(argv=None) -> int:
                "seconds": round(time.time() - t0, 1)}
         history.append(rec)
         print(f"ep{ep:>3} loss {tr['loss']:.4f} (bce {tr['bce']:.4f}) | "
-              f"val onset_F {ev['onset_f']:.4f} groove {ev['groove_sim']:.3f} | {rec['seconds']}s")
+              f"val onset_F {ev['onset_f']:.4f} @thr {ev['best_threshold']:.2f} "
+              f"(fixed {ev['onset_f_fixed']:.4f}) groove {ev['groove_sim']:.3f} | "
+              f"{rec['seconds']}s")
 
         if ev["onset_f"] > best:
             best = ev["onset_f"]

@@ -63,4 +63,7 @@ train:
 
 eval:
   tolerance_s: 0.05     # 50 ms onset tolerance
-  threshold: 0.3
+  threshold: 0.3        # reported as onset_f_fixed, for continuity
+  # Headline onset F uses the best of these per model. A single fixed threshold
+  # scores output scale as much as timing, which is unfair across Phase 4 arms.
+  threshold_sweep: [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6]
