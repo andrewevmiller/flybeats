@@ -85,12 +85,15 @@ class StreamingDrummer:
         for k in range(prob.shape[0]):
             step = self.step + k
             for c, name in enumerate(self.kit.classes):
-                v = prob[k, c]
-                # local peak, above threshold, outside the refractory window
-                if (v >= self.threshold and v > self.prev[c]
+                v = float(prob[k, c])
+                rising = v >= self.threshold and v > self.prev[c]
+                # still climbing -- wait for the actual peak. Only a lookahead
+                # inside this block is available; at a block boundary the next
+                # push sees it as a rising edge against the carried prev, which
+                # is why prev must be updated on every path through this loop.
+                climbing = k + 1 < prob.shape[0] and prob[k + 1, c] > v
+                if (rising and not climbing
                         and step - self.last_fire[name] >= self.refractory_steps):
-                    if k + 1 < prob.shape[0] and prob[k + 1, c] > v:
-                        continue                      # not the peak yet
                     self.last_fire[name] = step
                     vel = int(np.clip(40 + 87 * (v - self.threshold) / max(1 - self.threshold, 1e-6),
                                       1, 127))

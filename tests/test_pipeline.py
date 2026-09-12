@@ -186,3 +186,53 @@ def test_ride_reaches_the_targets_for_both_tiers():
     y2 = smooth_onsets(events, art, 400, 5.0)
     assert y2[:, art.index("ride")].max() > 0.9
     assert y2[:, art.index("crash")].max() < 0.1, "ride leaked onto crash"
+
+
+def test_streaming_peak_state_survives_block_boundaries():
+    """The streaming picker carries `prev` across blocks; an early `continue`
+    used to skip that update on a rising edge and leave it stale."""
+    import torch
+    from realtime import StreamingDrummer
+
+    class FakeEncoder:
+        hop = 110
+        context_samples = 256
+
+        def forward_window(self, wav, start, n):
+            return torch.zeros(1, n, 1)
+
+    class FakeRNN:
+        def initial_state(self, b, device=None, dtype=None):
+            return torch.zeros(b, 1)
+
+        def __call__(self, drive, state=None, tonic=None):
+            return drive, state
+
+    # a single ramp that peaks in the middle, split across two pushes
+    ramp = [0.05, 0.2, 0.5, 0.9, 0.6, 0.1, 0.05, 0.05]
+
+    class FakeDecoder:
+        def __init__(self):
+            self.i = 0
+
+        def __call__(self, rates):
+            n = rates.shape[1]
+            vals = ramp[self.i: self.i + n]
+            self.i += n
+            # inverse sigmoid so the drummer's sigmoid recovers the ramp
+            logits = torch.tensor([[np.log(v / (1 - v)) for v in vals]]).unsqueeze(-1)
+            return logits
+
+    class FakeModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.encoder, self.rnn, self.decoder, self.genre = \
+                FakeEncoder(), FakeRNN(), FakeDecoder(), None
+
+    kit = DrumKit(["kick"])
+    d = StreamingDrummer(FakeModel(), kit, 22050, 5.0, threshold=0.3, refractory_ms=25.0)
+    block = np.zeros(110 * 4, dtype=np.float32)
+
+    fired = d.push(block) + d.push(block)
+    assert len(fired) == 1, f"expected exactly one peak across the two blocks, got {fired}"
+    assert fired[0][0] == kit.notes[0]
