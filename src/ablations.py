@@ -13,6 +13,12 @@ encoder/decoder, with only the recurrent core changed:
 
 If ``real`` does not beat ``rewired`` and ``sign_shuffled``, the connectome is
 not contributing and that is the result. Report it either way.
+
+``--seeds N`` is not optional dressing on that comparison. ``rewired`` and
+``sign_shuffled`` each draw one sample from a distribution of random graphs, so
+a single run cannot tell "random topologies do worse" from "this particular
+random topology was unlucky". Run several and report the spread; a gap smaller
+than the spread is not a result.
 """
 from __future__ import annotations
 
@@ -218,18 +224,20 @@ def lesion_sweep(model, loader, cfg, device, roles: dict, populations, evaluate_
 
 
 # ------------------------------------------------------------------- driver --
-def build_arm(arm: str, cfg: dict, sg: SubGraph, n_styles: int):
+#: Arms whose topology is a random draw, so one run is one sample.
+STOCHASTIC_ARMS = ("rewired", "sign_shuffled")
+
+
+def build_arm(arm: str, cfg: dict, sg: SubGraph, n_styles: int, seed: int = 0):
     """Build one ablation arm. Encoder and decoder are identical across arms."""
     from build import build_model
 
     if arm == "real":
         return build_model(cfg, sg, n_styles=n_styles)
     if arm == "rewired":
-        return build_model(cfg, degree_matched_rewire(sg, cfg["train"].get("seed", 0)),
-                           n_styles=n_styles)
+        return build_model(cfg, degree_matched_rewire(sg, seed), n_styles=n_styles)
     if arm == "sign_shuffled":
-        return build_model(cfg, shuffle_signs(sg, cfg["train"].get("seed", 0)),
-                           n_styles=n_styles)
+        return build_model(cfg, shuffle_signs(sg, seed), n_styles=n_styles)
 
     # GRU and shortcut reuse the real encoder/decoder, swapping only the core.
     model, kit = build_model(cfg, sg, n_styles=n_styles)
@@ -251,6 +259,10 @@ def main(argv=None) -> int:
     ap.add_argument("--arms", nargs="+", default=list(ARMS), choices=list(ARMS))
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--out", type=Path, default=None)
+    ap.add_argument("--seeds", type=int, default=1,
+                    help="repeats per arm. rewired and sign_shuffled each draw one random "
+                         "topology, so a single run cannot separate 'random is worse' from "
+                         "'this draw was unlucky'. 3-5 gives a usable spread")
     ap.add_argument("--lesion", action="store_true",
                     help="after training the real arm, sweep lesions over confirmed populations")
     ap.add_argument("--smoke", action="store_true")
@@ -274,33 +286,54 @@ def main(argv=None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     results, lesion_rows = [], []
 
+    base_seed = cfg["train"].get("seed", 0)
     for arm in a.arms:
-        # identical seed per arm: the topology is the only thing that differs
-        torch.manual_seed(cfg["train"].get("seed", 0))
-        np.random.seed(cfg["train"].get("seed", 0))
+        # A deterministic arm is the same model every time, so repeating it only
+        # measures optimiser noise; the random-topology arms are the ones that
+        # need repeats.
+        n_reps = a.seeds if arm in STOCHASTIC_ARMS else 1
+        runs = []
 
-        model, kit = build_arm(arm, cfg, sg, n_styles)
-        model = model.to(device)
-        opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
-                                lr=cfg["train"].get("lr", 3e-3))
-        n_par = sum(p.numel() for p in model.parameters() if p.requires_grad)
-        print(f"\n=== {arm} === params {n_par:,} | core {type(model.rnn).__name__}")
+        for rep in range(n_reps):
+            seed = base_seed + rep
+            # identical init seed across arms: the topology is what differs
+            torch.manual_seed(base_seed)
+            np.random.seed(base_seed)
 
-        for ep in range(cfg["train"].get("epochs", 10)):
-            tr = train_mod.run_epoch(model, train_loader, opt, cfg, device, train=True)
+            model, kit = build_arm(arm, cfg, sg, n_styles, seed=seed)
+            model = model.to(device)
+            opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
+                                    lr=cfg["train"].get("lr", 3e-3))
+            n_par = sum(p.numel() for p in model.parameters() if p.requires_grad)
+            tag = f"{arm}" + (f" (seed {seed})" if n_reps > 1 else "")
+            print(f"\n=== {tag} === params {n_par:,} | core {type(model.rnn).__name__}")
+
+            for ep in range(cfg["train"].get("epochs", 10)):
+                tr = train_mod.run_epoch(model, train_loader, opt, cfg, device, train=True)
+                ev = train_mod.evaluate(model, val_loader, cfg, device)
+                print(f"  ep{ep:>3} loss {tr['loss']:.4f} | onset_F {ev['onset_f']:.4f} "
+                      f"@thr {ev['best_threshold']:.2f} | groove {ev['groove_sim']:.3f}")
+
             ev = train_mod.evaluate(model, val_loader, cfg, device)
-            print(f"  ep{ep:>3} loss {tr['loss']:.4f} | onset_F {ev['onset_f']:.4f} "
-                  f"@thr {ev['best_threshold']:.2f} | groove {ev['groove_sim']:.3f}")
+            runs.append(ev)
+            suffix = f"_seed{seed}" if n_reps > 1 else ""
+            torch.save({"model": model.state_dict(), "arm": arm, "config": cfg,
+                        "seed": seed, "n_styles": n_styles, "kit": kit.classes},
+                       out / f"{arm}{suffix}.pt")
 
-        ev = train_mod.evaluate(model, val_loader, cfg, device)
-        results.append({"arm": arm, "params": n_par, **ev})
-        torch.save({"model": model.state_dict(), "arm": arm, "config": cfg}, out / f"{arm}.pt")
+            if a.lesion and arm == "real" and rep == 0:
+                pops = [p for p in ("pC1", "pIP10", "octopaminergic", "aPN1", "vPN1",
+                                    "pC2", "sensory", "inhibitory") if len(roles.get(p, []))]
+                lesion_rows = lesion_sweep(model, val_loader, cfg, device, roles, pops,
+                                           train_mod.evaluate)
 
-        if a.lesion and arm == "real":
-            pops = [p for p in ("pC1", "pIP10", "octopaminergic", "aPN1", "vPN1",
-                                "pC2", "sensory", "inhibitory") if len(roles.get(p, []))]
-            lesion_rows = lesion_sweep(model, val_loader, cfg, device, roles, pops,
-                                       train_mod.evaluate)
+        agg = {"arm": arm, "params": n_par, "n_runs": len(runs), "runs": runs}
+        for key in ("onset_f", "groove_sim", "beat_align_ms", "mean_dev_ms", "best_threshold"):
+            vals = np.array([r[key] for r in runs], dtype=float)
+            vals = vals[np.isfinite(vals)]
+            agg[key] = float(vals.mean()) if len(vals) else float("nan")
+            agg[key + "_std"] = float(vals.std()) if len(vals) > 1 else 0.0
+        results.append(agg)
 
     (out / "ablation_results.json").write_text(json.dumps(
         {"config": str(a.config), "arms": results, "lesion": lesion_rows}, indent=2))
@@ -312,16 +345,18 @@ def main(argv=None) -> int:
 
 
 def format_table(rows: list[dict]) -> str:
-    head = (f"{'arm':<16}{'params':>12}{'onset F':>10}{'@thr':>7}{'groove':>9}"
+    head = (f"{'arm':<16}{'n':>3}{'params':>12}{'onset F':>18}{'groove':>9}"
             f"{'beat ms':>10}{'dev ms':>9}")
     lines = [head, "-" * len(head)]
     for r in rows:
-        lines.append(f"{r['arm']:<16}{r['params']:>12,}{r['onset_f']:>10.4f}"
-                     f"{r.get('best_threshold', float('nan')):>7.2f}"
+        sd = r.get("onset_f_std", 0.0)
+        f = f"{r['onset_f']:.4f}" + (f" +/-{sd:.4f}" if r.get("n_runs", 1) > 1 else "        ")
+        lines.append(f"{r['arm']:<16}{r.get('n_runs', 1):>3}{r['params']:>12,}{f:>18}"
                      f"{r['groove_sim']:>9.3f}{r['beat_align_ms']:>10.1f}{r['mean_dev_ms']:>9.1f}")
-    lines.append("\nonset F is reported at each arm's best peak-picking threshold, "
-                 "chosen on this split;\na single fixed threshold would score arms "
-                 "at a point that suits whichever one\nhappens to sit at that output scale.")
+    lines.append("\nonset F is at each run's best peak-picking threshold, chosen on this "
+                 "split; a single\nfixed threshold scores output scale as much as timing. "
+                 "rewired and sign_shuffled\nshow the spread over random draws -- a gap "
+                 "smaller than that spread is not a result.")
     return "\n".join(lines)
 
 
