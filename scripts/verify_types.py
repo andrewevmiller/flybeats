@@ -7,8 +7,14 @@ file and nothing else -- no phase is allowed to hardcode a type string.
 Why this file and not the neuPrint API: neuprint.janelia.org is not reachable
 from every environment (and needs a personal token), while the flat-connectome
 ``body-annotations`` feather is the same v1.0 release, is public CC-BY, and is
-what the weights table is keyed against. If you do have a token and want to
-cross-check, ``--neuprint`` re-runs the same resolution against the server.
+what the weights table is keyed against.
+
+``--neuprint`` cross-checks the resolved type list against the live server for
+anyone who does have a token: it reports types the server knows that the
+feather does not and vice versa. It is a *check*, not the primary path -- the
+feather stays the source of truth because the weights are keyed to it. NOTE:
+this path could not be exercised where this was written (the host is blocked by
+an egress policy), so treat it as unverified until it has run somewhere.
 
 Resolution works on three columns, in order of authority:
   1. ``type``            -- the dataset's own primary type string
@@ -273,12 +279,58 @@ def summarise(sub: pd.DataFrame, evidence: dict[str, str], nt: pd.DataFrame | No
     return sorted(out, key=lambda r: -r["n_bodies"])
 
 
+def crosscheck_neuprint(concepts: dict, server: str, dataset: str) -> dict:
+    """Compare the feather-resolved types against what the live server reports.
+
+    Reports disagreements rather than overriding anything: if the two sources
+    differ, that is something a human should look at, not something a script
+    should silently pick a winner for.
+    """
+    import os
+
+    token = os.environ.get("NEUPRINT_TOKEN")
+    if not token:
+        print("\n--neuprint: NEUPRINT_TOKEN is not set; skipping cross-check")
+        return {"status": "skipped", "reason": "NEUPRINT_TOKEN not set"}
+    try:
+        from neuprint import Client, fetch_neurons, NeuronCriteria
+    except ImportError:
+        print("\n--neuprint: neuprint-python is not installed "
+              "(pip install neuprint-python); skipping")
+        return {"status": "skipped", "reason": "neuprint-python not installed"}
+
+    resolved = sorted({t["type"] for rec in concepts.values() for t in rec["types"]})
+    try:
+        Client(server, dataset=dataset, token=token)
+        found, _ = fetch_neurons(NeuronCriteria(type=resolved))
+    except Exception as e:
+        print(f"\n--neuprint: could not reach {server} ({type(e).__name__}: {e})")
+        return {"status": "error", "reason": f"{type(e).__name__}: {e}"}
+
+    server_types = set(found["type"].dropna().unique())
+    missing = sorted(set(resolved) - server_types)
+    print(f"\n--neuprint: {len(server_types)} of {len(resolved)} resolved types "
+          f"confirmed on {server}")
+    if missing:
+        print(f"  NOT found on the server: {', '.join(missing[:20])}"
+              + (" ..." if len(missing) > 20 else ""))
+    return {"status": "ok", "server": server, "dataset": dataset,
+            "n_resolved": len(resolved), "n_confirmed": len(server_types),
+            "not_on_server": missing}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--raw", type=Path, default=RAW)
     ap.add_argument("--out", type=Path, default=OUT)
     ap.add_argument("--strict", action="store_true",
                     help="exit non-zero if any non-optional concept is unconfirmed")
+    ap.add_argument("--neuprint", action="store_true",
+                    help="cross-check the resolved types against the live neuPrint "
+                         "server (needs NEUPRINT_TOKEN); see the module docstring")
+    ap.add_argument("--dataset", default="male-cns:v1.0",
+                    help="neuPrint dataset name, only used with --neuprint")
+    ap.add_argument("--server", default="neuprint.janelia.org")
     args = ap.parse_args(argv)
 
     ann = load_annotations(args.raw)
@@ -324,6 +376,10 @@ def main(argv: list[str] | None = None) -> int:
         "unconfirmed": unconfirmed,
         "concepts": concepts,
     }
+    if args.neuprint:
+        payload["neuprint_crosscheck"] = crosscheck_neuprint(
+            concepts, args.server, args.dataset)
+
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(payload, indent=2))
     print(f"\nwrote {args.out}")

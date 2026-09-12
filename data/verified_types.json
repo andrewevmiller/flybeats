@@ -10637,5 +10637,9 @@
         }
       ]
     }
+  },
+  "neuprint_crosscheck": {
+    "status": "skipped",
+    "reason": "NEUPRINT_TOKEN not set"
   }
 }

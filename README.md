@@ -43,8 +43,9 @@ neurons.
 
 `neuprint.janelia.org` is blocked from this environment, so the gate reads the
 public `body-annotations` feather instead: same v1.0 release, CC-BY, and the
-table the connectome weights are keyed against. `scripts/verify_types.py
---neuprint` re-runs the same resolution against the server if you have a token.
+table the connectome weights are keyed against. `scripts/verify_types.py --neuprint` cross-checks the resolved
+types against the live server if you have a token — though that path could not
+be exercised here, so treat it as unverified until it has run somewhere.
 
 | PLAN.md said | v1.0 reality |
 |---|---|
