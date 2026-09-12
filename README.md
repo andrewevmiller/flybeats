@@ -122,17 +122,17 @@ python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --s
 
 **Open question 3 — does the rate model converge before anyone builds the
 spiking version?** Yes. On the 3-piece sanity task (10k-neuron subgraph,
-synthetic clips, 11 epochs) training loss falls monotonically from
-1.399 to 1.124 and groove similarity rises
-from 0.395 to 0.433
+synthetic clips, 12 epochs) training loss falls monotonically from 1.399 to
+1.121 and groove similarity rises from 0.395 to 0.441
 (`runs/sanity_3piece_run/history.json`). The surrogate-gradient spiking version
 is unblocked; it is still unwritten.
 
-That run is also where the threshold problem showed up. Onset F at a *fixed*
-0.3 threshold bounced between 0.41 and 0.65 across those same epochs while the
-loss fell smoothly — the metric was tracking output scale, not timing. Hence
-the per-model threshold sweep described above. Treat this as a convergence
-check, not a performance claim: the data is synthetic and the kit is 3 pieces.
+That run is also where the threshold problem surfaced. Onset F at a *fixed* 0.3
+threshold swung between 0.41 and 0.65 across those same epochs while the loss
+fell smoothly — the metric was tracking output
+scale, not timing. Hence the per-model threshold sweep. Treat this as a
+convergence check, not a performance claim: the data is synthetic and the kit
+is 3 pieces.
 
 **Open question 2 — is octopaminergic tonic drive numerically stable as a bias
 current?** Not unbounded. The OA pool is 25 neurons feeding high-gain drive
