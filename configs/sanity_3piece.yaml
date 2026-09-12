@@ -6,6 +6,7 @@ kit:
   tier: 3piece
   bilateral: false
 subgraph:
+  cache: data/cache/subgraph_10k_w5.npz
   max_nodes: 10000
   min_weight: 5
 data:

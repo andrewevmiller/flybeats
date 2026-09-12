@@ -109,15 +109,30 @@ shortcut              79,499    0.2683    0.446      39.8    -22.0
 ```
 
 At one epoch the simplest arms lead, which is what one epoch measures. Drawing
-"the rewired graph beats the connectome" from this would be wrong. Running the
-suite properly needs a GPU and the real corpus:
+"the rewired graph beats the connectome" from this would be wrong.
+
+Running the suite properly needs a GPU and the real corpus. `--seeds` matters
+here: `rewired` and `sign_shuffled` each draw *one* random topology, so a single
+run cannot tell "random topologies do worse" from "this draw was unlucky". A gap
+smaller than the spread across seeds is not a result.
 
 ```bash
-python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40
+python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5
 ```
 
 **Open question 3 — does the rate model converge before anyone builds the
-spiking version?** RUN_IN_PROGRESS
+spiking version?** Yes. On the 3-piece sanity task (10k-neuron subgraph,
+synthetic clips, 11 epochs) training loss falls monotonically from
+1.399 to 1.124 and groove similarity rises
+from 0.395 to 0.433
+(`runs/sanity_3piece_run/history.json`). The surrogate-gradient spiking version
+is unblocked; it is still unwritten.
+
+That run is also where the threshold problem showed up. Onset F at a *fixed*
+0.3 threshold bounced between 0.41 and 0.65 across those same epochs while the
+loss fell smoothly — the metric was tracking output scale, not timing. Hence
+the per-model threshold sweep described above. Treat this as a convergence
+check, not a performance claim: the data is synthetic and the kit is 3 pieces.
 
 **Open question 2 — is octopaminergic tonic drive numerically stable as a bias
 current?** Not unbounded. The OA pool is 25 neurons feeding high-gain drive
@@ -187,8 +202,9 @@ src/feel.py                  measured swing and timing offsets — never imposed
 src/realtime.py              Phase 5: streaming inference, MIDI out, latency benchmark
 scripts/verify_types.py      Phase 0 gate
 scripts/render_full_graph.py offline pass over all 162k neurons
-tests/                       23 tests: exact gradients, frozen signs and topology,
-                             ablation invariants, encoder window/full equivalence
+tests/                       50 tests: exact gradients, frozen signs and topology,
+                             ablation invariants, encoder window/full equivalence,
+                             checkpointing transparency, streaming peak state
 ```
 
 No module hardcodes a cell-type string. Every population is read from

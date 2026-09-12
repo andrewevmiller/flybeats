@@ -37,24 +37,66 @@ def deep_merge(a: dict, b: dict) -> dict:
     return out
 
 
+#: Subgraph settings that change the graph itself. A cached file is only reused
+#: when every one of these matches what the config asks for.
+SUBGRAPH_KEYS = ("seed_concepts", "target_concepts", "forward_hops",
+                 "backward_hops", "min_weight", "max_nodes", "full_graph")
+
+
+def subgraph_params(cfg: dict) -> dict:
+    sc = cfg.get("subgraph", {})
+    return {
+        "seed_concepts": list(sc.get("seed_concepts", ["JO_A", "JO_B", "JO_E"])),
+        "target_concepts": list(sc.get("target_concepts", ["wing_motor_all"])),
+        "forward_hops": sc.get("forward_hops", 3),
+        "backward_hops": sc.get("backward_hops", 3),
+        "min_weight": sc.get("min_weight", 3),
+        "max_nodes": sc.get("max_nodes", 30_000),
+        "full_graph": bool(sc.get("full_graph", False)),
+    }
+
+
 def get_subgraph(cfg: dict, rebuild: bool = False) -> SubGraph:
+    """Load the cached subgraph, or rebuild it if the config asks for a different one.
+
+    Configs inherit a cache path from their ``_base_``, so several of them
+    address the same file while asking for different graphs -- sanity_3piece
+    wants 10k nodes at min_weight 5, v1_8piece wants 30k at 3. Reusing whatever
+    happens to be on disk means a run silently trains on the previous run's
+    graph and nothing says so. The saved metadata is checked against the request
+    and the graph is rebuilt on any mismatch.
+    """
     sc = cfg.get("subgraph", {})
     cache = Path(sc.get("cache", ROOT / "data" / "cache" / "subgraph.npz"))
+    if not cache.is_absolute():
+        cache = ROOT / cache
+    want = subgraph_params(cfg)
+
     if cache.exists() and not rebuild:
-        return SubGraph.load(cache)
+        sg = SubGraph.load(cache)
+        have = {k: sg.meta.get(k) for k in SUBGRAPH_KEYS}
+        differs = {k: (have[k], want[k]) for k in SUBGRAPH_KEYS
+                   if _norm(have[k]) != _norm(want[k])}
+        if not differs:
+            return sg
+        print(f"  [subgraph] {cache.name} was built with "
+              + ", ".join(f"{k}={h!r} (want {w!r})" for k, (h, w) in differs.items())
+              + " -- rebuilding")
+
     g = build_neuron_graph()
-    sg = extract(
-        g, load_verified_types(),
-        seed_concepts=tuple(sc.get("seed_concepts", ("JO_A", "JO_B", "JO_E"))),
-        target_concepts=tuple(sc.get("target_concepts", ("wing_motor_all",))),
-        forward_hops=sc.get("forward_hops", 3),
-        backward_hops=sc.get("backward_hops", 3),
-        min_weight=sc.get("min_weight", 3),
-        max_nodes=sc.get("max_nodes", 30_000),
-        full_graph=sc.get("full_graph", False),
-    )
+    sg = extract(g, load_verified_types(), **{
+        **want,
+        "seed_concepts": tuple(want["seed_concepts"]),
+        "target_concepts": tuple(want["target_concepts"]),
+    })
+    cache.parent.mkdir(parents=True, exist_ok=True)
     sg.save(cache)
     return sg
+
+
+def _norm(v):
+    """Compare lists and tuples by value; everything else as-is."""
+    return list(v) if isinstance(v, (list, tuple)) else v
 
 
 def inhibitory_nodes(sg: SubGraph) -> np.ndarray:
