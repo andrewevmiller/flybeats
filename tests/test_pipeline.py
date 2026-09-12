@@ -236,3 +236,35 @@ def test_streaming_peak_state_survives_block_boundaries():
     fired = d.push(block) + d.push(block)
     assert len(fired) == 1, f"expected exactly one peak across the two blocks, got {fired}"
     assert fired[0][0] == kit.notes[0]
+
+
+def test_missing_corpus_raises_instead_of_silently_using_synthetic():
+    """A run whose config names a real corpus must not quietly train on click
+    tracks. Nothing in the logs or the metrics would distinguish that from a
+    real run, which is how a result gets invalidated without anyone noticing."""
+    import pytest
+    from dataset import build_dataset
+
+    with pytest.raises(FileNotFoundError, match="no corpus at"):
+        build_dataset({"root": "definitely/not/here", "synthetic": False},
+                      ["kick", "snare"], "train")
+
+    ds = build_dataset({"root": "definitely/not/here", "synthetic": True, "n_clips": 2},
+                       ["kick", "snare"], "train")
+    assert len(ds) == 2, "an explicit synthetic request must still work"
+
+
+def test_relative_corpus_path_resolves_against_the_repo_root():
+    """Running from src/ and from the repo root must address the same corpus."""
+    import dataset as D
+
+    assert D.ROOT.name == "flybeats" or (D.ROOT / "src").exists()
+    try:
+        D.build_dataset({"root": "data/egmd/groove", "synthetic": False},
+                        ["kick", "snare"], "train")
+    except FileNotFoundError as e:
+        # the message must name an absolute path under the repo, not a path
+        # relative to whatever directory the process happened to start in
+        assert str(D.ROOT) in str(e), str(e)
+    except Exception:
+        pass          # corpus present: nothing to assert

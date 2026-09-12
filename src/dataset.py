@@ -271,11 +271,28 @@ class GrooveDataset(Dataset):
 
 
 def build_dataset(cfg: dict, classes: list[str], split: str = "train"):
-    """Pick the real corpus when present, the synthetic floor when not."""
+    """Build the configured dataset.
+
+    Falling back to synthetic data when the real corpus is missing is NOT the
+    behaviour here, and used to be: a run would quietly train on click tracks
+    while its config said ``data/egmd/groove``, and nothing in the logs or the
+    metrics would distinguish that from a real run. Synthetic data is used only
+    when the config explicitly asks for it.
+    """
     root = Path(cfg.get("root") or DATA / "groove")
-    if cfg.get("synthetic") or not (root / "info.csv").exists():
-        if not cfg.get("synthetic"):
-            print(f"  [dataset] no corpus at {root} -- falling back to synthetic")
+    if not root.is_absolute():
+        # relative to the repo root, not to whatever directory the process was
+        # started from -- running from src/ and from the root must agree
+        root = ROOT / root
+    if not cfg.get("synthetic"):
+        if not (root / "info.csv").exists():
+            raise FileNotFoundError(
+                f"no corpus at {root} (expected info.csv there).\n"
+                f"Fetch one:  python scripts/fetch_egmd.py\n"
+                f"or set data.synthetic: true in the config to use the click-track "
+                f"fallback deliberately."
+            )
+    else:
         return SyntheticDrums(
             classes,
             n_clips=cfg.get("n_clips", 256 if split == "train" else 64),
