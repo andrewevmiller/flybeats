@@ -4,10 +4,12 @@ The connectome fixes *which* neurons connect and in *which direction*; the
 transmitter fixes the sign. Training may only change what each connection is
 worth. Concretely, the recurrent weight is
 
-    W[i,j] = sign[i] * softplus(log_gain[i,j])
+    W[i,j] = sign[i] * exp(log_gain[i,j]) * scale
 
 with ``sign`` frozen and ``log_gain`` initialised at ``log(synapse_count)``, so
-the network starts at the animal's own relative connection strengths.
+the network starts at exactly the animal's own relative connection strengths.
+``scale`` is one global factor, set at construction to normalise the operator's
+spectral radius, so it cancels out of every within-graph weight ratio.
 
 Dynamics are a rate relaxation of LIF rather than surrogate-gradient spiking.
 PLAN.md's open question 3 asks which to use; the rate model is here because it
@@ -75,7 +77,7 @@ class ModelConfig:
     tau_ms_min: float = 5.0
     tau_ms_max: float = 200.0
     threshold_init: float = 0.0
-    gain_scale: float | str = "auto"  # global scale on softplus(log_gain);
+    gain_scale: float | str = "auto"  # global scale on exp(log_gain);
                                       # "auto" normalises the spectral radius
     spectral_radius: float = 0.9      # target rho(W) when gain_scale is "auto"
     input_scale: float = 1.0
