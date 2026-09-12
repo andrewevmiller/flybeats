@@ -75,9 +75,12 @@ class ModelConfig:
     tau_ms_min: float = 5.0
     tau_ms_max: float = 200.0
     threshold_init: float = 0.0
-    gain_scale: float = 0.05          # global scale on softplus(log_gain)
+    gain_scale: float | str = "auto"  # global scale on softplus(log_gain);
+                                      # "auto" normalises the spectral radius
+    spectral_radius: float = 0.9      # target rho(W) when gain_scale is "auto"
     input_scale: float = 1.0
     state_clip: float = 20.0          # keeps the relaxation from blowing up
+    log_gain_clamp: tuple = (-15.0, 12.0)   # keeps exp() in range
     spiking: bool = False
 
 
@@ -145,6 +148,22 @@ class ConnectomeRNN(nn.Module):
         self.threshold = nn.Parameter(torch.full((n,), float(self.cfg.threshold_init)))
         self.bias = nn.Parameter(torch.zeros(n))
 
+        # Global gain. Left free, each ablation arm starts at a wildly different
+        # operating point -- the real subgraph's recurrent operator has
+        # rho ~ 4,000 against ~400 for a degree-matched rewiring of it, so a
+        # shared constant puts one arm in saturation and the other near-silent.
+        # That would make the Phase 4 comparison a test of which topology
+        # happened to land in range, not of whether the topology helps. So the
+        # scale is normalised per arm to a common target spectral radius. The
+        # connectome's own *relative* synapse counts are untouched; only the
+        # overall scale moves, and it stays trainable through log_gain.
+        if self.cfg.gain_scale == "auto":
+            rho = self._spectral_radius()
+            scale = self.cfg.spectral_radius / rho if rho > 0 else 1.0
+        else:
+            scale = float(self.cfg.gain_scale)
+        self.register_buffer("gain_scale", torch.tensor(float(scale)))
+
         # Lesion / slider gates. Multiplicative on each neuron's output rate;
         # 1.0 is intact. Not trained -- set at inference by lesion mode and the
         # biological sliders.
@@ -160,7 +179,36 @@ class ConnectomeRNN(nn.Module):
         return tau_ms / self.cfg.step_ms
 
     def edge_weight(self) -> torch.Tensor:
-        return self.edge_sign * torch.nn.functional.softplus(self.log_gain) * self.cfg.gain_scale
+        """W[i,j] = sign[i] * exp(log_gain[i,j]) * scale.
+
+        exp, not softplus: with log_gain initialised at log(synapse_count) this
+        makes the starting weight *exactly* the synapse count, so the network
+        begins at the animal's own relative connection strengths and the ratios
+        between connections survive the global rescaling untouched. softplus
+        would give log(1 + synapse_count), which quietly compresses a 2,591-
+        synapse connection and a 26-synapse one into a factor of ~2.4 instead
+        of ~100.
+        """
+        lo, hi = self.cfg.log_gain_clamp
+        return self.edge_sign * self.log_gain.clamp(lo, hi).exp() * self.gain_scale
+
+    @torch.no_grad()
+    def _spectral_radius(self, iters: int = 60) -> float:
+        """|lambda_max| of the unscaled recurrent operator, by power iteration."""
+        lo, hi = self.cfg.log_gain_clamp
+        vals = self.edge_sign * self.log_gain.clamp(lo, hi).exp()
+        a = torch.sparse_csr_tensor(self.crow, self.edge_col, vals,
+                                    size=(self.n_nodes, self.n_nodes))
+        x = torch.randn(self.n_nodes, 1, generator=torch.Generator().manual_seed(0))
+        x /= x.norm()
+        lam = 0.0
+        for _ in range(iters):
+            y = torch.sparse.mm(a, x)
+            nrm = float(y.norm())
+            if nrm == 0.0:
+                return 0.0
+            x, lam = y / nrm, nrm
+        return lam
 
     def recurrent(self, values: torch.Tensor, r: torch.Tensor) -> torch.Tensor:
         return SparseSpMM.apply(

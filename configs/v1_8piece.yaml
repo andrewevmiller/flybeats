@@ -26,7 +26,8 @@ kit:
 
 model:
   tau_ms_init: 20.0
-  gain_scale: 0.05
+  gain_scale: auto        # normalise each arm to a common spectral radius
+  spectral_radius: 0.9    # so Phase 4 compares topology, not operator scale
   input_scale: 1.0
   state_clip: 20.0
   spiking: false        # rate relaxation first; see PLAN.md open question 3

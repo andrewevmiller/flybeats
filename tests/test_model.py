@@ -163,3 +163,55 @@ def test_genre_interpolates():
     mid = gm.interpolate(0, 1, 0.5)
     assert not torch.allclose(a, b)
     assert not torch.allclose(mid, a) and not torch.allclose(mid, b)
+
+
+def test_auto_gain_normalises_spectral_radius():
+    """Phase 4 must compare topology, not operator scale."""
+    rng = np.random.default_rng(0)
+    n, e = 300, 4000
+    results = {}
+    for label, seed in (("a", 0), ("b", 7)):
+        ei = np.stack([rng.integers(0, n, e), rng.integers(0, n, e)]).astype(np.int32)
+        rnn = ConnectomeRNN(
+            ei, rng.choice([-1.0, 1.0], e).astype(np.float32),
+            rng.integers(1, 400, e).astype(np.float32), n,
+            np.arange(4), np.arange(4, 8),
+            cfg=ModelConfig(gain_scale="auto", spectral_radius=0.9),
+        )
+        vals = rnn.edge_weight()
+        a = torch.sparse_csr_tensor(rnn.crow, rnn.edge_col, vals.detach(), size=(n, n))
+        x = torch.randn(n, 1, generator=torch.Generator().manual_seed(1))
+        x /= x.norm()
+        for _ in range(80):
+            y = torch.sparse.mm(a, x)
+            rho = float(y.norm())
+            x = y / max(rho, 1e-12)
+        results[label] = rho
+    for label, rho in results.items():
+        assert abs(rho - 0.9) < 0.05, f"arm {label} rho={rho}, not normalised"
+
+
+def test_initial_weights_are_the_synapse_counts_up_to_one_global_scale():
+    """The network must start at the animal's own relative connection strengths.
+
+    softplus(log(w)) = log(1 + w) would compress a 2,591-synapse connection and
+    a 26-synapse one from a ratio of ~100 down to ~2.4. exp(log(w)) = w keeps
+    every ratio exact, and the spectral normalisation is a single global factor
+    that cancels out of any ratio.
+    """
+    e = 500
+    w = np.random.default_rng(2).integers(1, 2600, e).astype(np.float32)
+    ei = np.stack([np.arange(e) % 40, np.arange(e) % 31]).astype(np.int32)
+    rnn = ConnectomeRNN(ei, np.ones(e, dtype=np.float32), w, 40,
+                        np.arange(2), np.arange(2, 4),
+                        cfg=ModelConfig(gain_scale="auto"))
+    got = np.abs(rnn.edge_weight().detach().numpy())
+    ratios = got / np.sort(w)[np.argsort(np.argsort(got))]
+    assert np.allclose(ratios, ratios[0], rtol=1e-4), "weight ratios were distorted"
+
+    # and with no normalisation the weights are literally the synapse counts
+    plain = ConnectomeRNN(ei, np.ones(e, dtype=np.float32), w, 40,
+                          np.arange(2), np.arange(2, 4),
+                          cfg=ModelConfig(gain_scale=1.0))
+    assert np.allclose(np.sort(np.abs(plain.edge_weight().detach().numpy())),
+                       np.sort(w), rtol=1e-4)

@@ -83,7 +83,8 @@ def build_model(cfg: dict, sg: SubGraph, n_styles: int = 1, verified: dict | Non
     mcfg = ModelConfig(
         step_ms=cfg["audio"]["step_ms"],
         tau_ms_init=cfg["model"].get("tau_ms_init", 20.0),
-        gain_scale=cfg["model"].get("gain_scale", 0.05),
+        gain_scale=cfg["model"].get("gain_scale", "auto"),
+        spectral_radius=cfg["model"].get("spectral_radius", 0.9),
         input_scale=cfg["model"].get("input_scale", 1.0),
         state_clip=cfg["model"].get("state_clip", 20.0),
     )
