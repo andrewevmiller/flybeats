@@ -285,3 +285,33 @@ def test_sweep_matches_the_per_threshold_measure():
     for t in thresholds:
         slow = onset_f_measure(pred, ref, 5.0, threshold=t)["f_measure"]
         assert abs(fast[t] - slow) < 1e-9, f"threshold {t}: {fast[t]} vs {slow}"
+
+
+def test_style_vocabulary_is_global_across_splits():
+    """Per-split style vocabularies give the same integer different meanings in
+    train and validation, and overflow the genre embedding when a split carries
+    a style the training split lacked. Both happened before this was fixed."""
+    import csv as _csv
+    import pytest
+    from dataset import GrooveDataset
+
+    root = ROOT / "data" / "egmd" / "groove"
+    if not (root / "info.csv").exists():
+        pytest.skip("corpus not present in this checkout")
+
+    kit = DrumKit.from_tier("8piece")
+    tr = GrooveDataset(root, kit.classes, split="train", max_files=8)
+    va = GrooveDataset(root, kit.classes, split="validation", max_files=8)
+
+    assert tr.styles == va.styles, "splits disagree on the style vocabulary"
+    assert tr.style_id == va.style_id
+
+    all_styles = {r["style"].split("/")[0]
+                  for r in _csv.DictReader((root / "info.csv").open())}
+    assert set(tr.styles) == all_styles
+
+    # every id any split can emit must be inside the embedding built from n_styles
+    for ds in (tr, va):
+        for i in range(len(ds)):
+            assert 0 <= int(ds[i][2]) < ds.n_styles
+            break

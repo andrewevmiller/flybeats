@@ -201,17 +201,25 @@ class GrooveDataset(Dataset):
                 f"{info} not found. Fetch a corpus first:\n"
                 f"  python scripts/fetch_egmd.py"
             )
-        rows = [r for r in csv.DictReader(info.open()) if r.get("split") == split]
-        rows = [r for r in rows if r.get("audio_filename") and (self.root / r["audio_filename"]).exists()]
+        all_rows = list(csv.DictReader(info.open()))
+
+        # The style vocabulary is built from the WHOLE corpus, never from one
+        # split. Per-split vocabularies give the same integer different meanings
+        # in train and validation (id 2 is 'jazz' in one and 'latin' in the
+        # other), so the genre embedding is conditioned on noise -- and when a
+        # split contains a style the training split lacked, the embedding lookup
+        # goes out of range outright. Both happened here before this was fixed.
+        self.styles = sorted({r["style"].split("/")[0] for r in all_rows})
+        self.style_id = {s: i for i, s in enumerate(self.styles)}
+
+        rows = [r for r in all_rows if r.get("split") == split]
+        rows = [r for r in rows
+                if r.get("audio_filename") and (self.root / r["audio_filename"]).exists()]
         if max_files:
             rows = rows[:max_files]
         if not rows:
             raise RuntimeError(f"no usable {split} rows under {self.root}")
-
         self.rows = rows
-        styles = sorted({r["style"].split("/")[0] for r in rows})
-        self.styles = styles
-        self.style_id = {s: i for i, s in enumerate(styles)}
 
     def __len__(self) -> int:
         return len(self.rows)
