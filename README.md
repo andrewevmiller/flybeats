@@ -141,7 +141,10 @@ steps. Bounding it through `tanh × max_current` keeps genres separable and
 interpolation smooth; a test pushes the embedding 1000× out of distribution and
 asserts the injected current stays inside its envelope.
 
-### Three bugs that would have produced plausible, wrong numbers
+### Bugs that would have produced plausible, wrong numbers
+
+Most of the work in this session was finding these. Each one is the kind that
+trains, evaluates, prints a number, and is silently meaningless.
 
 1. **The ablation arms started at incomparable operating points.** The real
    subgraph's recurrent operator has |λ_max| ≈ 4,019; a degree-matched rewiring
@@ -158,9 +161,38 @@ asserts the injected current stays inside its envelope.
    collapse from a ratio of ~100 to ~2.4. Switched to `exp(log_gain)`, so the
    initial weight *is* the synapse count.
 
-3. **The envelope filter aliased.** It smoothed at the audio rate then sampled
+3. **The genre embedding was conditioned on a scrambled mapping.** The style→id
+   map was built per split, so id 2 could mean "jazz" in train and "latin" in
+   validation. It surfaced only as an out-of-range crash, and only because the
+   validation split happened to contain a style the truncated training split
+   lacked. With matching style counts it would have trained and evaluated
+   cleanly on noise. The vocabulary now comes from the whole corpus.
+
+4. **A missing corpus silently became synthetic data.** A run whose config named
+   `data/egmd/groove` would fall back to click tracks and report metrics, with
+   nothing in the logs or the numbers to distinguish it from a real run. Hit this
+   live. Now a hard error; synthetic data is used only when explicitly requested.
+
+5. **One subgraph cache served several configs.** Configs inherit their cache
+   path, so `sanity_3piece` (10k nodes, min_weight 5) and `v1_8piece` (30k, 3)
+   resolved to the same file and whichever ran last won. Cached metadata is now
+   checked against the request and rebuilt on mismatch.
+
+6. **The envelope filter aliased.** It smoothed at the audio rate then sampled
    every hop-th output, so whether an onset registered depended on its phase
-   within the hop window. Now the sub-bands are decimated by a box mean first.
+   within the hop window. Now the sub-bands are decimated by a box mean first —
+   which also happens to be where the 54× speedup came from.
+
+7. **Onset F was scored at one fixed threshold.** Training loss fell smoothly
+   while F bounced between 0.41 and 0.65; the metric was tracking output scale.
+   Across ablation arms that is not just noisy but unfair. Now swept per model,
+   with the chosen threshold reported.
+
+Two more, smaller: torch's CSR autograd returns a gradient sized to the
+*deduplicated* values when edges repeat, which the rewiring ablation can
+produce — so the backward is written out explicitly and checked against a dense
+reference. And the streaming peak picker skipped its `prev` update on a rising
+edge, leaving stale state exactly at block boundaries.
 
 ---
 
@@ -202,7 +234,7 @@ src/feel.py                  measured swing and timing offsets — never imposed
 src/realtime.py              Phase 5: streaming inference, MIDI out, latency benchmark
 scripts/verify_types.py      Phase 0 gate
 scripts/render_full_graph.py offline pass over all 162k neurons
-tests/                       50 tests: exact gradients, frozen signs and topology,
+tests/                       54 tests: exact gradients, frozen signs and topology,
                              ablation invariants, encoder window/full equivalence,
                              checkpointing transparency, streaming peak state
 ```
