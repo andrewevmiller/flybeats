@@ -35,7 +35,7 @@ def erb_space(low_hz: float, high_hz: float, n: int) -> np.ndarray:
 
 def gammatone_filterbank(
     n_bands: int, sample_rate: int, low_hz: float = 40.0, high_hz: float = 6000.0,
-    order: int = 4, length: int = 1024,
+    order: int = 4, length: int = 512,
 ) -> tuple[np.ndarray, np.ndarray]:
     """FIR gammatone impulse responses, one per band.
 
@@ -94,6 +94,7 @@ class AudioToJO(nn.Module):
         n_bands: int = 64,
         flux_weight: float = 1.0,
         trainable_dsp: bool = False,
+        filter_taps: int = 512,
     ):
         super().__init__()
         if len(zone_of_channel) != n_channels:
@@ -105,7 +106,11 @@ class AudioToJO(nn.Module):
         self.n_bands = n_bands
         self.flux_weight = flux_weight
 
-        kernels, cf = gammatone_filterbank(n_bands, sample_rate)
+        # 512 taps is 23 ms at 22.05 kHz. The slowest band (40 Hz) has an ERB
+        # bandwidth of ~29.5 Hz, so a 5.4 ms time constant -- 23 ms is over four
+        # of those and the tail is already numerically dead. 1024 taps doubled
+        # the convolution cost to buy nothing.
+        kernels, cf = gammatone_filterbank(n_bands, sample_rate, length=filter_taps)
         # Fixed by default: the filterbank is meant to be a model of the ear,
         # not another set of free parameters competing with the connectome.
         self.register_buffer("cf", torch.from_numpy(cf))
@@ -113,10 +118,17 @@ class AudioToJO(nn.Module):
             torch.from_numpy(kernels).unsqueeze(1), requires_grad=trainable_dsp
         )
 
-        # Envelope smoothing, ~15 ms one-pole, applied as a fixed conv.
-        tau_samples = 0.015 * sample_rate
-        env_len = int(4 * tau_samples)
-        env = np.exp(-np.arange(env_len) / tau_samples).astype(np.float32)
+        # Envelope smoothing, ~15 ms one-pole. Applied *after* decimation to
+        # the step grid, not at the audio rate: at 22.05 kHz a 15 ms one-pole
+        # is a 1,323-tap FIR run on every sample, which measured at 140 ms per
+        # 20 ms audio block -- 81% of the entire encoder and the single thing
+        # keeping this out of real time. On the 5 ms step grid the same filter
+        # is ~12 taps at 1/110th the rate. Decimating by a box mean first is
+        # also the correct anti-aliasing step, which sampling every hop-th
+        # value (the earlier version) skipped.
+        tau_steps = 15.0 / step_ms
+        env_len = max(2, int(4 * tau_steps))
+        env = np.exp(-np.arange(env_len) / tau_steps).astype(np.float32)
         env /= env.sum()
         self.register_buffer("env_kernel", torch.from_numpy(env).view(1, 1, -1))
 
@@ -132,23 +144,32 @@ class AudioToJO(nn.Module):
     def n_features(self) -> int:
         return 2 * self.n_bands
 
-    def features(self, wav: torch.Tensor) -> torch.Tensor:
-        """Fixed DSP: waveform -> ``(batch, steps, 2*n_bands)``."""
-        if wav.dim() == 1:
-            wav = wav.unsqueeze(0)
-        x = wav.unsqueeze(1)                                     # (B, 1, T)
+    def _subband(self, x: torch.Tensor, prepadded: bool) -> torch.Tensor:
+        """Rectified filterbank output.
 
-        pad = self.filters.shape[-1] - 1
-        sub = torch.nn.functional.conv1d(torch.nn.functional.pad(x, (pad, 0)), self.filters)
-        sub = torch.relu(sub)                                    # half-wave rectify
+        With ``prepadded``, ``x`` already carries the filter's ``taps - 1``
+        samples of left context and the output aligns to ``x[..., taps-1:]``;
+        the convolution then produces only the samples that are kept, instead
+        of a full window that is mostly discarded.
+        """
+        if not prepadded:
+            x = torch.nn.functional.pad(x, (self.filters.shape[-1] - 1, 0))
+        return torch.relu(torch.nn.functional.conv1d(x, self.filters))
+
+    def _assemble(self, sub: torch.Tensor) -> torch.Tensor:
+        """Rectified sub-bands -> ``(batch, steps, 2*n_bands)`` features."""
+        b, c, t = sub.shape
+        n_steps = t // self.hop
+        if n_steps == 0:
+            return sub.new_zeros(b, 0, 2 * self.n_bands)
+        # Decimate to the step grid by a box mean over each hop window -- the
+        # anti-aliasing and the downsample in one cheap operation.
+        env = sub[:, :, : n_steps * self.hop].reshape(b, c, n_steps, self.hop).mean(-1)
 
         epad = self.env_kernel.shape[-1] - 1
-        b, c, t = sub.shape
         env = torch.nn.functional.conv1d(
-            torch.nn.functional.pad(sub.reshape(b * c, 1, t), (epad, 0)), self.env_kernel
-        ).reshape(b, c, t)
-
-        env = env[:, :, :: self.hop]
+            torch.nn.functional.pad(env.reshape(b * c, 1, n_steps), (epad, 0)), self.env_kernel
+        ).reshape(b, c, n_steps)
         env = torch.log1p(env * 1e3)                             # compressive, as the ear is
 
         # Spectral flux: positive part of the frame-to-frame difference. This is
@@ -158,10 +179,20 @@ class AudioToJO(nn.Module):
 
         return torch.cat([env, flux], dim=1).transpose(1, 2)     # (B, steps, 2*bands)
 
+    def features(self, wav: torch.Tensor) -> torch.Tensor:
+        """Fixed DSP: waveform -> ``(batch, steps, 2*n_bands)``."""
+        if wav.dim() == 1:
+            wav = wav.unsqueeze(0)
+        return self._assemble(self._subband(wav.unsqueeze(1), prepadded=False))
+
     @property
     def context_samples(self) -> int:
-        """Left context the causal DSP block needs before its output is exact."""
-        return int(self.filters.shape[-1] + self.env_kernel.shape[-1])
+        """Left context the causal DSP block needs before its output is exact.
+
+        The filterbank needs its full impulse response; the envelope now works
+        on the step grid, so it needs its taps expressed back in samples.
+        """
+        return int(self.filters.shape[-1] + self.env_kernel.shape[-1] * self.hop)
 
     def forward_window(self, wav: torch.Tensor, start_step: int, n_steps: int) -> torch.Tensor:
         """Encode only steps ``[start_step, start_step + n_steps)``.
@@ -175,12 +206,17 @@ class AudioToJO(nn.Module):
         """
         if wav.dim() == 1:
             wav = wav.unsqueeze(0)
-        hop = self.hop
-        ctx_steps = -(-self.context_samples // hop)          # ceil, in steps
+        hop, taps = self.hop, self.filters.shape[-1]
+        # the envelope needs its taps of step-grid context, and the flux one more
+        ctx_steps = self.env_kernel.shape[-1]
         first = max(0, start_step - ctx_steps)
-        lo = first * hop
-        hi = min(wav.shape[-1], (start_step + n_steps) * hop + hop)
-        feats = self.features(wav[:, lo:hi])
+
+        a, b = first * hop, min(wav.shape[-1], (start_step + n_steps) * hop)
+        lo = a - (taps - 1)
+        x = wav[:, max(0, lo): b].unsqueeze(1)
+        if lo < 0:
+            x = torch.nn.functional.pad(x, (-lo, 0))
+        feats = self._assemble(self._subband(x, prepadded=True))
         off = start_step - first
         return self.to_jo(feats[:, off: off + n_steps])
 
