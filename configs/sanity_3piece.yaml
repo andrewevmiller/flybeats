@@ -1,0 +1,18 @@
+# PLAN.md open question 3: confirm the rate model converges on a 3-piece task
+# before investing in the surrogate-gradient spiking version.
+_base_: v1_8piece.yaml
+name: sanity_3piece
+kit:
+  tier: 3piece
+  bilateral: false
+subgraph:
+  max_nodes: 10000
+  min_weight: 5
+data:
+  synthetic: true
+  n_clips: 128
+  seconds: 2.0
+train:
+  epochs: 15
+  batch_size: 8
+  tbptt_steps: 100

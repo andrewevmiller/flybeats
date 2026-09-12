@@ -1,0 +1,63 @@
+# FlyDrums v1 -- the recommended cut line from PLAN.md.
+# 8-piece kit, bilateral split, genre via octopaminergic drive, three sliders,
+# transcribe mode, lesion mode, full Phase 4 ablation suite.
+
+name: v1_8piece
+
+audio:
+  sample_rate: 22050
+  step_ms: 5.0          # 4-bar loop at 5 ms is ~1,600 steps
+  n_bands: 64           # gammatone filterbank
+  trainable_dsp: false  # the ear is a model, not a parameter bank
+
+subgraph:
+  cache: data/cache/subgraph.npz
+  seed_concepts: [JO_A, JO_B, JO_E]
+  target_concepts: [wing_motor_all]
+  forward_hops: 3
+  backward_hops: 3
+  min_weight: 3         # drop connections weaker than 3 synapses
+  max_nodes: 30000      # live tier; see configs/render_full.yaml for 162k
+  full_graph: false
+
+kit:
+  tier: 8piece          # within the 15 confirmed wing steering MN types
+  bilateral: true       # left MNs -> left-hand classes, right -> right-hand
+
+model:
+  tau_ms_init: 20.0
+  gain_scale: 0.05
+  input_scale: 1.0
+  state_clip: 20.0
+  spiking: false        # rate relaxation first; see PLAN.md open question 3
+
+genre:
+  enabled: true
+  dim: 8
+  max_current: 0.5      # bounded: unbounded tonic drive saturates pC1/pIP10
+
+data:
+  root: data/egmd/groove
+  seconds: 4.0
+  sigma_ms: 20.0        # Gaussian onset smoothing
+  val_split: validation
+  synthetic: false
+
+train:
+  device: auto
+  epochs: 20
+  batch_size: 4
+  lr: 0.003
+  weight_decay: 0.0
+  tbptt_steps: 150
+  pos_weight: 8.0       # onsets are sparse
+  rate_weight: 0.1
+  target_rate_hz: 5.0
+  grad_clip: 1.0
+  bf16: true            # honoured on CUDA; ignored on CPU
+  workers: 2
+  seed: 0
+
+eval:
+  tolerance_s: 0.05     # 50 ms onset tolerance
+  threshold: 0.3

@@ -158,6 +158,32 @@ class AudioToJO(nn.Module):
 
         return torch.cat([env, flux], dim=1).transpose(1, 2)     # (B, steps, 2*bands)
 
+    @property
+    def context_samples(self) -> int:
+        """Left context the causal DSP block needs before its output is exact."""
+        return int(self.filters.shape[-1] + self.env_kernel.shape[-1])
+
+    def forward_window(self, wav: torch.Tensor, start_step: int, n_steps: int) -> torch.Tensor:
+        """Encode only steps ``[start_step, start_step + n_steps)``.
+
+        Truncated BPTT backwards through one chunk at a time, so the encoder
+        cannot be run once over the whole clip -- its graph would be freed by
+        the first chunk's backward pass. Re-encoding a window with enough left
+        context gives bit-comparable output and keeps memory flat. It is also
+        exactly what the Phase 5 streaming path does, so training and live
+        inference run the same code.
+        """
+        if wav.dim() == 1:
+            wav = wav.unsqueeze(0)
+        hop = self.hop
+        ctx_steps = -(-self.context_samples // hop)          # ceil, in steps
+        first = max(0, start_step - ctx_steps)
+        lo = first * hop
+        hi = min(wav.shape[-1], (start_step + n_steps) * hop + hop)
+        feats = self.features(wav[:, lo:hi])
+        off = start_step - first
+        return self.to_jo(feats[:, off: off + n_steps])
+
     def forward(self, wav: torch.Tensor) -> torch.Tensor:
         return self.to_jo(self.features(wav))
 
