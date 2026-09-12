@@ -2,8 +2,13 @@
 
 Truncated BPTT over the rate model, per-class BCE against Gaussian-smoothed
 onset targets, plus a firing-rate regulariser that keeps the network off its
-saturation ceiling. bfloat16 autocast and gradient checkpointing are available
-via config; both are off by default on CPU where they cost more than they save.
+saturation ceiling.
+
+Truncation already bounds activation memory in sequence length; gradient
+checkpointing (``train.grad_checkpoint``) trades ~30% more compute to halve
+what one chunk holds, which is what buys a longer chunk or a larger batch on a
+fixed GPU. bfloat16 autocast (``train.bf16``) is honoured on CUDA and ignored
+on CPU, where it costs more than it saves. Both default off here.
 
 The loss is deliberately plain. Everything interesting is supposed to be in the
 recurrent core, so anything clever here would muddy what the Phase 4 ablations
@@ -21,7 +26,7 @@ import torch
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from build import build_model, device_of, get_subgraph, load_config, role_index
+from build import build_model, device_of, get_subgraph, load_config
 from dataset import build_dataset
 from metrics import beat_alignment_error, groove_similarity, onset_f_measure
 
@@ -48,6 +53,7 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
     tb = cfg["train"]
     chunk = int(tb.get("tbptt_steps", 150))
     amp = bool(tb.get("bf16", False)) and device.type == "cuda"
+    ckpt = bool(tb.get("grad_checkpoint", False)) and train
     totals = {"loss": 0.0, "bce": 0.0, "rate": 0.0, "n": 0}
 
     for wav, y, style, _tempo in loader:
@@ -72,7 +78,15 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
             with ctx:
                 drive = model.encoder.forward_window(wav, a, b - a)
                 tonic = model.genre(style) if style is not None else None
-                rates, state = model.rnn(drive, state=state, tonic=tonic, return_all=True)
+                if ckpt:
+                    # Recompute this chunk's timestep activations during
+                    # backward instead of holding them all.
+                    rates, state = torch.utils.checkpoint.checkpoint(
+                        lambda d, st, tn: model.rnn(d, state=st, tonic=tn, return_all=True),
+                        drive, state, tonic, use_reentrant=False,
+                    )
+                else:
+                    rates, state = model.rnn(drive, state=state, tonic=tonic, return_all=True)
                 motor = rates[:, :, model.rnn.motor_idx]
                 logits = model.decoder(motor)
                 bce = onset_loss(logits.float(), y[:, a:b], tb.get("pos_weight", 8.0))

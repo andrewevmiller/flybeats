@@ -56,6 +56,8 @@ train:
   target_rate_hz: 5.0
   grad_clip: 1.0
   bf16: true            # honoured on CUDA; ignored on CPU
+  grad_checkpoint: false  # ~30% more compute to halve per-chunk activation
+                          # memory; turn on to fit a longer chunk on a GPU
   workers: 2
   seed: 0
 
