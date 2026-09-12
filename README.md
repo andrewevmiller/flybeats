@@ -9,9 +9,12 @@ See [PLAN.md](PLAN.md) for the design this implements.
 
 > **Status.** The pipeline is complete and runs end to end: Phase 0 gate through
 > Phase 5 streaming playback, with the full Phase 4 ablation harness. What has
-> **not** happened is a trained run at a scale that would let anyone answer the
-> project's central question. Read [Results](#results-and-what-they-are-not)
-> before quoting a number from this repo.
+> **not** happened is a trained run that answers the project's central question —
+> and the model currently converges to a constant predictor, so that run is
+> blocked on two fixes rather than on compute.
+>
+> Resuming work: **[Picking this up again](#picking-this-up-again)**.
+> Read [Results](#results-and-what-they-are-not) before quoting any number here.
 
 ---
 
@@ -107,6 +110,39 @@ sign_shuffled        725,272    0.1561    0.333      29.2    -28.3
 gru                  724,379    0.2521    0.299      32.6    -13.0
 shortcut              79,499    0.2683    0.446      39.8    -22.0
 ```
+
+### The real-corpus run, and the fault it exposed
+
+A short run on real GMD audio (10k-neuron subgraph, 8-piece kit, 64 clips,
+6 epochs, CPU) is in `runs/v1_8piece_cpu/`. It is not a result either — it is
+the run that found the problem below.
+
+```
+ep 0  loss 0.7391   onset F 0.2132   groove 0.275
+ep 5  loss 0.6561   onset F 0.2147   groove 0.259
+```
+
+**Loss falls; onset F and groove do not.** `scripts/diagnose.py` separates the
+causes by layer, and the answer is a design fault, not undertraining:
+
+- The model is **worse than the best constant predictor** (BCE 0.6588 vs
+  0.6344), and its per-class outputs sit on the closed-form weighted optimum —
+  kick predicts 0.313 against an optimum of 0.316, snare 0.568 against 0.555.
+- Mean `|corr(prediction, target)|` is **0.029**. There is no timing in the
+  output at all.
+- Encoder drive varies strongly (0.47 relative); motor rates barely move
+  (0.0056 relative). The time-varying signal is washed out in the recurrence.
+- **96% of the encoder's `to_jo` weights are negative**, having been initialised
+  non-negative from the JO zone prior, and the drive is now mostly a DC offset.
+  The encoder has learned to suppress its own sensory input.
+
+The root cause is the rate regulariser (`src/train.py:43`). `target_rate_hz: 5.0`
+becomes a target *activation* of `5 × 5ms/1000 = 0.025`, compared against
+`softplus(v − θ)` — a dimensionless activation with no Hz interpretation, sitting
+at 0.74. The units are meaningless and the penalty is a constant ~30× downward
+pressure on all activity, so silencing the sensory input is the cheapest way to
+satisfy it. The decoder is then left with the base rate, and BCE genuinely falls
+as it moves onto the optimal constant.
 
 At one epoch the simplest arms lead, which is what one epoch measures. Drawing
 "the rewired graph beats the connectome" from this would be wrong.
@@ -290,3 +326,68 @@ data-path failure.
   the dopaminergic reward channel.
 - **`--full-graph` render tier** is implemented but has not been run end to end
   at 162k nodes.
+
+---
+
+## Picking this up again
+
+Everything is committed and pushed on `claude/sharp-pasteur-kg9oyi`; 54 tests
+pass; the connectome cache, subgraph cache and GMD corpus are rebuilt by the
+`scripts/fetch_*.py` commands in [Quick start](#quick-start) (they are
+gitignored, not in the repo).
+
+**Do not start a GPU ablation run.** The model currently converges to a constant
+predictor, so the Phase 4 table would compare five arms that have all learned the
+base rate. Fix the two faults below first.
+
+### First: fix what the diagnostic found
+
+1. **The rate regulariser rewards silence** — `src/train.py:43`, configured at
+   `configs/v1_8piece.yaml:55-56`. `target_rate_hz` is converted to an activation
+   as if `softplus(v − θ)` were spikes per step; it is not. Either drop the term,
+   make it one-sided (penalise saturation only, not low activity), or make it
+   homeostatic against the activity level at initialisation rather than an
+   invented constant.
+2. **The encoder collapses to DC** — `src/encoder.py:136`. Its constant component
+   does no work and pins the JO afferents near zero. Either standardise the drive
+   per channel, or constrain `to_jo` weights non-negative, which is defensible
+   biologically: an onset function driving JO afferents should be excitatory.
+
+After each change, the loop is one command and a few minutes on CPU:
+
+```bash
+python src/train.py --config configs/v1_8piece_cpu.yaml
+python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
+```
+
+Success is `gain over constant` turning positive and `|corr(pred, target)|`
+rising off ~0.03. Onset F will follow; it cannot move before those do.
+
+3. **Then re-check the washout.** If motor modulation is still ~100× below the
+   drive once the encoder is no longer suppressing itself, that is a real finding
+   about the topology rather than a bug — and worth reporting as one.
+
+### Then, in order
+
+- **Run the real experiment** (needs a GPU):
+  `python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5`.
+  `--seeds` is not optional: a gap smaller than the across-seed spread is not a
+  result.
+- **Fix the weakest claim in Phase 1.** 3 hops from JO reaches 154,853 of 162,517
+  neurons, so the subgraph is selected by the pathway-strength trim, not by
+  anatomy. Either replace the trim with a defensible path-based criterion, or say
+  plainly that the trim *is* the selection.
+- **Run the render tier** — `scripts/render_full_graph.py` has never been executed
+  at 162k nodes.
+- **Deferred:** spiking model (unblocked, but only worth starting once the rate
+  model does something), v2 modes, leg/8-limb tiers, live playback on real
+  hardware.
+
+### Things that will bite
+
+- `neuprint.janelia.org` is blocked from this environment; the Phase 0 gate reads
+  the flat-connectome feather instead. `--neuprint` is implemented but has never
+  been exercised.
+- E-GMD's audio archive is 96 GB. The default corpus is GMD (5.4 GB), same
+  recordings and style vocabulary.
+- No GPU here, so every number in this repo is CPU-scale.
