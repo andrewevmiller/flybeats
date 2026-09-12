@@ -1,0 +1,18 @@
+# A real-corpus run scaled to finish on CPU. Proves the GMD audio+MIDI path
+# trains end to end; it is NOT the configuration to quote a result from.
+# For that, run configs/v1_8piece.yaml on a GPU.
+_base_: v1_8piece.yaml
+name: v1_8piece_cpu
+subgraph:
+  cache: data/cache/subgraph_10k.npz
+  max_nodes: 10000
+  min_weight: 5
+data:
+  synthetic: false
+  seconds: 2.0
+  max_files: 64
+train:
+  epochs: 6
+  batch_size: 4
+  tbptt_steps: 100
+  lr: 0.004

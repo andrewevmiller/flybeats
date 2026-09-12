@@ -145,7 +145,7 @@ def build_loaders(cfg, kit):
         DataLoader(tr, batch_size=bs, shuffle=True, num_workers=cfg["train"].get("workers", 0),
                    drop_last=True),
         DataLoader(va, batch_size=bs, shuffle=False, num_workers=cfg["train"].get("workers", 0)),
-        getattr(tr, "n_styles", getattr(tr, "styles", [1]) and len(getattr(tr, "styles", [1]))),
+        int(getattr(tr, "n_styles", 1)),
     )
 
 

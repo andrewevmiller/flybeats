@@ -96,9 +96,9 @@ class MotorToDrums(nn.Module):
             for c, name in enumerate(kit.classes):
                 hand = _hand_of(name)
                 if hand == "L":
-                    mask[c] = left.float() + 0.0
+                    mask[c] = left.float()
                 elif hand == "R":
-                    mask[c] = right.float() + 0.0
+                    mask[c] = right.float()
                 # feet and shared classes read from both hemispheres
                 if mask[c].sum() == 0:      # no MN on that side: fall back to all
                     mask[c] = 1.0

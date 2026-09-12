@@ -18,7 +18,7 @@ def peak_pick(activation: np.ndarray, step_ms: float, threshold: float = 0.3,
 
     keep, last = [], -np.inf
     gap = refractory_ms / step_ms
-    for i in idx[np.argsort(-a[idx])] if False else idx:
+    for i in idx:
         if i - last >= gap:
             keep.append(i)
             last = i

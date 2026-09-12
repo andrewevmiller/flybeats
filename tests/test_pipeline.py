@@ -153,3 +153,36 @@ def test_synthetic_dataset_shapes_line_up():
     assert y.shape == (400, 3)
     assert y.max() > 0.5, "targets must contain onsets"
     assert 0 <= int(style) < 4 and float(tempo) > 0
+
+
+def test_class_fallback_respects_the_kit_in_use():
+    """A ride hit belongs on the ride when the kit has one, on the crash when
+    it does not -- deciding that in the MIDI note map would get one tier wrong."""
+    from dataset import resolve_class
+
+    eight = set(KIT_TIERS["8piece"])
+    articulated = set(KIT_TIERS["articulated"])
+
+    assert resolve_class("ride", eight) == "crash"
+    assert resolve_class("ride", articulated) == "ride"
+    assert resolve_class("ride_bell", articulated) == "ride_bell"
+    assert resolve_class("ride_bell", eight) == "crash"
+    assert resolve_class("hat_pedal", eight) == "hat_closed"
+    assert resolve_class("hat_pedal", articulated) == "hat_pedal"
+    assert resolve_class("sidestick", eight) == "snare"
+    assert resolve_class("kick", eight) == "kick"
+    assert resolve_class("nonsense", eight) is None
+
+
+def test_ride_reaches_the_targets_for_both_tiers():
+    from dataset import smooth_onsets
+
+    events = [(0.5, "ride"), (1.0, "kick")]
+    eight = KIT_TIERS["8piece"]
+    y = smooth_onsets(events, eight, 400, 5.0)
+    assert y[:, eight.index("crash")].max() > 0.9, "ride was dropped on the 8-piece kit"
+
+    art = KIT_TIERS["articulated"]
+    y2 = smooth_onsets(events, art, 400, 5.0)
+    assert y2[:, art.index("ride")].max() > 0.9
+    assert y2[:, art.index("crash")].max() < 0.1, "ride leaked onto crash"

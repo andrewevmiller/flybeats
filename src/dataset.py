@@ -40,8 +40,30 @@ MIDI_TO_CLASS: dict[int, str] = {
     47: "tom_mid", 48: "tom_mid",
     50: "tom_high",
     49: "crash", 52: "crash", 55: "crash", 57: "crash",
-    51: "crash", 53: "crash", 59: "crash",
+    51: "ride", 59: "ride", 53: "ride_bell",
+    37: "sidestick", 44: "hat_pedal",
 }
+
+#: Where a class goes when the kit in use does not have it. The 8-piece kit has
+#: no ride, so ride notes must land on crash rather than be dropped -- but the
+#: articulated tier does have one, and sending its rides to crash would be
+#: wrong. Resolved per kit at load time instead of baked into the note map.
+CLASS_FALLBACK: dict[str, str] = {
+    "ride": "crash", "ride_bell": "crash", "cowbell": "crash",
+    "sidestick": "snare", "clap": "snare",
+    "hat_pedal": "hat_closed",
+}
+
+
+def resolve_class(name: str, classes: set[str]) -> str | None:
+    """Map a MIDI-derived class onto the kit actually in use."""
+    seen = set()
+    while name is not None and name not in classes:
+        if name in seen:
+            return None
+        seen.add(name)
+        name = CLASS_FALLBACK.get(name)
+    return name
 
 
 @dataclass
@@ -62,13 +84,15 @@ def smooth_onsets(
     single 1 in 1,600 steps per class, and the loss would just learn silence.
     """
     idx = {c: i for i, c in enumerate(classes)}
+    available = set(classes)
     y = np.zeros((n_steps, len(classes)), dtype=np.float32)
     sigma = max(sigma_ms / step_ms, 1e-3)
     half = int(math.ceil(3 * sigma))
     kern = np.exp(-0.5 * (np.arange(-half, half + 1) / sigma) ** 2).astype(np.float32)
 
     for t, cls in times:
-        j = idx.get(cls)
+        resolved = resolve_class(cls, available)
+        j = idx.get(resolved) if resolved else None
         if j is None:
             continue
         c = int(round(t * 1000.0 / step_ms))
