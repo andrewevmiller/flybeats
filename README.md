@@ -1,4 +1,4 @@
-# FlyBeats / FlyDrums
+# flybeats
 
 Connectome-constrained drum performance from audio. A sparse recurrent network
 whose **topology is fixed by the real MaleCNS v1.0 wiring diagram** and whose
@@ -9,9 +9,21 @@ See [PLAN.md](PLAN.md) for the design this implements.
 
 > **Status.** The pipeline is complete and runs end to end: Phase 0 gate through
 > Phase 5 streaming playback, with the full Phase 4 ablation harness. What has
-> **not** happened is a trained run that answers the project's central question —
-> and the model currently converges to a constant predictor, so that run is
-> blocked on two fixes rather than on compute.
+> **not** happened is a trained run that answers the project's central question.
+>
+> Three faults blocked it, and all three are now fixed. The rate regulariser no
+> longer rewards silence; the encoder no longer cancels its own input; and the
+> global gain normalisation no longer pins the network at an operating point
+> where **the drive never reaches the wing motor pool at all** — it was losing
+> 28× at the first synapse, which no amount of training could recover. The
+> third was hiding behind the first two; see
+> [Where the signal stops](#where-the-signal-stops).
+>
+> With `spectral_radius: 10.0`, a 25-epoch CPU run on real GMD audio beats the
+> best constant predictor for the first time (`gain over constant` +0.0128,
+> `|corr(pred, target)|` 0.134, onset F 0.31) and the diagnostic now calls the
+> model undertrained rather than broken. That is a working pipeline, **not** a
+> result about the connectome: the Phase 4 arms still need a GPU.
 >
 > Resuming work: **[Picking this up again](#picking-this-up-again)**.
 > Read [Results](#results-and-what-they-are-not) before quoting any number here.
@@ -19,6 +31,29 @@ See [PLAN.md](PLAN.md) for the design this implements.
 ---
 
 ## Quick start
+
+**Just want to run a trained model?** A bundle is self-contained — no
+connectome, no corpus, no `data/` directory, and no sampler or DAW:
+
+```bash
+pip install -r requirements.txt
+
+# audio in -> drums out, as a wav you can play immediately
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --out drums.wav
+
+# or as MIDI, if you do have a sampler
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav --out drums.mid
+```
+
+That works on a laptop with nothing else installed, Windows included: the
+`soundfile` and `sounddevice` wheels carry their own libraries, and the starter
+kit ships in `kits/synth/`. Live input (`--sound-source samples` with no
+`--render`) additionally needs `sounddevice`.
+
+The checkpoint already carries the whole topology, so a bundle is ~10 MB and
+`scripts/export_bundle.py` verifies it reproduces the original model's output
+exactly before it writes the file. Everything below is for *building* a model.
 
 ```bash
 pip install -r requirements.txt
@@ -33,6 +68,9 @@ python src/ablations.py --config configs/v1_8piece.yaml --lesion
 
 # size a subgraph against the latency budget before training it
 python src/realtime.py --config configs/v1_8piece.yaml --benchmark
+
+# ship a trained run to a machine that has none of the above
+python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
 ```
 
 Setting this up on a laptop — disk, RAM and time for each step, which parts are
@@ -115,11 +153,11 @@ gru                  724,379    0.2521    0.299      32.6    -13.0
 shortcut              79,499    0.2683    0.446      39.8    -22.0
 ```
 
-### The real-corpus run, and the fault it exposed
+### The real-corpus run, and the faults it exposed
 
 A short run on real GMD audio (10k-neuron subgraph, 8-piece kit, 64 clips,
 6 epochs, CPU) is in `runs/v1_8piece_cpu/`. It is not a result either — it is
-the run that found the problem below.
+the run that found the problems below. These were its numbers:
 
 ```
 ep 0  loss 0.7391   onset F 0.2132   groove 0.275
@@ -127,29 +165,156 @@ ep 5  loss 0.6561   onset F 0.2147   groove 0.259
 ```
 
 **Loss falls; onset F and groove do not.** `scripts/diagnose.py` separates the
-causes by layer, and the answer is a design fault, not undertraining:
+causes by layer, and the answer was a design fault, not undertraining:
 
-- The model is **worse than the best constant predictor** (BCE 0.6588 vs
-  0.6344), and its per-class outputs sit on the closed-form weighted optimum —
-  kick predicts 0.313 against an optimum of 0.316, snare 0.568 against 0.555.
-- Mean `|corr(prediction, target)|` is **0.029**. There is no timing in the
-  output at all.
-- Encoder drive varies strongly (0.47 relative); motor rates barely move
-  (0.0056 relative). The time-varying signal is washed out in the recurrence.
-- **96% of the encoder's `to_jo` weights are negative**, having been initialised
-  non-negative from the JO zone prior, and the drive is now mostly a DC offset.
-  The encoder has learned to suppress its own sensory input.
+- The model was **worse than the best constant predictor** (BCE 0.6588 vs
+  0.6344), and its per-class outputs sat on the closed-form weighted optimum —
+  kick predicting 0.313 against an optimum of 0.316, snare 0.568 against 0.555.
+- Mean `|corr(prediction, target)|` was **0.029**. No timing in the output at all.
+- Encoder drive varied strongly (0.47 relative); motor rates barely moved
+  (0.0056 relative). The time-varying signal was washed out downstream.
+- **96% of the encoder's `to_jo` weights were negative**, having been
+  initialised non-negative from the JO zone prior, leaving the drive as mostly a
+  DC offset. The encoder had learned to suppress its own sensory input.
 
-The root cause is the rate regulariser (`src/train.py:43`). `target_rate_hz: 5.0`
-becomes a target *activation* of `5 × 5ms/1000 = 0.025`, compared against
-`softplus(v − θ)` — a dimensionless activation with no Hz interpretation, sitting
-at 0.74. The units are meaningless and the penalty is a constant ~30× downward
-pressure on all activity, so silencing the sensory input is the cheapest way to
-satisfy it. The decoder is then left with the base rate, and BCE genuinely falls
-as it moves onto the optimal constant.
+Two causes, both fixed:
+
+1. **The rate regulariser rewarded silence.** `target_rate_hz: 5.0` became a
+   target *activation* of `5 × 5ms/1000 = 0.025`, compared against
+   `softplus(v − θ)` — a dimensionless activation with no Hz interpretation,
+   sitting at 0.74. The units were meaningless and the penalty was a constant
+   ~30× downward pressure on all activity, so silencing the sensory input was
+   the cheapest way to satisfy it. It is now **one-sided** — nothing below the
+   ceiling is penalised — and the ceiling is measured from each model's own
+   activity at initialisation, in the units the network actually has. A config
+   still carrying `target_rate_hz` is refused rather than reinterpreted.
+2. **The encoder was fighting its own DC.** `log1p` band energy is a large
+   positive constant plus a small fluctuation, and cancelling that constant with
+   negative weights cancels the signal with it. Features are now standardised
+   per channel by a **fixed affine**, calibrated once on training audio and
+   saved with the weights — fixed rather than per-clip, so the streaming path
+   still matches the training path exactly (`tests/test_encoder.py` pins it).
+   `to_jo` is constrained **non-negative** by projection after each optimiser
+   step: an onset function driving JO afferents should excite them, and the DC
+   offset is the bias's job.
+
+Both worked, at their own layer — and neither works alone. Same config, same
+corpus, same 6 epochs, one arm per combination:
+
+| arm | `to_jo` negative | drive rel. variation | final train BCE | best onset F |
+|---|---|---|---|---|
+| neither (the earlier run) | 96% | 0.50 | 0.6387 | 0.215 |
+| rate regulariser only | 46% | 0.79 | 0.6387 | 0.213 |
+| encoder only | 0% | **0.08** | 0.6387 | 0.209 |
+| both | **0%** | **2.91** | 0.6387 | 0.200 |
+| both, at ρ = 10 | 0% | 4.30 | **0.6351** | **0.280** |
+
+The `neither` arm reproduces the earlier run *exactly* in a fresh container
+(ep 0 `0.7391 / 0.2132 / 0.275`, ep 5 `0.6561 / 0.2147 / 0.259`), so this is a
+like-for-like comparison and not two different machines.
+
+Two things fall out of it. **The fixes are not independent:** the regulariser
+fix alone leaves the encoder still fighting its DC (46% of weights negative),
+and the encoder fix alone is *worse than nothing* — with sign-flipping blocked
+but the penalty still pushing down on all activity, the encoder shrinks its
+weights toward zero instead (mean +0.0001) and the drive nearly dies, 0.50 →
+0.08. Cancel by sign or cancel by magnitude: the regulariser bought silence
+either way, and only removing the incentive *and* the mechanism helps.
+
+**And every ρ = 0.9 arm lands on the same final BCE to four decimals.** Whatever
+the encoder did, the loss did not care — which is as direct a demonstration as
+this repo has that at that operating point the sensory pathway contributed
+nothing at all to the output.
+
+What they did *not* do is move onset F (0.215 → 0.200) or `|corr(pred, target)|`
+(0.029 → 0.019). That is not the fixes failing. It is the fault they were
+hiding, which the next section is about — and once that one was fixed too, the
+same two encoder numbers went on to carry a drive that finally arrives.
 
 At one epoch the simplest arms lead, which is what one epoch measures. Drawing
 "the rewired graph beats the connectome" from this would be wrong.
+
+### Where the signal stops
+
+The drive now varies (2.91 relative) and the wing motor pool still does not
+(0.0064). "Washed out in the recurrence" is a guess; `scripts/diagnose.py`
+section 6 measures it, as relative temporal variation of the firing rate by hop
+distance from the JO afferents:
+
+```
+hop     neurons  mean rate  sd over time   relative
+---------------------------------------------------
+0           405     1.1403      0.695646    0.55147
+1           376     0.7203      0.014983    0.01945   /28
+2          4969     0.7471      0.007273    0.00609   /3
+3          4209     0.7024      0.003086    0.00390   /2
+4            41     0.7178      0.003523    0.00396   /1
+motor pool sits at hops {2: 62, 3: 4}
+```
+
+**The loss is not spread through the depth of the connectome. It is a 28× drop
+at the first synapse**, after which each hop costs a factor of 2–3. And the
+giveaway is the mean rate: every neuron past hop 0 sits at ~0.72, which is
+`softplus(0)` — they are receiving essentially nothing.
+
+The suspect is not the topology but the operating point. `gain_scale: auto`
+normalises the recurrent operator to `spectral_radius: 0.9`, which is what makes
+the Phase 4 arms comparable — but ρ is carried by a small, strongly connected
+hub subnetwork, so pinning it at 0.9 divides every weight by that hub's gain and
+leaves the typical neuron's synaptic input far below its own resting activation.
+`scripts/propagation.py` sweeps it on an **untrained** model over real audio,
+forward passes only:
+
+```
+  radius     hop 0     hop 1     hop 2     hop 3     motor  mean rate  at clip
+      0.90   0.55564   0.01608   0.00788   0.00497   0.00760     0.7429     0.0%
+      2.00   0.55630   0.03935   0.02794   0.02475   0.01766     1.0477     0.9%
+      5.00   0.55817   0.16779   0.15022   0.11071   0.06244     1.2863     1.7%
+     10.00   0.56059   0.72660   1.06303   0.76519   1.00240     1.8206     3.6%
+     25.00   0.56473   4.13316   5.06504   4.19136   3.84961     3.1754     9.4%
+```
+
+So the architecture *can* carry the signal; at the configured radius it does
+not, and it is not something training can recover — no gradient on a
+connection's gain can create modulation that never arrives. Between ρ 5 and 10
+the motor pool goes from 0.06 to 1.00, at the cost of 3.6% of unit-steps pinned
+against the state clip. ρ = 25 is louder and a tenth saturated, which is the
+same failure from the other side.
+
+`spectral_radius` is therefore **10.0**, not 0.9. This does not touch the
+Phase 4 fairness argument: every arm is still normalised to one common radius,
+and only the value of that constant changes.
+
+### The first run that learns anything
+
+Same CPU config, ρ = 10, 25 epochs on the same 64 GMD clips
+(`runs/rho10_long/`). Still not a result — 64 clips, a 10k-neuron subgraph and
+no GPU — but it is the first run in this repo whose diagnostic says the model is
+*undertrained* rather than broken:
+
+```
+ep  0  loss 0.7484   onset F 0.186   groove 0.304
+ep  8  loss 0.6039   onset F 0.297   groove 0.328
+ep 16  loss 0.5809   onset F 0.295   groove 0.347
+ep 24  loss 0.5658   onset F 0.292   groove 0.352      best F 0.3118
+```
+
+| `scripts/diagnose.py` | ρ = 0.9, 6 ep | ρ = 10, 6 ep | ρ = 10, 25 ep |
+|---|---|---|---|
+| gain over best constant | −0.0170 | −0.0172 | **+0.0128** |
+| mean \|corr(pred, target)\| | 0.019 | 0.069 | **0.134** |
+| motor relative modulation | 0.0064 | 0.189 | **0.450** |
+| prediction relative variation | 0.0070 | 0.055 | **0.413** |
+| verdict | learned the base rate | learned the base rate | **tracks the target** |
+
+The per-hop table flattens out completely — 1.04 / 1.29 / 1.45 / 1.05 from the
+JO afferents to hop 3 — so nothing is being lost on the way to the wings any
+more. Per-class prediction sd goes from ~0.003 (a constant with noise on it) to
+0.10–0.19, and every class that has onsets now correlates positively with its
+target.
+
+What this does **not** show: that the connectome is doing the work. That is what
+the Phase 4 arms are for, and they need a GPU and the full corpus.
 
 Running the suite properly needs a GPU and the real corpus. `--seeds` matters
 here: `rewired` and `sign_shuffled` each draw *one* random topology, so a single
@@ -228,6 +393,16 @@ trains, evaluates, prints a number, and is silently meaningless.
    Across ablation arms that is not just noisy but unfair. Now swept per model,
    with the chosen threshold reported.
 
+8. **The rate regulariser's units were meaningless** — a target in Hz compared
+   against a dimensionless activation, which made it a constant downward pull on
+   all activity and taught the encoder to go quiet. Detailed
+   [above](#the-real-corpus-run-and-the-faults-it-exposed); it trained, it
+   evaluated, and its loss curve fell the whole way down.
+
+9. **The encoder's own DC gave it a way to cancel its input.** Same section. The
+   symptom was a metric that would not move while everything upstream looked
+   healthy.
+
 Two more, smaller: torch's CSR autograd returns a gradient sized to the
 *deduplicated* values when edges repeat, which the rewiring ablation can
 produce — so the backward is written out explicitly and checked against a dense
@@ -272,15 +447,102 @@ src/ablations.py             Phase 4: rewire / sign-shuffle / GRU / shortcut + l
 src/metrics.py               onset F, beat alignment, groove similarity
 src/feel.py                  measured swing and timing offsets — never imposed
 src/realtime.py              Phase 5: streaming inference, MIDI out, latency benchmark
+src/bundle.py                self-contained model files -- no dataset needed to play
+src/soundbank.py             MidiBank / SampleBank behind one interface
+src/voice.py                 voice pool, choke groups, layer crossfade, round-robin
+scripts/make_synth_kit.py    generates the starter kit in kits/synth/
+scripts/export_bundle.py     checkpoint -> bundle, verified against the original
 scripts/verify_types.py      Phase 0 gate
+scripts/diagnose.py          why a checkpoint is not learning, separated by layer
+scripts/propagation.py       what the subgraph carries, per hop, before training
 scripts/render_full_graph.py offline pass over all 162k neurons
-tests/                       54 tests: exact gradients, frozen signs and topology,
-                             ablation invariants, encoder window/full equivalence,
-                             checkpointing transparency, streaming peak state
+tests/                       95 tests: exact gradients, frozen signs and topology,
+                             ablation invariants, encoder window/full equivalence
+                             (calibrated and not), the non-negativity constraint,
+                             one-sided rate penalty, hop distances, checkpointing
+                             transparency, streaming peak state, bundle round
+                             trips, choke groups and velocity layers
 ```
 
 No module hardcodes a cell-type string. Every population is read from
 `data/verified_types.json`.
+
+---
+
+## Making sound
+
+The model decides *what to hit*; a `SoundBank` decides what that sounds like.
+Both are downstream of the same `(class, velocity, time)` tuple, so swapping
+kits needs no retraining, and the backends are interchangeable:
+
+| backend | what it does |
+|---|---|
+| `MidiBank` | notes out to a sampler or DAW — the original Phase 5 path |
+| `SampleBank` | WAV layers mixed here, so the model makes sound on its own |
+
+A kit is a folder per class, with `<layer>_<variant>.wav` files — layer 0 is the
+softest. Velocity crossfades between adjacent layers rather than stepping
+between them (a hard cutoff puts an audible seam mid-crescendo where the sample
+identity jumps), and variants within a layer are drawn from a shuffled bag that
+never repeats immediately, because pure random audibly repeats over a short loop.
+
+```
+kits/synth/
+  manifest.yaml     choke groups, and aliases so a kit using 'chh'/'bd' still maps
+  kick/   0_0.wav 0_1.wav 0_2.wav 1_0.wav ...
+  hat_closed/ ...   both hats are in the 'hihat' choke group
+```
+
+Choke groups live in the sound layer, not the model: one hi-hat cannot be open
+and closed at once, which is a fact about the instrument rather than something
+the connectome should have to learn. A kit missing a class plays everything else
+and says which are silent — lesion mode already needs "some classes do not fire"
+to be an ordinary outcome rather than an error.
+
+`kits/synth/` is generated, not sampled: `scripts/make_synth_kit.py` synthesises
+it from pitch-enveloped sines and filtered noise. It is not a good kit. It is
+tiny, unambiguously ours to ship, and it exercises every path the player has.
+
+**One caveat.** The model was trained on binary onset targets, so its velocity
+is the height of the detection peak, not a learned dynamic — the layers
+crossfade correctly, but what they crossfade on is confidence. GMD's real MIDI
+velocities are in the corpus and currently discarded; see
+[What is not done](#what-is-not-done).
+
+---
+
+## Speed
+
+The dial runs from a human drummer's timescale to the fly's own. It is
+inference-time only — no retraining, and at speed 1 the output is unchanged.
+
+```bash
+python src/realtime.py --bundle m.fb --render song.wav --speed 4
+python src/realtime.py --bundle m.fb --render song.wav --speed 8 --class-speed kick=1
+python src/realtime.py --bundle m.fb --benchmark --speed 4      # can this machine?
+```
+
+Speed is `k` recurrent updates per encoder frame, holding that frame's drive.
+That works because `alpha = step / tau`: going `k` times faster divides *both* by
+`k`, so the discrete update is exactly the one that was trained and only its
+mapping onto wall-clock time moves. Scaling τ instead saturates near 4× and then
+silently stops, because `alpha` clamps at 1.0 and τ at `tau_ms_min`.
+
+| speed | effective τ | |
+|---|---|---|
+| 1 | 20 ms | as trained |
+| 4 | 5 ms | **full fly** — the wingbeat period, and the model's own τ floor |
+| 8+ | ≤2.5 ms | faster than the animal; a musical effect, not a biological one |
+
+**Speed generates resolution; the refractory allocates it.** Both are needed: at
+a fixed 50 ms refractory every class caps at 20 hits/s and the dial does nothing
+at all (measured: 12.5, 17.5, 14.2, 12.5 hits/s across speeds 1–8). The default
+refractory therefore scales with speed — 12.5 → 22.2 → 34.0 → 36.5 hits/s — while
+`--class-speed` is absolute, so naming a class pins it back to a human timescale
+while the rest run fast.
+
+Cost is linear in `k`, so check `--benchmark --speed` before using it live; the
+offline renderer has no such ceiling. See [SPEED_PLAN.md](SPEED_PLAN.md).
 
 ---
 
@@ -323,7 +585,16 @@ data-path failure.
 
 ## What is not done
 
-- **No meaningful trained run.** Needs a GPU. This is the gap that matters.
+- **Velocity is not learned.** The decoder's velocity is detection confidence,
+  not dynamics: targets are binary onsets and GMD's MIDI velocities are dropped
+  when events are built. A per-class velocity head would fix it, and should land
+  *before* the Phase 4 arms run rather than after, since it changes the loss.
+- **No meaningful trained run.** Needs a GPU and the full corpus. This is the gap
+  that matters. The model now learns *something* (see
+  [the first run that learns anything](#the-first-run-that-learns-anything)), but
+  64 clips on a 10k-neuron subgraph settles nothing about the connectome.
+- **The radius has been checked on both trained tiers, not all of them.** 10k and
+  30k both land on ρ = 10; re-run `scripts/propagation.py` for any other.
 - **Spiking model** — the rate relaxation converges, so the surrogate-gradient
   LIF version is now unblocked, but unwritten.
 - **v2 modes** — continue, call-and-response, accompany; leg mode; 8-limb kit;
@@ -335,60 +606,110 @@ data-path failure.
 
 ## Picking this up again
 
-Everything is committed and pushed on `claude/sharp-pasteur-kg9oyi`; 54 tests
-pass; the connectome cache, subgraph cache and GMD corpus are rebuilt by the
-`scripts/fetch_*.py` commands in [Quick start](#quick-start) (they are
-gitignored, not in the repo).
+Everything is committed and pushed on `claude/resume-previous-session-8r6f7g`;
+95 tests pass. The connectome cache, subgraph cache and GMD corpus are rebuilt by
+the `scripts/fetch_*.py` commands in [Quick start](#quick-start) — they are
+gitignored, and so is `runs/`, so **a trained model only survives as an exported
+bundle**. Export one before you lose the machine that trained it.
 
-**Do not start a GPU ablation run.** The model currently converges to a constant
-predictor, so the Phase 4 table would compare five arms that have all learned the
-base rate. Fix the two faults below first.
+### Testing it locally, with nothing installed
 
-### First: fix what the diagnostic found
-
-1. **The rate regulariser rewards silence** — `src/train.py:43`, configured at
-   `configs/v1_8piece.yaml:55-56`. `target_rate_hz` is converted to an activation
-   as if `softplus(v − θ)` were spikes per step; it is not. Either drop the term,
-   make it one-sided (penalise saturation only, not low activity), or make it
-   homeostatic against the activity level at initialisation rather than an
-   invented constant.
-2. **The encoder collapses to DC** — `src/encoder.py:136`. Its constant component
-   does no work and pins the JO afferents near zero. Either standardise the drive
-   per channel, or constrain `to_jo` weights non-negative, which is defensible
-   biologically: an onset function driving JO afferents should be excitatory.
-
-After each change, the loop is one command and a few minutes on CPU:
+This needs no connectome, no corpus and no sampler — see
+[Quick start](#quick-start) for the one-liner. Worth trying in this order:
 
 ```bash
-python src/train.py --config configs/v1_8piece_cpu.yaml
-python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
+# 1. does it run at all, and how fast is this machine?
+python src/realtime.py --bundle flybeats-8piece.fb --benchmark
+python src/realtime.py --bundle flybeats-8piece.fb --benchmark --speed 4
+
+# 2. drums over your own audio, as a wav you can just play
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --out drums.wav
+
+# 3. the same performance at the fly's own timescale, and with the kick held back
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --speed 4 --out fly.wav
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --speed 8 --class-speed kick=1 snare=1 --out pocket.wav
+
+# 4. the biology, audibly: mute a confirmed population mid-performance
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --lesion pIP10 --out lesioned.wav
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --slider drive 1.5 --out busier.wav
 ```
 
-Success is `gain over constant` turning positive and `|corr(pred, target)|`
-rising off ~0.03. Onset F will follow; it cannot move before those do.
+What to expect, honestly: a busy, snare-heavy performance that follows the
+music's energy rather than its groove. The model is undertrained (see below),
+and its velocity is detection confidence rather than dynamics. The mechanism is
+what has been verified end to end; the musicality has not.
 
-3. **Then re-check the washout.** If motor modulation is still ~100× below the
-   drive once the encoder is no longer suppressing itself, that is a real finding
-   about the topology rather than a bug — and worth reporting as one.
+`--render` is the robust path — it needs no audio device. Live input
+(`--sound-source samples` with no `--render`) additionally needs `sounddevice`
+and a working input device, and it has had no hardware testing at all.
+
+### Where the model actually is
+
+The three faults that blocked training are fixed and verified: the rate
+regulariser is one-sided against a measured ceiling, the encoder is standardised
+with its map constrained non-negative, and `spectral_radius` is 10 rather than
+0.9. `scripts/diagnose.py` reads *"output varies and tracks the target; likely
+undertrained rather than structurally broken"* — which it had never said before.
+
+The last run started here was 256 GMD clips × 20 epochs at ρ = 10 and **did not
+finish**; at epoch 7 its best was onset F 0.305, groove 0.377 (better groove than
+the 64-clip model, on 4× the data). Its numbers are not in the repo. Re-run it:
+
+```bash
+python src/train.py --config configs/v1_8piece_cpu.yaml --epochs 20   # ~2 h on 4 CPU cores
+python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
+python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
+```
+
+Raise `data.max_files` before `train.epochs`: 25 epochs on 64 clips ended with
+the loss still falling and onset F flat, which is a model limited by data.
 
 ### Then, in order
 
+- **The velocity head**, before anything expensive. Targets are binary onsets and
+  GMD's real MIDI velocities are discarded when events are built, so the
+  decoder's velocity is the height of a detection peak. A per-class velocity
+  regression fixes it and makes the sound layer's velocity crossfade mean
+  something. It changes the loss, so it must land *before* the Phase 4 arms run
+  or they get redone.
 - **Run the real experiment** (needs a GPU):
   `python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5`.
   `--seeds` is not optional: a gap smaller than the across-seed spread is not a
-  result.
+  result. Every arm is normalised to the same radius, so the comparison is still
+  about topology.
+- **Finish the speed control** — [SPEED_PLAN.md](SPEED_PLAN.md) steps 4–6: a
+  benchmark-based guard on the live path, fractional speeds via a phase
+  accumulator, and the interesting one, driving `k(t)` from pC1's own activity
+  per frame so the drummer speeds up exactly where it is already playing harder.
+- **Finish the sound layer** — [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md) steps 5–8:
+  `hot_swap` is written but untested against a live callback, and
+  `SoundFontBank` and user-kit auto-mapping are not started.
 - **Fix the weakest claim in Phase 1.** 3 hops from JO reaches 154,853 of 162,517
-  neurons, so the subgraph is selected by the pathway-strength trim, not by
-  anatomy. Either replace the trim with a defensible path-based criterion, or say
-  plainly that the trim *is* the selection.
+  neurons, so the subgraph is selected by `_trim`, not by anatomy — the code now
+  says so plainly, which is the honest half of the fix. The other half is a
+  path-based criterion to replace the two-hop heuristic.
 - **Run the render tier** — `scripts/render_full_graph.py` has never been executed
   at 162k nodes.
-- **Deferred:** spiking model (unblocked, but only worth starting once the rate
-  model does something), v2 modes, leg/8-limb tiers, live playback on real
-  hardware.
+- **Deferred:** the spiking model (the rate model now does something, so this is
+  genuinely next), v2 modes, leg/8-limb tiers, live playback on real hardware.
 
 ### Things that will bite
 
+- `runs/` is gitignored, so **bundles are the only durable form of a trained
+  model**. `scripts/export_bundle.py` takes seconds; losing a checkpoint costs
+  the 1.1 GB download, the graph build and hours of training.
+- **Never run two training jobs on one small machine.** Torch defaults to a
+  thread per core in each process, and the oversubscribed threads spin rather
+  than progress: one epoch went from 76 s to 1,415 s. Set `OMP_NUM_THREADS`, or
+  run them in sequence.
+- **Live audio has never been run.** There is no audio device in this
+  environment, so the `sounddevice` paths are written and unexercised. The
+  offline render is the tested one.
 - `neuprint.janelia.org` is blocked from this environment; the Phase 0 gate reads
   the flat-connectome feather instead. `--neuprint` is implemented but has never
   been exercised.

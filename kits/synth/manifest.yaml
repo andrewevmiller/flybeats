@@ -1,0 +1,12 @@
+# The starter kit: synthesised, tiny, and ours to ship. Swap in a real one.
+name: synth
+sample_rate: 22050
+layers: 3            # <layer>_<variant>.wav; layer 0 is the softest
+choke_groups:
+  hihat: [hat_closed, hat_open]
+aliases:             # so a third-party kit's folder names still map
+  kick: [bd, bassdrum, kik]
+  snare: [sd, sn]
+  hat_closed: [chh, hh, hihat_closed]
+  hat_open: [ohh, oh, hihat_open]
+  crash: [cym, crash1]

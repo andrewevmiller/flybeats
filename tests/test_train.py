@@ -7,6 +7,7 @@ curve would say so.
 """
 import copy
 import sys
+import types
 from pathlib import Path
 
 import numpy as np
@@ -69,12 +70,40 @@ def test_gradient_checkpointing_is_numerically_transparent():
             f"{(plain[k] - ckpt[k]).abs().max():.3e}"
 
 
-def test_rate_penalty_pushes_toward_the_target():
-    step_ms, target_hz = 5.0, 5.0
-    on_target = torch.full((2, 10, 50), target_hz * step_ms / 1000.0)
-    assert float(T.rate_penalty(on_target, target_hz, step_ms)) < 1e-9
-    saturated = torch.full((2, 10, 50), 5.0)
-    assert float(T.rate_penalty(saturated, target_hz, step_ms)) > 1.0
+def test_rate_penalty_is_one_sided():
+    """It exists to keep the units off their saturation ceiling. Penalising
+    quiet as well is what taught the encoder to silence its own input."""
+    ceiling = 3.0
+    quiet = torch.full((2, 10, 50), 0.01)
+    assert float(T.rate_penalty(quiet, ceiling)) == 0.0
+    at_ceiling = torch.full((2, 10, 50), ceiling)
+    assert float(T.rate_penalty(at_ceiling, ceiling)) == 0.0
+    saturated = torch.full((2, 10, 50), 20.0)
+    assert float(T.rate_penalty(saturated, ceiling)) > 1.0
+
+
+def test_rate_ceiling_is_measured_from_the_models_own_activity():
+    """'auto' means "several times as loud as this network starts", in the
+    activation units the network actually has -- not an invented Hz constant."""
+    tb = {"rate_ceiling": "auto", "rate_headroom": 4.0}
+    model = types.SimpleNamespace()
+    rates = torch.full((2, 10, 50), 0.5)
+    assert T.resolve_rate_ceiling(model, tb, rates) == 2.0
+    # cached on the model, so every later chunk uses the initial operating point
+    assert T.resolve_rate_ceiling(model, tb, torch.full((2, 10, 50), 9.0)) == 2.0
+    # and a config that names a number is taken at its word
+    assert T.resolve_rate_ceiling(types.SimpleNamespace(),
+                                  {"rate_ceiling": 1.25}, rates) == 1.25
+
+
+def test_stale_target_rate_hz_is_refused():
+    """The old key silently meant something else. A config carrying it must
+    fail loudly rather than train against a penalty on all activity."""
+    cfg = _tiny_cfg()
+    cfg["train"]["target_rate_hz"] = 5.0
+    model = types.SimpleNamespace(train=lambda *_: None)
+    with pytest.raises(SystemExit, match="target_rate_hz"):
+        T.run_epoch(model, [], None, cfg, torch.device("cpu"), train=True)
 
 
 def test_onset_loss_prefers_the_right_answer():

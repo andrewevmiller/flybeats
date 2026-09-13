@@ -8,6 +8,17 @@ actually carry signal from the ears to the wings:
   ∩ backward j hops from the wing motor pool  (what can reach the wings)
   ∪ seeds ∪ targets ∪ required populations    (sliders and genre need these)
 
+Read the hop counts honestly. In a brain this small-world they barely
+constrain anything: 3 hops forward from the JO afferents reaches 154,853 of
+162,517 neurons and 3 hops backward from the wing motor pool reaches 130,934,
+for an intersection of 128,433. Everything below ``max_nodes`` is therefore
+chosen by ``_trim``, not by anatomy -- **the trim is the selection**, and its
+score is a one-hop-in x one-hop-out heuristic rather than a path-based measure
+of ear->wing throughput. Anyone reading "k-hop subgraph" as a meaningful
+anatomical restriction here would be mistaken. Replacing the heuristic with a
+defensible path criterion is on the open list in the README; until then the
+claim this module supports is the weaker one.
+
 Everything is driven by ``data/verified_types.json`` -- the Phase 0 gate output
 -- so no type string is hardcoded here.
 
@@ -222,9 +233,15 @@ def extract(
 def _trim(adj, keep, seeds, targets, required, max_nodes) -> np.ndarray:
     """Shrink to ``max_nodes`` by dropping the weakest pathway members.
 
-    Score = total synaptic weight on the ear->wing path through each neuron,
-    approximated as (input from the kept set) * (output to the kept set). A
-    neuron that both hears and acts scores high; a dead-end scores zero.
+    Score = (input from the kept set) * (output to the kept set), geometric
+    mean. A neuron that both hears and acts scores high; a dead-end scores zero.
+
+    Two hops of context, so it is a *local* proxy for ear->wing throughput and
+    not a path measure: a neuron wired into a busy cluster with no route to the
+    motor pool still scores well. Since the k-hop sweeps keep ~128k of 162k
+    neurons, this heuristic -- not the anatomy -- is what actually picks the
+    10k-30k neurons that get trained. That is a weaker claim than "the subgraph
+    is the ear-to-wing pathway" and it is the one the code supports.
     """
     kf = keep.astype(np.float32)
     inflow = adj.T @ kf
@@ -245,6 +262,33 @@ def _trim(adj, keep, seeds, targets, required, max_nodes) -> np.ndarray:
     out = protected.copy()
     out[best] = True
     return out
+
+
+def hops_from(sg, src: np.ndarray, max_hops: int = 8) -> np.ndarray:
+    """BFS hop distance from ``src`` along the subgraph's directed edges.
+
+    ``-1`` for anything the sweep never reaches. This is the same forward sweep
+    Phase 1 uses to select the subgraph, run again here on the trimmed graph so
+    the depth labels match the network that actually ran.
+    """
+    n = sg.n_nodes
+    pre, post = sg.edge_index[0], sg.edge_index[1]
+    a = sp.csr_matrix((np.ones(len(pre), dtype=bool), (pre, post)), shape=(n, n))
+    dist = np.full(n, -1, dtype=np.int32)
+    seen = np.zeros(n, dtype=bool)
+    frontier = np.zeros(n, dtype=bool)
+    frontier[src] = True
+    dist[src] = 0
+    seen |= frontier
+    for h in range(1, max_hops + 1):
+        nxt = (a.T @ frontier.astype(np.int8)) > 0
+        nxt &= ~seen
+        if not nxt.any():
+            break
+        dist[nxt] = h
+        seen |= nxt
+        frontier = nxt
+    return dist
 
 
 def main(argv=None) -> int:

@@ -15,14 +15,17 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from connectome import NT_SIGN  # noqa: E402
-from subgraph import SubGraph  # noqa: E402
+from subgraph import SubGraph, hops_from  # noqa: E402
 
 CACHE = ROOT / "data" / "cache" / "subgraph.npz"
-pytestmark = pytest.mark.skipif(not CACHE.exists(), reason="no cached subgraph in this checkout")
 
 
 @pytest.fixture(scope="module")
 def sg():
+    """The real cached subgraph. Tests that need it skip without it; tests that
+    can build their own graph should not be held hostage to a 1.1 GB download."""
+    if not CACHE.exists():
+        pytest.skip("no cached subgraph in this checkout")
     return SubGraph.load(CACHE)
 
 
@@ -95,3 +98,21 @@ def test_roundtrip_preserves_everything(sg, tmp_path):
     assert sorted(back.roles) == sorted(sg.roles)
     for k in sg.roles:
         assert np.array_equal(back.roles[k], sg.roles[k])
+
+
+def test_hops_from_counts_real_path_lengths():
+    """Depth from the JO afferents is what tells "the recurrence attenuates
+    gradually" apart from "the first synapse loses everything"."""
+    from types import SimpleNamespace
+
+    # 0 -> 1 -> 2 -> 3, plus 4 hanging off nothing
+    edges = np.array([[0, 1, 2], [1, 2, 3]], dtype=np.int64)
+    g = SimpleNamespace(n_nodes=5, edge_index=edges)
+    d = hops_from(g, np.array([0]))
+    assert list(d) == [0, 1, 2, 3, -1]
+
+    # direction matters: the sweep follows pre -> post only
+    assert list(hops_from(g, np.array([3]))) == [-1, -1, -1, 0, -1]
+
+    # max_hops truncates rather than mislabelling
+    assert list(hops_from(g, np.array([0]), max_hops=2)) == [0, 1, 2, -1, -1]

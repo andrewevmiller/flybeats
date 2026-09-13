@@ -234,13 +234,31 @@ class ConnectomeRNN(nn.Module):
         state: torch.Tensor | None = None,
         tonic: torch.Tensor | None = None,   # (B, n_nodes) neuromodulatory bias
         return_all: bool = False,
+        substeps: int = 1,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Run the relaxation. Returns ``(motor_rates, final_state)``.
 
-        ``motor_rates`` is ``(B, T, n_motor)``; with ``return_all`` it is the
-        full ``(B, T, n_nodes)`` tensor instead (needed by the rate regulariser
-        and by lesion analysis).
+        ``motor_rates`` is ``(B, T * substeps, n_motor)``; with ``return_all`` it
+        is the full ``(B, T * substeps, n_nodes)`` tensor instead (needed by the
+        rate regulariser and by lesion analysis).
+
+        ``substeps`` is the speed control: run the core ``k`` times per encoder
+        frame, holding that frame's drive. It works because ``alpha`` is
+        ``step / tau`` -- going ``k`` times faster divides *both* by ``k``, so
+        the discrete update is exactly the one that was trained and only its
+        mapping onto wall-clock time changes. The network runs the same
+        trajectory, ``k`` times further per second of music. Scaling tau instead
+        would not: alpha clamps at 1.0 and tau at ``tau_ms_min``, so a tau-only
+        speed-up saturates near 4x and then silently stops doing anything.
+
+        Holding the drive means the network improvises faster without hearing
+        faster -- the encoder stays on its trained grid, because its hop, its
+        envelope kernel and its standardisation affine are all tied to
+        ``step_ms``. See SPEED_PLAN.md.
         """
+        substeps = int(substeps)
+        if substeps < 1:
+            raise ValueError(f"substeps must be >= 1, got {substeps}")
         b, t, _ = drive.shape
         v = self.initial_state(b, drive.device, drive.dtype) if state is None else state
         w = self.edge_weight()
@@ -249,16 +267,19 @@ class ConnectomeRNN(nn.Module):
 
         out = []
         for k in range(t):
-            r = self.rate(v)
-            rec = self.recurrent(w, r)
+            # built once per frame, not once per sub-step: this *is* the held
+            # drive, and it keeps the index_add out of the inner loop
             inp = torch.zeros_like(v)
             inp.index_add_(
                 1, self.sensory_idx,
                 drive[:, k, :].to(v.dtype) * self.cfg.input_scale,
             )
-            v = v + alpha * (-v + rec + inp + base)
-            v = v.clamp(-self.cfg.state_clip, self.cfg.state_clip)
-            out.append(self.rate(v) if return_all else self.rate(v)[:, self.motor_idx])
+            for _ in range(substeps):
+                r = self.rate(v)
+                rec = self.recurrent(w, r)
+                v = v + alpha * (-v + rec + inp + base)
+                v = v.clamp(-self.cfg.state_clip, self.cfg.state_clip)
+                out.append(self.rate(v) if return_all else self.rate(v)[:, self.motor_idx])
 
         return torch.stack(out, dim=1), v
 
@@ -327,7 +348,7 @@ class GenreModulation(nn.Module):
         return out
 
 
-class FlyDrums(nn.Module):
+class FlyBeats(nn.Module):
     """Encoder -> ConnectomeRNN -> decoder, plus the slider/lesion surface."""
 
     def __init__(self, encoder, rnn: ConnectomeRNN, decoder, genre: GenreModulation | None = None):
@@ -338,10 +359,11 @@ class FlyDrums(nn.Module):
         self.genre = genre
         self._slider_base: dict[str, torch.Tensor] = {}
 
-    def forward(self, wav, state=None, style_id=None, return_rates=False):
+    def forward(self, wav, state=None, style_id=None, return_rates=False, substeps: int = 1):
         drive = self.encoder(wav)
         tonic = self.genre(style_id) if (self.genre is not None and style_id is not None) else None
-        rates, state = self.rnn(drive, state=state, tonic=tonic, return_all=return_rates)
+        rates, state = self.rnn(drive, state=state, tonic=tonic, return_all=return_rates,
+                                substeps=substeps)
         motor = rates[:, :, self.rnn.motor_idx] if return_rates else rates
         logits = self.decoder(motor)
         return (logits, state, rates) if return_rates else (logits, state)

@@ -1,4 +1,4 @@
-# FlyDrums Visualizer — Execution Plan
+# flybeats Visualizer — Execution Plan
 
 Companion to `PLAN.md`. Covers two rendering surfaces driven by one event
 stream:
@@ -266,7 +266,7 @@ per-neuron detail is ever wanted, it belongs in the offline explorer.
 ## Repo additions
 
 ```
-flydrums/
+flybeats/
   viz/
     anatomy.py            # skeleton cache load, shared layout (V1 + V3)
     subgraph_explorer.py  # V1 static 3D render -> standalone html

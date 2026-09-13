@@ -1,4 +1,4 @@
-# FlyDrums: Connectome-Constrained Drum Performance from Audio
+# flybeats: Connectome-Constrained Drum Performance from Audio
 
 ## What this actually is
 
@@ -204,7 +204,7 @@ channel) is v2.
 
 ## Suggested repo structure
 ```
-flydrums/
+flybeats/
   data/
     verified_types.json        # Phase 0 gate output — source of truth for type names
     raw/                        # downloaded feather files (gitignored)

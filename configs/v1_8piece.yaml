@@ -1,4 +1,4 @@
-# FlyDrums v1 -- the recommended cut line from PLAN.md.
+# flybeats v1 -- the recommended cut line from PLAN.md.
 # 8-piece kit, bilateral split, genre via octopaminergic drive, three sliders,
 # transcribe mode, lesion mode, full Phase 4 ablation suite.
 
@@ -9,6 +9,11 @@ audio:
   step_ms: 5.0          # 4-bar loop at 5 ms is ~1,600 steps
   n_bands: 64           # gammatone filterbank
   trainable_dsp: false  # the ear is a model, not a parameter bank
+  standardize_features: true  # fixed per-channel affine, calibrated once on
+                              # training audio. log1p band energy is mostly DC,
+                              # and an encoder fighting that DC silences itself
+  nonneg_to_jo: true          # an onset function driving JO afferents should
+                              # excite them; the DC offset is the bias's job
 
 subgraph:
   cache: data/cache/subgraph.npz
@@ -27,7 +32,13 @@ kit:
 model:
   tau_ms_init: 20.0
   gain_scale: auto        # normalise each arm to a common spectral radius
-  spectral_radius: 0.9    # so Phase 4 compares topology, not operator scale
+  # so Phase 4 compares topology, not operator scale. 10, not the 0.9 a linear
+  # recurrence would want: rho here is carried by a small hub subnetwork, and at
+  # 0.9 the typical neuron's synaptic input sits far below its own resting
+  # activation -- the drive lost 28x at the first synapse and the motor pool
+  # never moved. Chosen by scripts/propagation.py, which measures what reaches
+  # the wings before any training; re-run it for a different subgraph tier.
+  spectral_radius: 10.0
   input_scale: 1.0
   state_clip: 20.0
   spiking: false        # rate relaxation first; see PLAN.md open question 3
@@ -53,7 +64,12 @@ train:
   tbptt_steps: 150
   pos_weight: 8.0       # onsets are sparse
   rate_weight: 0.1
-  target_rate_hz: 5.0
+  # One-sided: penalise mean activation above the ceiling, never below it.
+  # 'auto' sets the ceiling from each model's own activity at initialisation,
+  # which is the only scale the number can honestly be expressed in --
+  # softplus(v - theta) is an activation, not a firing rate in Hz.
+  rate_ceiling: auto
+  rate_headroom: 4.0
   grad_clip: 1.0
   bf16: true            # honoured on CUDA; ignored on CPU
   grad_checkpoint: false  # ~30% more compute to halve per-chunk activation

@@ -13,6 +13,10 @@ This separates the candidate causes by measuring, in order:
   4. Are the recurrent dynamics alive -- do motor rates vary over time? If they
      do not, the problem is upstream of the loss.
   5. Is the drive from the encoder time-varying? If not, nothing downstream can be.
+  6. If the drive varies and the motor pool does not, *where* between them is the
+     modulation lost? Reported per hop from the JO afferents, because "the
+     recurrence washes it out" and "the first synapse washes it out" call for
+     completely different fixes.
 
 A model can fail at (4) with a perfectly good loss, and fail at (1) with
 perfectly healthy dynamics. The layers have to be told apart before anything is
@@ -33,6 +37,7 @@ sys.path.insert(0, str(ROOT / "src"))
 import train as train_mod  # noqa: E402
 from build import build_model, device_of, get_subgraph  # noqa: E402
 from decoder import DrumKit  # noqa: E402
+from subgraph import hops_from  # noqa: E402
 
 
 def constant_baseline_bce(target: np.ndarray, pos_weight: float) -> tuple[float, np.ndarray]:
@@ -68,18 +73,23 @@ def main(argv=None) -> int:
     pos_weight = cfg["train"].get("pos_weight", 8.0)
 
     probs, targs, motor_all, drive_all = [], [], [], []
+    all_rates = None                      # one batch, every neuron, for section 6
     seen = 0
     with torch.no_grad():
         for wav, y, style, tempo in val_loader:
             sid = style if model.genre is not None else None
             drive = model.encoder(wav)
-            rates, _ = model.rnn(drive, tonic=model.genre(sid) if sid is not None else None)
+            tonic = model.genre(sid) if sid is not None else None
+            full, _ = model.rnn(drive, tonic=tonic, return_all=True)
+            rates = full[:, :, model.rnn.motor_idx]
             logits = model.decoder(rates)
             n = min(logits.shape[1], y.shape[1])
             probs.append(torch.sigmoid(logits[:, :n].float()).numpy())
             targs.append(y[:, :n].numpy())
             motor_all.append(rates[:, :n].float().numpy())
             drive_all.append(drive[:, :n].float().numpy())
+            if all_rates is None:
+                all_rates = full[:, :n].float().numpy()
             seen += wav.shape[0]
             if seen >= a.clips:
                 break
@@ -133,11 +143,41 @@ def main(argv=None) -> int:
 
     w = model.encoder.to_jo.weight.detach().numpy()
     neg_frac = float((w < 0).mean())
+    enc = model.encoder
+    constraint = "constrained >= 0" if getattr(enc, "nonneg", False) else "unconstrained"
+    calib = ("calibrated" if bool(getattr(enc, "calibrated", torch.zeros(())))
+             else "NOT calibrated" if getattr(enc, "standardize", False) else "off")
     print(f"   to_jo weights: mean {w.mean():+.4f}, {neg_frac:.0%} negative "
-          f"(initialised non-negative from the JO zone prior)")
+          f"(initialised non-negative from the JO zone prior; {constraint})")
+    print(f"   feature standardisation: {calib}")
     dc_ratio = abs(float(D.mean())) / max(d_t, 1e-12)
     print(f"   drive DC / temporal sd = {dc_ratio:.2f}"
           f"   <-- >>1 means the input is mostly a constant offset")
+
+    # 6 -- where between the ears and the wings is the modulation lost?
+    print("\n6. Signal by depth from the JO afferents")
+    dist = hops_from(sg, sg.role("sensory").astype(np.int64))
+    motor_set = set(sg.role("motor").astype(np.int64).tolist())
+    rel_t = all_rates.std(axis=1).mean(axis=0) / np.maximum(
+        np.abs(all_rates.mean(axis=(0, 1))), 1e-12)       # per neuron, relative
+    head = f"   {'hop':<6}{'neurons':>9}{'mean rate':>11}{'sd over time':>14}{'relative':>11}"
+    print(head)
+    print("   " + "-" * (len(head) - 3))
+    prev = None
+    for h in sorted({int(d) for d in np.unique(dist) if d >= 0}):
+        m = dist == h
+        if not m.any():
+            continue
+        r = float(rel_t[m].mean())
+        drop = f"   /{prev / r:,.0f}" if prev and r > 0 else ""
+        print(f"   {h:<6}{int(m.sum()):>9}{all_rates[:, :, m].mean():>11.4f}"
+              f"{all_rates[:, :, m].std(axis=1).mean():>14.6f}{r:>11.5f}{drop}")
+        prev = r
+    unreached = int((dist < 0).sum())
+    n_motor_by_hop = {h: sum(1 for i in motor_set if dist[i] == h)
+                      for h in sorted({int(dist[i]) for i in motor_set})}
+    print(f"   motor pool sits at hops {n_motor_by_hop}"
+          f"   |   never reached from sensory: {unreached}")
 
     # -- verdict. Every test is RELATIVE to the signal's own scale: an absolute
     # threshold calls a prediction with sd 0.0014 around a mean of 0.31 "varying",

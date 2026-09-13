@@ -98,3 +98,64 @@ def test_output_shape_tracks_step_rate():
     for seconds in (0.25, 1.0, 2.5):
         n = int(22050 * seconds)
         assert enc.features(torch.zeros(1, n)).shape[1] == n // enc.hop
+
+
+def test_calibration_standardises_the_features():
+    """The DC the encoder used to fight with negative weights is removed here."""
+    torch.manual_seed(2)
+    enc = _enc()
+    wav = torch.randn(4, 22050) * 0.3
+    raw = enc.raw_features(wav)
+    assert raw.mean().abs() > 0.5 * raw.std(), "test needs features with real DC"
+
+    stats = enc.calibrate([wav])
+    assert stats["calibrated"] and stats["frames"] > 0
+    f = enc.features(wav).reshape(-1, enc.n_features)
+    assert f.mean(0).abs().max() < 1e-4
+    assert (f.std(0) - 1.0).abs().max() < 1e-3
+
+
+def test_calibrated_encoder_still_streams_exactly():
+    """Standardisation must not break the training/streaming agreement, which
+    is why it is a fixed affine and not a per-clip statistic."""
+    torch.manual_seed(3)
+    enc = _enc()
+    enc.calibrate([torch.randn(2, 22050)])
+    wav = torch.randn(1, 22050)
+    full = enc.forward(wav)
+    for start, n in [(0, 8), (17, 30), (full.shape[1] - 6, 6)]:
+        assert torch.allclose(enc.forward_window(wav, start, n),
+                              full[:, start: start + n], atol=1e-5)
+
+
+def test_standardisation_is_fixed_not_per_clip():
+    """A per-clip normaliser would make a quiet clip and a loud one encode
+    identically -- and would be non-causal in the live path."""
+    torch.manual_seed(4)
+    enc = _enc()
+    wav = torch.randn(2, 22050)
+    enc.calibrate([wav])
+    quiet = enc.features(wav * 0.01)
+    assert quiet.mean().abs() > 0.1, "loudness must survive a fixed affine"
+
+
+def test_projection_keeps_to_jo_non_negative():
+    """The failure mode being closed off: to_jo going negative and cancelling
+    the encoder's own input."""
+    enc = _enc(nonneg=True)
+    enc.to_jo.weight.data.sub_(1.0)
+    assert float(enc.to_jo.weight.detach().min()) < 0
+    enc.project_()
+    assert float(enc.to_jo.weight.detach().min()) >= 0.0
+
+    free = _enc(nonneg=False)
+    free.to_jo.weight.data.sub_(1.0)
+    free.project_()
+    assert float(free.to_jo.weight.detach().min()) < 0, "nonneg=False must not constrain"
+
+
+def test_zone_prior_is_non_negative():
+    """The constraint has to be satisfiable at initialisation, or the first
+    projection would silently move the model off the prior."""
+    enc = _enc()
+    assert float(enc.to_jo.weight.detach().min()) >= 0.0
