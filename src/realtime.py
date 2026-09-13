@@ -188,7 +188,7 @@ def render_file(model, kit, cfg, wav_path: Path, out_mid: Path,
 
     block = int(sr * block_ms / 1000.0)
     pm = pretty_midi.PrettyMIDI()
-    inst = pretty_midi.Instrument(program=0, is_drum=True, name="FlyDrums")
+    inst = pretty_midi.Instrument(program=0, is_drum=True, name="flybeats")
     n = 0
     for a in range(0, len(audio) - block + 1, block):
         t = a / sr

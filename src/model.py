@@ -327,7 +327,7 @@ class GenreModulation(nn.Module):
         return out
 
 
-class FlyDrums(nn.Module):
+class FlyBeats(nn.Module):
     """Encoder -> ConnectomeRNN -> decoder, plus the slider/lesion surface."""
 
     def __init__(self, encoder, rnn: ConnectomeRNN, decoder, genre: GenreModulation | None = None):

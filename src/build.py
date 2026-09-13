@@ -1,4 +1,4 @@
-"""Assemble a FlyDrums model from a config. Shared by train, ablations, realtime.
+"""Assemble a flybeats model from a config. Shared by train, ablations, realtime.
 
 Keeping this in one place is what lets the Phase 4 ablations be honest: every
 arm is built through this function with the same encoder, decoder, optimiser
@@ -15,7 +15,7 @@ import yaml
 from connectome import build_neuron_graph, load_verified_types, types_for
 from decoder import DrumKit, MotorToDrums
 from encoder import AudioToJO, zones_for_channels
-from model import ConnectomeRNN, FlyDrums, GenreModulation, ModelConfig
+from model import ConnectomeRNN, FlyBeats, GenreModulation, ModelConfig
 from subgraph import SubGraph, extract
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -149,7 +149,7 @@ def build_model(cfg: dict, sg: SubGraph, n_styles: int = 1, verified: dict | Non
             dim=cfg["genre"].get("dim", 8),
             max_current=cfg["genre"].get("max_current", 0.5),
         )
-    return FlyDrums(enc, rnn, dec, genre), kit
+    return FlyBeats(enc, rnn, dec, genre), kit
 
 
 def role_index(sg: SubGraph) -> dict[str, np.ndarray]:

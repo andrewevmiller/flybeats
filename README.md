@@ -1,4 +1,4 @@
-# FlyBeats / FlyDrums
+# flybeats
 
 Connectome-constrained drum performance from audio. A sparse recurrent network
 whose **topology is fixed by the real MaleCNS v1.0 wiring diagram** and whose
@@ -11,14 +11,19 @@ See [PLAN.md](PLAN.md) for the design this implements.
 > Phase 5 streaming playback, with the full Phase 4 ablation harness. What has
 > **not** happened is a trained run that answers the project's central question.
 >
-> The two faults that blocked it are fixed: the rate regulariser no longer
-> rewards silence, and the encoder no longer cancels its own input. Both are
-> verified at their own layer. They were hiding a third, which blocks it now and
-> is not a tuning problem: **at the configured operating point the subgraph does
-> not carry the drive's modulation to the wing motor pool at all** — the signal
-> dies at the first synapse, and no gradient on the connectome's gains can
-> create modulation that never arrives. It is measured, and it has a fix with
-> numbers behind it; see [Where the signal stops](#where-the-signal-stops).
+> Three faults blocked it, and all three are now fixed. The rate regulariser no
+> longer rewards silence; the encoder no longer cancels its own input; and the
+> global gain normalisation no longer pins the network at an operating point
+> where **the drive never reaches the wing motor pool at all** — it was losing
+> 28× at the first synapse, which no amount of training could recover. The
+> third was hiding behind the first two; see
+> [Where the signal stops](#where-the-signal-stops).
+>
+> With `spectral_radius: 10.0`, a 25-epoch CPU run on real GMD audio beats the
+> best constant predictor for the first time (`gain over constant` +0.0128,
+> `|corr(pred, target)|` 0.134, onset F 0.31) and the diagnostic now calls the
+> model undertrained rather than broken. That is a working pipeline, **not** a
+> result about the connectome: the Phase 4 arms still need a GPU.
 >
 > Resuming work: **[Picking this up again](#picking-this-up-again)**.
 > Read [Results](#results-and-what-they-are-not) before quoting any number here.
@@ -173,7 +178,8 @@ Both worked, at their own layer. Same config, same corpus, same 6 epochs:
 
 What they did *not* do is move onset F (0.215 → 0.200) or `|corr(pred, target)|`
 (0.029 → 0.019). That is not the fixes failing. It is the fault they were
-hiding, which the next section is about.
+hiding, which the next section is about — and once that one was fixed too, the
+same two encoder numbers went on to carry a drive that finally arrives.
 
 At one epoch the simplest arms lead, which is what one epoch measures. Drawing
 "the rewired graph beats the connectome" from this would be wrong.
@@ -225,8 +231,40 @@ the motor pool goes from 0.06 to 1.00, at the cost of 3.6% of unit-steps pinned
 against the state clip. ρ = 25 is louder and a tenth saturated, which is the
 same failure from the other side.
 
-This does not touch the Phase 4 fairness argument: every arm is still normalised
-to one common radius, and only the value of that constant changes.
+`spectral_radius` is therefore **10.0**, not 0.9. This does not touch the
+Phase 4 fairness argument: every arm is still normalised to one common radius,
+and only the value of that constant changes.
+
+### The first run that learns anything
+
+Same CPU config, ρ = 10, 25 epochs on the same 64 GMD clips
+(`runs/rho10_long/`). Still not a result — 64 clips, a 10k-neuron subgraph and
+no GPU — but it is the first run in this repo whose diagnostic says the model is
+*undertrained* rather than broken:
+
+```
+ep  0  loss 0.7484   onset F 0.186   groove 0.304
+ep  8  loss 0.6039   onset F 0.297   groove 0.328
+ep 16  loss 0.5809   onset F 0.295   groove 0.347
+ep 24  loss 0.5658   onset F 0.292   groove 0.352      best F 0.3118
+```
+
+| `scripts/diagnose.py` | ρ = 0.9, 6 ep | ρ = 10, 6 ep | ρ = 10, 25 ep |
+|---|---|---|---|
+| gain over best constant | −0.0170 | −0.0172 | **+0.0128** |
+| mean \|corr(pred, target)\| | 0.019 | 0.069 | **0.134** |
+| motor relative modulation | 0.0064 | 0.189 | **0.450** |
+| prediction relative variation | 0.0070 | 0.055 | **0.413** |
+| verdict | learned the base rate | learned the base rate | **tracks the target** |
+
+The per-hop table flattens out completely — 1.04 / 1.29 / 1.45 / 1.05 from the
+JO afferents to hop 3 — so nothing is being lost on the way to the wings any
+more. Per-class prediction sd goes from ~0.003 (a constant with noise on it) to
+0.10–0.19, and every class that has onsets now correlates positively with its
+target.
+
+What this does **not** show: that the connectome is doing the work. That is what
+the Phase 4 arms are for, and they need a GPU and the full corpus.
 
 Running the suite properly needs a GPU and the real corpus. `--seeds` matters
 here: `rewired` and `sign_shuffled` each draw *one* random topology, so a single
@@ -414,11 +452,12 @@ data-path failure.
 
 ## What is not done
 
-- **The subgraph does not carry the drive to the motor pool** at the configured
-  spectral radius. Measured, with a fix that has numbers behind it, and it needs
-  one CPU training run to confirm before anything larger is worth starting. See
-  [Where the signal stops](#where-the-signal-stops).
-- **No meaningful trained run.** Needs a GPU. This is the gap that matters.
+- **No meaningful trained run.** Needs a GPU and the full corpus. This is the gap
+  that matters. The model now learns *something* (see
+  [the first run that learns anything](#the-first-run-that-learns-anything)), but
+  64 clips on a 10k-neuron subgraph settles nothing about the connectome.
+- **The radius is calibrated for the 10k tier only.** Re-run
+  `scripts/propagation.py` before training the 30k one.
 - **Spiking model** — the rate relaxation converges, so the surrogate-gradient
   LIF version is now unblocked, but unwritten.
 - **v2 modes** — continue, call-and-response, accompany; leg mode; 8-limb kit;
@@ -430,57 +469,68 @@ data-path failure.
 
 ## Picking this up again
 
-Everything is committed and pushed on `claude/sharp-pasteur-kg9oyi`; 54 tests
-pass; the connectome cache, subgraph cache and GMD corpus are rebuilt by the
-`scripts/fetch_*.py` commands in [Quick start](#quick-start) (they are
+Everything is committed and pushed on `claude/resume-previous-session-8r6f7g`;
+62 tests pass; the connectome cache, subgraph cache and GMD corpus are rebuilt by
+the `scripts/fetch_*.py` commands in [Quick start](#quick-start) (they are
 gitignored, not in the repo).
 
-**Do not start a GPU ablation run.** The model currently converges to a constant
-predictor, so the Phase 4 table would compare five arms that have all learned the
-base rate. Fix the two faults below first.
+The three faults the last session's diagnostic found are fixed and verified: the
+rate regulariser is one-sided against a measured ceiling, the encoder is
+standardised and its map constrained non-negative, and `spectral_radius` is 10
+rather than 0.9. `scripts/diagnose.py` now reads *"output varies and tracks the
+target; likely undertrained rather than structurally broken"* — which it had
+never said before.
 
-### First: fix what the diagnostic found
+**A GPU ablation run is no longer blocked on a known fault.** It is still worth
+one more CPU hour first, because nothing here has been trained long enough to
+know where it plateaus.
 
-1. **The rate regulariser rewards silence** — `src/train.py:43`, configured at
-   `configs/v1_8piece.yaml:55-56`. `target_rate_hz` is converted to an activation
-   as if `softplus(v − θ)` were spikes per step; it is not. Either drop the term,
-   make it one-sided (penalise saturation only, not low activity), or make it
-   homeostatic against the activity level at initialisation rather than an
-   invented constant.
-2. **The encoder collapses to DC** — `src/encoder.py:136`. Its constant component
-   does no work and pins the JO afferents near zero. Either standardise the drive
-   per channel, or constrain `to_jo` weights non-negative, which is defensible
-   biologically: an onset function driving JO afferents should be excitatory.
+### First, on CPU
 
-After each change, the loop is one command and a few minutes on CPU:
+1. **Train longer at ρ = 10 and find the plateau.** 25 epochs on 64 clips ends
+   with the loss still falling (0.5658) and onset F flat around 0.29–0.31, which
+   is the signature of a model limited by data, not by epochs. Raise
+   `data.max_files` before raising `train.epochs`.
 
-```bash
-python src/train.py --config configs/v1_8piece_cpu.yaml
-python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
-```
+   ```bash
+   python src/train.py --config configs/v1_8piece_cpu.yaml --epochs 40
+   python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
+   ```
 
-Success is `gain over constant` turning positive and `|corr(pred, target)|`
-rising off ~0.03. Onset F will follow; it cannot move before those do.
+2. **Re-run the radius sweep for the 30k tier.** The 10 was chosen on the
+   10k-node subgraph. A different tier has a different hub structure, so the
+   number does not transfer by assumption:
 
-3. **Then re-check the washout.** If motor modulation is still ~100× below the
-   drive once the encoder is no longer suppressing itself, that is a real finding
-   about the topology rather than a bug — and worth reporting as one.
+   ```bash
+   python scripts/propagation.py --config configs/v1_8piece.yaml
+   ```
+
+   It prints a recommended radius under a stated rule (motor modulation at least
+   half the JO afferents' own, under 5% of unit-steps at the state clip).
+
+3. **Watch the saturation end.** ρ = 10 pins 3.6% of unit-steps against
+   `state_clip` at initialisation and the trained model's hop-4 population sits
+   at a mean rate of 4.2. If a longer run pushes that up, the one-sided rate
+   penalty is the knob (`rate_headroom`), and `scripts/diagnose.py` section 6
+   will show it as a *rising* mean rate with falling relative modulation.
 
 ### Then, in order
 
 - **Run the real experiment** (needs a GPU):
   `python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5`.
   `--seeds` is not optional: a gap smaller than the across-seed spread is not a
-  result.
+  result. Every arm is normalised to the same radius, so the comparison is still
+  about topology — but check `propagation.py` for the 30k tier first, or all five
+  arms may sit at an operating point that carries nothing.
 - **Fix the weakest claim in Phase 1.** 3 hops from JO reaches 154,853 of 162,517
-  neurons, so the subgraph is selected by the pathway-strength trim, not by
-  anatomy. Either replace the trim with a defensible path-based criterion, or say
-  plainly that the trim *is* the selection.
+  neurons, so the subgraph is selected by `_trim`, not by anatomy — the code now
+  says so plainly, which is the honest half of the fix. The other half is a
+  path-based criterion to replace the two-hop heuristic.
 - **Run the render tier** — `scripts/render_full_graph.py` has never been executed
   at 162k nodes.
-- **Deferred:** spiking model (unblocked, but only worth starting once the rate
-  model does something), v2 modes, leg/8-limb tiers, live playback on real
-  hardware.
+- **Deferred:** spiking model (the rate model now does something, so this is
+  genuinely next), v2 modes, leg/8-limb tiers, live playback on real hardware,
+  and the sound bank in [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md).
 
 ### Things that will bite
 

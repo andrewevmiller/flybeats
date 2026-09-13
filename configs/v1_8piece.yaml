@@ -1,4 +1,4 @@
-# FlyDrums v1 -- the recommended cut line from PLAN.md.
+# flybeats v1 -- the recommended cut line from PLAN.md.
 # 8-piece kit, bilateral split, genre via octopaminergic drive, three sliders,
 # transcribe mode, lesion mode, full Phase 4 ablation suite.
 
@@ -32,7 +32,13 @@ kit:
 model:
   tau_ms_init: 20.0
   gain_scale: auto        # normalise each arm to a common spectral radius
-  spectral_radius: 0.9    # so Phase 4 compares topology, not operator scale
+  # so Phase 4 compares topology, not operator scale. 10, not the 0.9 a linear
+  # recurrence would want: rho here is carried by a small hub subnetwork, and at
+  # 0.9 the typical neuron's synaptic input sits far below its own resting
+  # activation -- the drive lost 28x at the first synapse and the motor pool
+  # never moved. Chosen by scripts/propagation.py, which measures what reaches
+  # the wings before any training; re-run it for a different subgraph tier.
+  spectral_radius: 10.0
   input_scale: 1.0
   state_clip: 20.0
   spiking: false        # rate relaxation first; see PLAN.md open question 3
