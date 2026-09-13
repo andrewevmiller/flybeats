@@ -168,13 +168,33 @@ Two causes, both fixed:
    step: an onset function driving JO afferents should excite them, and the DC
    offset is the bias's job.
 
-Both worked, at their own layer. Same config, same corpus, same 6 epochs:
+Both worked, at their own layer — and neither works alone. Same config, same
+corpus, same 6 epochs, one arm per combination:
 
-| | before | after |
-|---|---|---|
-| relative temporal variation of the drive | 0.47 | **2.91** |
-| `to_jo` weights negative | 96% | **0%** |
-| drive DC / temporal sd | ≫1 | **0.34** |
+| arm | `to_jo` negative | drive rel. variation | final train BCE | best onset F |
+|---|---|---|---|---|
+| neither (the earlier run) | 96% | 0.50 | 0.6387 | 0.215 |
+| rate regulariser only | 46% | 0.79 | 0.6387 | 0.213 |
+| encoder only | 0% | **0.08** | 0.6387 | 0.209 |
+| both | **0%** | **2.91** | 0.6387 | 0.200 |
+| both, at ρ = 10 | 0% | 4.30 | **0.6351** | **0.280** |
+
+The `neither` arm reproduces the earlier run *exactly* in a fresh container
+(ep 0 `0.7391 / 0.2132 / 0.275`, ep 5 `0.6561 / 0.2147 / 0.259`), so this is a
+like-for-like comparison and not two different machines.
+
+Two things fall out of it. **The fixes are not independent:** the regulariser
+fix alone leaves the encoder still fighting its DC (46% of weights negative),
+and the encoder fix alone is *worse than nothing* — with sign-flipping blocked
+but the penalty still pushing down on all activity, the encoder shrinks its
+weights toward zero instead (mean +0.0001) and the drive nearly dies, 0.50 →
+0.08. Cancel by sign or cancel by magnitude: the regulariser bought silence
+either way, and only removing the incentive *and* the mechanism helps.
+
+**And every ρ = 0.9 arm lands on the same final BCE to four decimals.** Whatever
+the encoder did, the loss did not care — which is as direct a demonstration as
+this repo has that at that operating point the sensory pathway contributed
+nothing at all to the output.
 
 What they did *not* do is move onset F (0.215 → 0.200) or `|corr(pred, target)|`
 (0.029 → 0.019). That is not the fixes failing. It is the fault they were
