@@ -730,13 +730,18 @@ the loss still falling and onset F flat, which is a model limited by data.
   `--seeds` is not optional: a gap smaller than the across-seed spread is not a
   result. Every arm is normalised to the same radius, so the comparison is still
   about topology.
-- **Finish the speed control** — [SPEED_PLAN.md](SPEED_PLAN.md) steps 4–6: a
-  benchmark-based guard on the live path, fractional speeds via a phase
-  accumulator, and the interesting one, driving `k(t)` from pC1's own activity
-  per frame so the drummer speeds up exactly where it is already playing harder.
-- **Finish the sound layer** — [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md) steps 5–8:
-  `hot_swap` is written but untested against a live callback, and
-  `SoundFontBank` and user-kit auto-mapping are not started.
+- **Speed on fills only** — the one interesting piece left in
+  [SPEED_PLAN.md](SPEED_PLAN.md). Steps 4–6 are done (a benchmark-based guard on
+  the live path, fractional speeds via a phase accumulator, ramping); what
+  remains is driving `k(t)` from pC1's own activity per frame, so the drummer
+  speeds up exactly where it is already playing harder. The per-frame schedule
+  the fractional dial needed is the mechanism that makes it possible.
+- **`SoundFontBank`** — the only piece of [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md)
+  left, and it needs a machine with a sound card: FluidSynth is not installed
+  here and there is no audio device, so it could not be exercised at all.
+  `hot_swap` is now genuinely atomic and tested against a live callback (it was
+  three attribute stores, which a callback could land between — see the plan),
+  and user-kit auto-mapping is done.
 - **Fix the weakest claim in Phase 1.** 3 hops from JO reaches 154,853 of 162,517
   neurons, so the subgraph is selected by `_trim`, not by anatomy — the code now
   says so plainly, which is the honest half of the fix. The other half is a
