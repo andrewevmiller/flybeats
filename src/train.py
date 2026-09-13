@@ -40,13 +40,73 @@ def onset_loss(logits: torch.Tensor, target: torch.Tensor, pos_weight: float) ->
     return F.binary_cross_entropy_with_logits(logits, target, pos_weight=pw)
 
 
-def rate_penalty(rates: torch.Tensor, target_hz: float, step_ms: float) -> torch.Tensor:
-    """Keep mean firing near a target. Without this the softplus units drift up
-    until everything saturates and the readout sees a constant."""
+def rate_penalty(rates: torch.Tensor, ceiling: float) -> torch.Tensor:
+    """Penalise mean activity *above* ``ceiling``. Nothing below it is penalised.
+
+    The job of this term is to keep the softplus units off their saturation
+    ceiling, where the readout sees a constant. It is not to hold activity at
+    some particular level, and the earlier two-sided version did exactly that,
+    against a number with no meaning: ``target_rate_hz`` was converted as
+    ``hz * step_ms / 1000`` -- 0.025 for 5 Hz at a 5 ms step -- as if
+    ``softplus(v - theta)`` were spikes per step. It is a dimensionless
+    activation, and it sits near 0.74 at initialisation. So the term was a
+    constant ~30x downward pull on all activity, and the cheapest way to
+    satisfy it was for the encoder to silence its own sensory input. It did:
+    96% of ``to_jo`` went negative, the drive collapsed to DC, and the model
+    settled on the best constant predictor while the loss fell. See the README.
+
+    One-sided removes the incentive to be quiet, and the ceiling is measured
+    from the network's own activity at initialisation (``rate_ceiling: auto``)
+    rather than invented, so it means "several times as loud as this network
+    starts" in the units the network actually uses.
+    """
     if rates is None:
         return torch.zeros((), device="cpu")
-    target = target_hz * step_ms / 1000.0
-    return (rates.mean() - target).pow(2)
+    return (rates.mean() - float(ceiling)).clamp(min=0.0).pow(2)
+
+
+def resolve_rate_ceiling(model, tb: dict, rates: torch.Tensor) -> float:
+    """Resolve ``rate_ceiling: auto`` against the untrained network's activity.
+
+    Called on the first chunk of the first epoch, before any optimiser step, so
+    ``rates`` is that model's initial operating point. It is cached on the model
+    and not in the config: the Phase 4 arms share one config but not one
+    initialisation, and each arm has to be judged against its own starting
+    activity for the same reason each arm is normalised to a common spectral
+    radius.
+    """
+    cached = getattr(model, "rate_ceiling", None)
+    if cached is not None:
+        return float(cached)
+    want = tb.get("rate_ceiling", "auto")
+    if want == "auto":
+        ceiling = float(rates.detach().float().mean()) * float(tb.get("rate_headroom", 4.0))
+        print(f"  [rate] ceiling = {ceiling:.4f} activation "
+              f"({tb.get('rate_headroom', 4.0)}x this model's initial mean)")
+    else:
+        ceiling = float(want)
+    model.rate_ceiling = ceiling
+    return ceiling
+
+
+def calibrate_encoder(model, dataset, cfg, device, n_clips: int = 16) -> dict:
+    """Measure the encoder's feature standardisation on real training audio.
+
+    Deterministic on purpose -- the corpus loader crops clips at random, so the
+    numpy stream is seeded and restored around the sample. Every Phase 4 arm
+    then calibrates to exactly the same affine, and a re-run of a config gets
+    the same encoder it got last time.
+    """
+    if not getattr(model.encoder, "standardize", False):
+        return {"calibrated": False}
+    state = np.random.get_state()
+    np.random.seed(int(cfg["train"].get("seed", 0)))
+    try:
+        wavs = [torch.as_tensor(dataset[i][0]).unsqueeze(0).to(device)
+                for i in range(min(n_clips, len(dataset)))]
+    finally:
+        np.random.set_state(state)
+    return model.encoder.calibrate(wavs)
 
 
 def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bool = True):
@@ -56,6 +116,13 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
     amp = bool(tb.get("bf16", False)) and device.type == "cuda"
     ckpt = bool(tb.get("grad_checkpoint", False)) and train
     totals = {"loss": 0.0, "bce": 0.0, "rate": 0.0, "n": 0}
+    if "target_rate_hz" in tb:
+        raise SystemExit(
+            "train.target_rate_hz is gone: it compared a dimensionless softplus "
+            "activation against a spikes-per-step number and penalised all "
+            "activity. Use train.rate_ceiling (activation units, or 'auto') "
+            "with train.rate_headroom."
+        )
 
     for wav, y, style, _tempo in loader:
         wav, y = wav.to(device), y.to(device)
@@ -91,8 +158,7 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
                 motor = rates[:, :, model.rnn.motor_idx]
                 logits = model.decoder(motor)
                 bce = onset_loss(logits.float(), y[:, a:b], tb.get("pos_weight", 8.0))
-                reg = rate_penalty(rates.float(), tb.get("target_rate_hz", 5.0),
-                                   cfg["audio"]["step_ms"])
+                reg = rate_penalty(rates.float(), resolve_rate_ceiling(model, tb, rates))
                 loss = bce + tb.get("rate_weight", 0.1) * reg
 
             if train:
@@ -105,6 +171,10 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
         if train:
             torch.nn.utils.clip_grad_norm_(model.parameters(), tb.get("grad_clip", 1.0))
             opt.step()
+            # Projected step for the encoder's non-negativity constraint. Here
+            # rather than in the model so every entry point that trains --
+            # train.py and the Phase 4 arms -- gets it from one place.
+            model.encoder.project_()
         totals["n"] += max(n_chunks, 1)
 
     n = max(totals["n"], 1)
@@ -179,12 +249,11 @@ def build_loaders(cfg, kit):
     tr = build_dataset(dcfg, kit.classes, "train")
     va = build_dataset(dcfg, kit.classes, cfg["data"].get("val_split", "validation"))
     bs = cfg["train"].get("batch_size", 4)
-    return (
-        DataLoader(tr, batch_size=bs, shuffle=True, num_workers=cfg["train"].get("workers", 0),
-                   drop_last=True),
-        DataLoader(va, batch_size=bs, shuffle=False, num_workers=cfg["train"].get("workers", 0)),
-        int(getattr(tr, "n_styles", 1)),
-    )
+    train_loader = DataLoader(tr, batch_size=bs, shuffle=True,
+                              num_workers=cfg["train"].get("workers", 0), drop_last=True)
+    val_loader = DataLoader(va, batch_size=bs, shuffle=False,
+                            num_workers=cfg["train"].get("workers", 0))
+    return train_loader, val_loader, int(getattr(tr, "n_styles", 1))
 
 
 def main(argv=None) -> int:
@@ -219,6 +288,12 @@ def main(argv=None) -> int:
     print(f"device={device} | styles={n_styles} | kit={kit.classes}")
     print(f"params: {model.rnn.n_params()}")
 
+    # The encoder's standardisation is part of the trained artefact: live
+    # playback has to see the affine training saw, so it is measured before the
+    # first step and saved with the weights.
+    stats = calibrate_encoder(model, train_loader.dataset, cfg, device)
+    print(f"encoder calibration: {stats}")
+
     opt = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
         lr=cfg["train"].get("lr", 3e-3), weight_decay=cfg["train"].get("weight_decay", 0.0),
@@ -242,7 +317,8 @@ def main(argv=None) -> int:
         if ev["onset_f"] > best:
             best = ev["onset_f"]
             torch.save({"model": model.state_dict(), "config": cfg,
-                        "kit": kit.classes, "n_styles": n_styles}, out / "best.pt")
+                        "kit": kit.classes, "n_styles": n_styles,
+                        "rate_ceiling": getattr(model, "rate_ceiling", None)}, out / "best.pt")
         (out / "history.json").write_text(json.dumps(history, indent=2))
 
     print(f"best val onset F: {best:.4f} -> {out}")

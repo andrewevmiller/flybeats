@@ -302,6 +302,10 @@ def main(argv=None) -> int:
 
             model, kit = build_arm(arm, cfg, sg, n_styles, seed=seed)
             model = model.to(device)
+            # Same encoder calibration for every arm -- it depends only on the
+            # fixed DSP and the audio, and it is deterministic, so the arms
+            # differ in the recurrent core and nothing else.
+            train_mod.calibrate_encoder(model, train_loader.dataset, cfg, device)
             opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
                                     lr=cfg["train"].get("lr", 3e-3))
             n_par = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -318,7 +322,8 @@ def main(argv=None) -> int:
             runs.append(ev)
             suffix = f"_seed{seed}" if n_reps > 1 else ""
             torch.save({"model": model.state_dict(), "arm": arm, "config": cfg,
-                        "seed": seed, "n_styles": n_styles, "kit": kit.classes},
+                        "seed": seed, "n_styles": n_styles, "kit": kit.classes,
+                        "rate_ceiling": getattr(model, "rate_ceiling", None)},
                        out / f"{arm}{suffix}.pt")
 
             if a.lesion and arm == "real" and rep == 0:

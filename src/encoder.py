@@ -10,7 +10,25 @@ Frequency->zone mapping follows the fly: JO-B is the sound-particle-velocity
 zone tuned to the courtship song band, so it is weighted toward 100-500 Hz.
 JO-A covers higher-frequency vibration; JO-E is the gravity/wind zone and gets
 the low band. The weighting is a prior on the *initial* linear map, not a hard
-constraint -- gradient descent can move it.
+constraint -- gradient descent can move it, subject to the sign constraint below.
+
+Two properties of the drive matter more than the prior does, and the first
+training runs got both wrong. ``log1p`` band energy is a large positive
+constant plus a small fluctuation, so an unstandardised feature vector is
+mostly DC: the linear map's useful output is a few percent of its magnitude.
+Trained against a regulariser that penalised activity, the cheapest response
+was to cancel the DC with negative weights -- which also cancels the signal,
+and the encoder silenced its own sensory input (96% of ``to_jo`` weights went
+negative; see the README). So:
+
+  * features are **standardised per channel** by a fixed affine calibrated once
+    on training audio. Fixed, not per-clip: a per-clip statistic would be
+    non-causal and would break the streaming path's agreement with the training
+    path, which ``tests/test_encoder.py`` pins exactly.
+  * ``to_jo`` is optionally constrained **non-negative**, by projection after
+    each optimiser step. An onset function driving JO afferents should excite
+    them; the DC offset that used to be fought with negative weights is now the
+    bias's job, and the bias is free.
 """
 from __future__ import annotations
 
@@ -95,6 +113,8 @@ class AudioToJO(nn.Module):
         flux_weight: float = 1.0,
         trainable_dsp: bool = False,
         filter_taps: int = 512,
+        standardize: bool = True,
+        nonneg: bool = True,
     ):
         super().__init__()
         if len(zone_of_channel) != n_channels:
@@ -105,6 +125,8 @@ class AudioToJO(nn.Module):
         self.hop = max(1, int(round(sample_rate * step_ms / 1000.0)))
         self.n_bands = n_bands
         self.flux_weight = flux_weight
+        self.standardize = bool(standardize)
+        self.nonneg = bool(nonneg)
 
         # 512 taps is 23 ms at 22.05 kHz. The slowest band (40 Hz) has an ERB
         # bandwidth of ~29.5 Hz, so a 5.4 ms time constant -- 23 ms is over four
@@ -131,6 +153,13 @@ class AudioToJO(nn.Module):
         env = np.exp(-np.arange(env_len) / tau_steps).astype(np.float32)
         env /= env.sum()
         self.register_buffer("env_kernel", torch.from_numpy(env).view(1, 1, -1))
+
+        # Per-channel standardisation of the DSP features. Identity until
+        # ``calibrate`` runs, so an uncalibrated model behaves exactly as before
+        # and nothing depends on calibration having happened silently.
+        self.register_buffer("feat_mean", torch.zeros(2 * n_bands))
+        self.register_buffer("feat_scale", torch.ones(2 * n_bands))
+        self.register_buffer("calibrated", torch.zeros((), dtype=torch.bool))
 
         # The one trainable layer. 2*n_bands in: envelope and spectral flux.
         self.to_jo = nn.Linear(2 * n_bands, n_channels, bias=True)
@@ -179,11 +208,69 @@ class AudioToJO(nn.Module):
 
         return torch.cat([env, flux], dim=1).transpose(1, 2)     # (B, steps, 2*bands)
 
-    def features(self, wav: torch.Tensor) -> torch.Tensor:
-        """Fixed DSP: waveform -> ``(batch, steps, 2*n_bands)``."""
+    def _standardize(self, feats: torch.Tensor) -> torch.Tensor:
+        """Fixed per-channel affine. Constant in time, so the streaming path
+        and the training path still produce identical numbers block by block."""
+        if not self.standardize:
+            return feats
+        return (feats - self.feat_mean) / self.feat_scale
+
+    def raw_features(self, wav: torch.Tensor) -> torch.Tensor:
+        """DSP features before standardisation -- what ``calibrate`` measures."""
         if wav.dim() == 1:
             wav = wav.unsqueeze(0)
         return self._assemble(self._subband(wav.unsqueeze(1), prepadded=False))
+
+    @torch.no_grad()
+    def calibrate(self, wavs) -> dict:
+        """Set the standardisation affine from a sample of training audio.
+
+        One fixed mean and scale per feature channel, measured once and then
+        frozen into the checkpoint: live playback must see exactly the affine
+        training saw. Channels that never move (a silent band) keep scale 1 so
+        the division cannot amplify nothing into noise.
+
+        Returns the drive statistics it measured, so a caller can log what the
+        encoder was calibrated against rather than trusting that it happened.
+        """
+        if not self.standardize:
+            return {"calibrated": False}
+        n = torch.zeros(())
+        s1 = torch.zeros(2 * self.n_bands)
+        s2 = torch.zeros(2 * self.n_bands)
+        for wav in wavs:
+            f = self.raw_features(wav.to(self.feat_mean.device)).float().reshape(-1, 2 * self.n_bands)
+            n += f.shape[0]
+            s1 += f.sum(0)
+            s2 += (f * f).sum(0)
+        if float(n) < 2:
+            raise ValueError("calibrate needs at least two feature frames")
+        mean = s1 / n
+        var = (s2 / n - mean * mean).clamp(min=0.0)
+        scale = var.sqrt()
+        scale[scale < 1e-6] = 1.0
+        self.feat_mean.copy_(mean)
+        self.feat_scale.copy_(scale)
+        self.calibrated.fill_(True)
+        return {"calibrated": True, "frames": int(n),
+                "mean_abs": float(mean.abs().mean()), "scale_mean": float(scale.mean()),
+                "flat_channels": int((var.sqrt() < 1e-6).sum())}
+
+    @torch.no_grad()
+    def project_(self) -> None:
+        """Projected-gradient step for the non-negativity constraint.
+
+        Clamping after the optimiser (rather than reparameterising through a
+        softplus or an exp) keeps the initial weights *exactly* the zone prior
+        and leaves a weight sitting at zero with a live gradient, so a channel
+        that should come back up can.
+        """
+        if self.nonneg:
+            self.to_jo.weight.clamp_(min=0.0)
+
+    def features(self, wav: torch.Tensor) -> torch.Tensor:
+        """Fixed DSP: waveform -> ``(batch, steps, 2*n_bands)``, standardised."""
+        return self._standardize(self.raw_features(wav))
 
     @property
     def context_samples(self) -> int:
@@ -216,7 +303,7 @@ class AudioToJO(nn.Module):
         x = wav[:, max(0, lo): b].unsqueeze(1)
         if lo < 0:
             x = torch.nn.functional.pad(x, (-lo, 0))
-        feats = self._assemble(self._subband(x, prepadded=True))
+        feats = self._standardize(self._assemble(self._subband(x, prepadded=True)))
         off = start_step - first
         return self.to_jo(feats[:, off: off + n_steps])
 

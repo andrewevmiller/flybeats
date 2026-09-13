@@ -121,6 +121,8 @@ def build_model(cfg: dict, sg: SubGraph, n_styles: int = 1, verified: dict | Non
         sample_rate=cfg["audio"]["sample_rate"], step_ms=cfg["audio"]["step_ms"],
         n_bands=cfg["audio"].get("n_bands", 64),
         trainable_dsp=cfg["audio"].get("trainable_dsp", False),
+        standardize=cfg["audio"].get("standardize_features", True),
+        nonneg=cfg["audio"].get("nonneg_to_jo", True),
     )
     mcfg = ModelConfig(
         step_ms=cfg["audio"]["step_ms"],

@@ -9,6 +9,11 @@ audio:
   step_ms: 5.0          # 4-bar loop at 5 ms is ~1,600 steps
   n_bands: 64           # gammatone filterbank
   trainable_dsp: false  # the ear is a model, not a parameter bank
+  standardize_features: true  # fixed per-channel affine, calibrated once on
+                              # training audio. log1p band energy is mostly DC,
+                              # and an encoder fighting that DC silences itself
+  nonneg_to_jo: true          # an onset function driving JO afferents should
+                              # excite them; the DC offset is the bias's job
 
 subgraph:
   cache: data/cache/subgraph.npz
@@ -53,7 +58,12 @@ train:
   tbptt_steps: 150
   pos_weight: 8.0       # onsets are sparse
   rate_weight: 0.1
-  target_rate_hz: 5.0
+  # One-sided: penalise mean activation above the ceiling, never below it.
+  # 'auto' sets the ceiling from each model's own activity at initialisation,
+  # which is the only scale the number can honestly be expressed in --
+  # softplus(v - theta) is an activation, not a firing rate in Hz.
+  rate_ceiling: auto
+  rate_headroom: 4.0
   grad_clip: 1.0
   bf16: true            # honoured on CUDA; ignored on CPU
   grad_checkpoint: false  # ~30% more compute to halve per-chunk activation
