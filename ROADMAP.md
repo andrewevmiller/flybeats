@@ -52,6 +52,33 @@ are the candidates, cheapest first.
 
 Each is a retrain at 256 clips plus `python scripts/probe_velocity.py --seed 0`.
 
+### A′1 result: it worked, and the head was simply outvoted
+
+`velocity_weight` 1.0 → 5.0, everything else held. Head correlation at the onset
+peak, baseline → A′1, with 95% bootstrap intervals:
+
+```
+class          baseline                    velocity_weight 5.0
+snare          -0.098  [-0.19, -0.01]      +0.062  [-0.01, +0.13]
+tom_low        -0.284  [-0.41, -0.14]      +0.306  [+0.13, +0.45]
+tom_mid        -0.140  [-0.29, +0.02]      +0.231  [+0.09, +0.37]
+crash          +0.473  [+0.33, +0.60]      +0.349  [+0.17, +0.50]
+kick, hats     span 0                      span 0
+```
+
+**No class is significantly negative any more**, and three are significantly
+positive. tom_low is the telling one: it was the class carrying the most unused
+motor signal (0.39 at the motor units, −0.28 at the head), and it flipped to
+significantly right. Head spread rose from 0.084 to 0.105 against a target
+spread of 0.272 — still compressed, so this is "reading dynamics weakly", not
+"solved".
+
+Two things this does **not** establish. Onset F came in at 0.2761 against the
+baseline's 0.3006, which is either a real detection cost from crowding the loss
+or run-to-run noise; one run with no seeds cannot tell those apart, and it
+needs seeds before it is quoted. And a weight of 5 is the first value tried,
+not a tuned one.
+
 **Done when** at least one class's head correlation is significantly positive
 without pushing another negative. Compare bootstrap intervals, never point
 estimates: the same analysis read hat_open as 0.37, then 0.18, then 0.26 on one
