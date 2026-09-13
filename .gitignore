@@ -1,0 +1,8 @@
+data/raw/
+data/cache/
+data/egmd/
+runs/
+*.pyc
+__pycache__/
+.venv/
+*.egg-info/

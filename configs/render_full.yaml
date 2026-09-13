@@ -1,0 +1,11 @@
+# Render tier: the complete 162k-neuron graph, offline, single batch.
+# Same trained weights as the live tier, wider graph scope. Not real-time.
+_base_: v1_8piece.yaml
+name: render_full
+subgraph:
+  cache: data/cache/subgraph_full.npz
+  full_graph: true
+  max_nodes: null
+train:
+  batch_size: 1
+  tbptt_steps: 50
