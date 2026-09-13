@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 import torch
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -18,6 +19,17 @@ sys.path.insert(0, str(ROOT / "src"))
 import train as T  # noqa: E402
 from build import build_model, get_subgraph, load_config  # noqa: E402
 from decoder import DrumKit  # noqa: E402
+
+#: The checkpointing test needs a real subgraph, and building one falls back to
+#: the connectome download when no cache is on disk. On a fresh checkout that
+#: raised FileNotFoundError from deep inside pandas instead of skipping, which
+#: reads as a broken repo rather than as missing data.
+TEST_CACHE = ROOT / "data" / "cache" / "subgraph_test2k.npz"
+ANNOTATIONS = ROOT / "data" / "raw" / "body-annotations-male-cns-v1.0-minconf-0.5.feather"
+needs_graph = pytest.mark.skipif(
+    not TEST_CACHE.exists() and not ANNOTATIONS.exists(),
+    reason="no cached subgraph and no connectome download in this checkout",
+)
 
 
 def _tiny_cfg():
@@ -40,6 +52,7 @@ def _grads(cfg, sg, loader, n_styles, **overrides):
     return {n: p.grad.clone() for n, p in model.named_parameters() if p.grad is not None}
 
 
+@needs_graph
 def test_gradient_checkpointing_is_numerically_transparent():
     cfg = _tiny_cfg()
     kit = DrumKit.from_tier(cfg["kit"]["tier"])
