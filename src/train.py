@@ -316,8 +316,12 @@ def main(argv=None) -> int:
 
         if ev["onset_f"] > best:
             best = ev["onset_f"]
+            # The sweep already found where this model's outputs sit. Dropping
+            # that and letting playback re-guess at a fixed 0.3 is how a
+            # checkpoint that scores 0.31 renders a wall of notes.
             torch.save({"model": model.state_dict(), "config": cfg,
                         "kit": kit.classes, "n_styles": n_styles,
+                        "best_threshold": float(ev["best_threshold"]),
                         "rate_ceiling": getattr(model, "rate_ceiling", None)}, out / "best.pt")
         (out / "history.json").write_text(json.dumps(history, indent=2))
 

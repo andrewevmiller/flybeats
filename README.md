@@ -32,6 +32,18 @@ See [PLAN.md](PLAN.md) for the design this implements.
 
 ## Quick start
 
+**Just want to run a trained model?** A bundle is self-contained — no
+connectome, no corpus, no `data/` directory at all:
+
+```bash
+pip install -r requirements.txt
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav --out drums.mid
+```
+
+The checkpoint already carries the whole topology, so a bundle is ~10 MB and
+`scripts/export_bundle.py` verifies it reproduces the original model's output
+exactly before it writes the file. Everything below is for *building* a model.
+
 ```bash
 pip install -r requirements.txt
 
@@ -45,6 +57,9 @@ python src/ablations.py --config configs/v1_8piece.yaml --lesion
 
 # size a subgraph against the latency budget before training it
 python src/realtime.py --config configs/v1_8piece.yaml --benchmark
+
+# ship a trained run to a machine that has none of the above
+python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
 ```
 
 ---
@@ -417,6 +432,8 @@ src/ablations.py             Phase 4: rewire / sign-shuffle / GRU / shortcut + l
 src/metrics.py               onset F, beat alignment, groove similarity
 src/feel.py                  measured swing and timing offsets — never imposed
 src/realtime.py              Phase 5: streaming inference, MIDI out, latency benchmark
+src/bundle.py                self-contained model files -- no dataset needed to play
+scripts/export_bundle.py     checkpoint -> bundle, verified against the original
 scripts/verify_types.py      Phase 0 gate
 scripts/diagnose.py          why a checkpoint is not learning, separated by layer
 scripts/propagation.py       what the subgraph carries, per hop, before training

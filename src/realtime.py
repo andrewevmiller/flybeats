@@ -133,13 +133,27 @@ def benchmark(model, kit, cfg, block_ms: float = 20.0, n_blocks: int = 50) -> di
     }
 
 
+def drummer_for(model, kit, cfg, threshold: float | None = None) -> "StreamingDrummer":
+    """Build the streaming drummer at the threshold this model was scored at.
+
+    ``evaluate`` sweeps the peak-picking threshold and reports the one that
+    suits the model's own output scale; a checkpoint carries it and a bundle
+    passes it through. Ignoring that and picking at a fixed 0.3 is not a small
+    difference -- on the 25-epoch model it is 154 notes in four seconds against
+    a musical handful.
+    """
+    thr = threshold if threshold is not None else cfg.get("eval", {}).get("threshold", 0.3)
+    return StreamingDrummer(model, kit, cfg["audio"]["sample_rate"],
+                            cfg["audio"]["step_ms"], threshold=float(thr))
+
+
 def run_live(model, kit, cfg, style: int | None = None, block_ms: float = 20.0,
-             midi_port: str | None = None) -> None:
+             midi_port: str | None = None, threshold: float | None = None) -> None:
     import mido
     import sounddevice as sd
 
     sr = cfg["audio"]["sample_rate"]
-    drummer = StreamingDrummer(model, kit, sr, cfg["audio"]["step_ms"])
+    drummer = drummer_for(model, kit, cfg, threshold)
     drummer.set_style(style)
 
     port = mido.open_output(midi_port) if midi_port else mido.open_output()
@@ -164,7 +178,8 @@ def run_live(model, kit, cfg, style: int | None = None, block_ms: float = 20.0,
 
 
 def render_file(model, kit, cfg, wav_path: Path, out_mid: Path,
-                style: int | None = None, block_ms: float = 20.0) -> int:
+                style: int | None = None, block_ms: float = 20.0,
+                threshold: float | None = None) -> int:
     """Offline: run a wav through the streaming path and write a MIDI file.
 
     Uses the same StreamingDrummer as live playback, so what this renders is
@@ -183,7 +198,7 @@ def render_file(model, kit, cfg, wav_path: Path, out_mid: Path,
     if peak > 0:
         audio /= peak
 
-    drummer = StreamingDrummer(model, kit, sr, cfg["audio"]["step_ms"])
+    drummer = drummer_for(model, kit, cfg, threshold)
     drummer.set_style(style)
 
     block = int(sr * block_ms / 1000.0)
@@ -217,6 +232,9 @@ def load_checkpoint(path: Path, device: torch.device):
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--checkpoint", type=Path, default=None)
+    ap.add_argument("--bundle", type=Path, default=None,
+                    help="a self-contained model file from scripts/export_bundle.py. "
+                         "Needs no data/ directory: no connectome, no corpus")
     ap.add_argument("--config", type=Path, default=None,
                     help="benchmark an untrained model straight from a config, to size "
                          "the subgraph against the latency budget before training it")
@@ -225,6 +243,9 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, default=ROOT / "runs" / "render.mid")
     ap.add_argument("--style", type=int, default=None)
     ap.add_argument("--block-ms", type=float, default=20.0)
+    ap.add_argument("--threshold", type=float, default=None,
+                    help="peak-picking threshold; default is whatever the model's own "
+                         "eval sweep chose (see eval.threshold)")
     ap.add_argument("--midi-port", type=str, default=None)
     ap.add_argument("--lesion", type=str, default=None,
                     help="mute a confirmed population during playback, e.g. pIP10")
@@ -233,7 +254,14 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
 
     device = torch.device("cpu")
-    if a.checkpoint:
+    roles = None
+    if a.bundle:
+        # The self-contained path. Nothing below may reach for the subgraph:
+        # a bundle is meant to run on a machine that has never downloaded the
+        # connectome, so its roles come with it.
+        from bundle import load_bundle
+        model, kit, cfg, roles = load_bundle(a.bundle, device)
+    elif a.checkpoint:
         model, kit, cfg = load_checkpoint(a.checkpoint, device)
     elif a.config:
         from build import build_model, get_subgraph, load_config
@@ -241,10 +269,12 @@ def main(argv=None) -> int:
         model, kit = build_model(cfg, get_subgraph(cfg))
         model = model.to(device).eval()
     else:
-        ap.error("pass --checkpoint, or --config to benchmark an untrained model")
+        ap.error("pass --bundle or --checkpoint, or --config to benchmark an "
+                 "untrained model")
 
-    from build import get_subgraph, role_index
-    roles = role_index(get_subgraph(cfg))
+    if roles is None:
+        from build import get_subgraph, role_index
+        roles = role_index(get_subgraph(cfg))
     for name, value in a.slider:
         model.set_slider(name, float(value), roles)
         print(f"slider {name} = {value}")
@@ -262,11 +292,12 @@ def main(argv=None) -> int:
         return 0 if r["meets_budget"] else 1
 
     if a.render:
-        n = render_file(model, kit, cfg, a.render, a.out, a.style, a.block_ms)
+        n = render_file(model, kit, cfg, a.render, a.out, a.style, a.block_ms,
+                        a.threshold)
         print(f"wrote {n} notes -> {a.out}")
         return 0
 
-    run_live(model, kit, cfg, a.style, a.block_ms, a.midi_port)
+    run_live(model, kit, cfg, a.style, a.block_ms, a.midi_port, a.threshold)
     return 0
 
 
