@@ -91,3 +91,42 @@ def test_loading_a_bundle_never_touches_the_dataset(tmp_path, monkeypatch):
     monkeypatch.setattr(build_mod, "build_neuron_graph", explode)
     bundled, _, _, _ = load_bundle(path)
     assert bundled.rnn.n_nodes == model.rnn.n_nodes
+
+
+def test_a_v1_bundle_without_a_velocity_head_still_loads(tmp_path):
+    """A bundle is the only durable form a trained model has here -- runs/ is
+    gitignored. Refusing one because this build grew a head since it was
+    exported would strand hours of training, so the loader takes its shape from
+    what the bundle contains rather than from what this build would construct.
+    """
+    from bundle import FORMAT_VERSION, READABLE_VERSIONS
+
+    cfg, sg, model, ck = _tiny_model()
+    b = build_bundle(ck, sg, model)
+    assert b["format"] == FORMAT_VERSION == 2
+
+    # age it: strip the head and stamp it v1, exactly as an older export looks
+    b["state"] = {k: v for k, v in b["state"].items()
+                  if not k.startswith("decoder.vel_readout")}
+    b["format"] = 1
+    assert 1 in READABLE_VERSIONS
+    path = tmp_path / "old.fb"
+    torch.save(b, path)
+
+    old, kit, _, _ = load_bundle(path)
+    assert not old.decoder.has_velocity
+    wav = torch.randn(1, 22050, generator=torch.Generator().manual_seed(3)) * 0.1
+    with torch.no_grad():
+        logits, _ = old(wav)
+        assert old.decoder.velocity(logits.new_zeros(1, 4, len(sg.role("motor")))) is None
+    assert logits.shape[-1] == kit.n
+
+
+def test_an_unknown_future_bundle_version_is_still_refused(tmp_path):
+    cfg, sg, model, ck = _tiny_model()
+    b = build_bundle(ck, sg, model)
+    b["format"] = 99
+    path = tmp_path / "future.fb"
+    torch.save(b, path)
+    with pytest.raises(ValueError, match="bundle format"):
+        load_bundle(path)

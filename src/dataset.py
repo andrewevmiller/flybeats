@@ -70,27 +70,43 @@ def resolve_class(name: str, classes: set[str]) -> str | None:
 class Clip:
     audio: np.ndarray        # (samples,) float32 mono
     onsets: np.ndarray       # (steps, n_classes) float32, Gaussian-smoothed
+    velocity: np.ndarray     # (steps, n_classes) float32 in 0..1, held over each onset
     style: int
     tempo: float
 
 
-def smooth_onsets(
-    times: list[tuple[float, str]], classes: list[str], n_steps: int,
-    step_ms: float, sigma_ms: float = 20.0,
-) -> np.ndarray:
-    """Gaussian-smoothed onset targets, sigma ~= 20 ms as PLAN.md specifies.
+def smooth_targets(
+    times: "list[tuple[float, str] | tuple[float, str, float]]",
+    classes: list[str], n_steps: int, step_ms: float, sigma_ms: float = 20.0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Paired targets: a Gaussian-smoothed onset plane and a velocity plane.
 
     Smoothing is what makes BCE trainable here: an unsmoothed target is a
     single 1 in 1,600 steps per class, and the loss would just learn silence.
+
+    The velocity plane holds each hit's velocity flat across that hit's own
+    kernel support, rather than scaled by the kernel. Velocity is a property of
+    the hit, not of how close a step sits to its centre -- scaling it by the
+    bell would teach the head to regress the detection envelope a second time,
+    which is exactly the confusion between "how sure" and "how hard" that
+    having two heads is meant to end. Where two hits of one class overlap, the
+    step takes the velocity of whichever hit's kernel is taller there, so the
+    two planes always agree about which hit a step belongs to.
+
+    ``times`` entries are ``(t, cls)`` or ``(t, cls, velocity)`` with velocity
+    in 0..1; a 2-tuple means "unknown", recorded as 1.0.
     """
     idx = {c: i for i, c in enumerate(classes)}
     available = set(classes)
     y = np.zeros((n_steps, len(classes)), dtype=np.float32)
+    vel = np.zeros((n_steps, len(classes)), dtype=np.float32)
     sigma = max(sigma_ms / step_ms, 1e-3)
     half = int(math.ceil(3 * sigma))
     kern = np.exp(-0.5 * (np.arange(-half, half + 1) / sigma) ** 2).astype(np.float32)
 
-    for t, cls in times:
+    for event in times:
+        t, cls = event[0], event[1]
+        v = float(event[2]) if len(event) > 2 else 1.0
         resolved = resolve_class(cls, available)
         j = idx.get(resolved) if resolved else None
         if j is None:
@@ -99,8 +115,19 @@ def smooth_onsets(
         lo, hi = max(0, c - half), min(n_steps, c + half + 1)
         if lo >= hi:
             continue
-        y[lo:hi, j] = np.maximum(y[lo:hi, j], kern[lo - (c - half): hi - (c - half)])
-    return y
+        k = kern[lo - (c - half): hi - (c - half)]
+        taller = k > y[lo:hi, j]
+        vel[lo:hi, j] = np.where(taller, np.float32(np.clip(v, 0.0, 1.0)), vel[lo:hi, j])
+        y[lo:hi, j] = np.maximum(y[lo:hi, j], k)
+    return y, vel
+
+
+def smooth_onsets(
+    times: list[tuple[float, str]], classes: list[str], n_steps: int,
+    step_ms: float, sigma_ms: float = 20.0,
+) -> np.ndarray:
+    """The onset plane alone. See :func:`smooth_targets`."""
+    return smooth_targets(times, classes, n_steps, step_ms, sigma_ms)[0]
 
 
 class SyntheticDrums(Dataset):
@@ -157,15 +184,21 @@ class SyntheticDrums(Dataset):
                     sig = np.sin(2 * np.pi * f * tt).astype(np.float32) * env
                 a = int(t * sr)
                 b = min(n, a + k)
-                audio[a:b] += sig[: b - a] * float(rng.uniform(0.6, 1.0))
-                events.append((t, c))
+                # The amplitude this synth already randomises per hit is the
+                # velocity, so the click track carries a real dynamics signal
+                # for the velocity head to find rather than a constant one.
+                # Anything learnable here is learnable from the audio alone.
+                amp = float(rng.uniform(0.35, 1.0))
+                audio[a:b] += sig[: b - a] * amp
+                events.append((t, c, amp))
 
         audio += rng.standard_normal(n).astype(np.float32) * 0.005
         peak = np.abs(audio).max()
         if peak > 0:
             audio /= peak
         n_steps = int(round(self.seconds * 1000.0 / self.step_ms))
-        return Clip(audio, smooth_onsets(events, self.classes, n_steps, self.step_ms), style, tempo)
+        y, vel = smooth_targets(events, self.classes, n_steps, self.step_ms)
+        return Clip(audio, y, vel, style, tempo)
 
     def __len__(self) -> int:
         return len(self.items)
@@ -173,7 +206,8 @@ class SyntheticDrums(Dataset):
     def __getitem__(self, i: int):
         c = self.items[i]
         return (torch.from_numpy(c.audio), torch.from_numpy(c.onsets),
-                torch.tensor(c.style), torch.tensor(c.tempo))
+                torch.from_numpy(c.velocity), torch.tensor(c.style),
+                torch.tensor(c.tempo))
 
 
 class GrooveDataset(Dataset):
@@ -253,7 +287,7 @@ class GrooveDataset(Dataset):
             audio = audio[start: start + want]
             offset_s = start / self.sample_rate
 
-        events: list[tuple[float, str]] = []
+        events: list[tuple[float, str, float]] = []
         try:
             pm = pretty_midi.PrettyMIDI(str(mid_path))
             for inst in pm.instruments:
@@ -263,19 +297,22 @@ class GrooveDataset(Dataset):
                         continue
                     t = note.start - offset_s
                     if 0.0 <= t < self.seconds:
-                        events.append((t, cls))
+                        # A drummer's dynamics, straight off the TD-11 pads.
+                        # MIDI velocity is 1..127; 0 would be a note-off.
+                        events.append((t, cls, note.velocity / 127.0))
         except Exception:
             pass  # a handful of GMD files have malformed MIDI; an empty target
                   # is honest about that rather than dropping the clip silently
 
-        y = smooth_onsets(events, self.classes, self.n_steps, self.step_ms, self.sigma_ms)
+        y, vel = smooth_targets(events, self.classes, self.n_steps, self.step_ms,
+                                self.sigma_ms)
         peak = float(np.abs(audio).max())
         if peak > 0:
             audio = audio / peak
         style = self.style_id.get(row["style"].split("/")[0], 0)
         tempo = float(row.get("bpm") or 0.0)
         return (torch.from_numpy(audio.astype(np.float32)), torch.from_numpy(y),
-                torch.tensor(style), torch.tensor(tempo))
+                torch.from_numpy(vel), torch.tensor(style), torch.tensor(tempo))
 
 
 def build_dataset(cfg: dict, classes: list[str], split: str = "train"):

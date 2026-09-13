@@ -140,8 +140,40 @@ flybeats/
 3. Voice pool + choke groups + crossfaded velocity layers
 4. `validate()` against Phase 0's confirmed class list, with silent-fallback
    behavior for missing classes
-5. `hot_swap()` with background preload + atomic pointer swap
-6. Wire into `realtime.py` alongside existing `MidiBank`/`mido` path
+5. **Done.** `hot_swap()` with preload and an atomic pointer swap — and the
+   swap had to become genuinely atomic to earn the name. A kit was three
+   attributes rebound one at a time, which is three stores against three loads
+   in `trigger`: a callback landing between them reads the new `layers` with
+   the old round-robin table and indexes `rr[(cls, idx)]` for a layer the old
+   kit never had, raising `KeyError` inside the audio callback. Swapping to a
+   kit with *more* layers is what turns it from a wrong sample into a crash.
+   The three now live in a frozen `_Kit` and `trigger` snapshots the reference
+   once, so a trigger holds either the whole old kit or the whole new one.
+   Tested against a thread triggering and mixing without pause while the main
+   thread swaps 40 times; the test fails against the old three-store version.
+6. **Done.** Wired into `realtime.py` alongside the `MidiBank`/`mido` path.
 7. `SoundFontBank` (FluidSynth) as a later addition — same interface, no
    changes needed upstream
-8. User-upload auto-mapping + manual-mapping fallback
+8. **Done.** User-upload auto-mapping + manual-mapping fallback.
+   `guess_class` maps arbitrary folder and file names onto classes, and a flat
+   folder of wavs — how most uploads arrive — loads as a kit without a manifest.
+
+   Two rules the keyword table lives by. Specific beats generic, because every
+   generic name is a substring of a specific one in the direction that breaks
+   things: "open hat" must not file as a closed hat, "ride bell" must not file
+   as a ride. And the two-letter abbreviations match whole words only: "oh" is
+   inside "ohio" and "ch" is inside "chorus", so substring-matching them
+   mis-files half a sample library.
+
+   Nothing recognisable is *not* guessed at. It is recorded, and
+   `mapping_report()` prints what was auto-mapped, what was dropped, and the
+   `aliases` stanza that overrides it — which is the manual-mapping fallback in
+   the form this repo has, since `aliases` was already read and already wins.
+
+### Note on step 7
+
+Not done, deliberately. FluidSynth is not installed in this environment and
+there is no audio device, so a `SoundFontBank` written here could not be
+exercised at all — not one note. The repo already carries "live audio has never
+been run" as a thing that will bite; adding a second unexercised backend makes
+that worse rather than better. It wants a machine with a sound card.

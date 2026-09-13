@@ -16,20 +16,95 @@ Velocity is a float in 0..1 at this interface, not a MIDI 1..127. The MIDI
 scaling belongs at the MIDI edge; a sample backend converting 1..127 back into
 a gain would be a lossy round trip through a unit it should never have seen.
 
-    One caveat worth stating plainly: the model was trained on binary onset
-    targets, so its velocity is the peak height of the detection, not a learned
-    dynamic. The layers crossfade correctly; what they are crossfading on is
-    confidence. GMD's real MIDI velocities are in the corpus and unused -- see
-    the README's open items.
+    Velocity now comes from the decoder's own velocity head, trained against
+    the drummer's MIDI velocities, so the layers crossfade on dynamics rather
+    than on detection confidence. A model exported before that head existed has
+    no such output and falls back to peak height, which is the old behaviour
+    and reads as a hesitant model playing quietly.
 """
 from __future__ import annotations
 
+import re
 from abc import ABC, abstractmethod
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import numpy as np
 
 from voice import RoundRobin, VoicePool, layer_gains
+
+
+#: Filename keywords for auto-mapping a kit nobody wrote a manifest for.
+#: Ordered most specific first and matched first-wins, because the generic
+#: names are substrings of the specific ones in every direction that matters:
+#: "open hat" has to beat "hat", "ride bell" has to beat "ride", and "floor
+#: tom" has to beat "tom". Two forms per class -- ``phrases`` are matched
+#: against the name with its separators removed, so "open hat", "open-hat" and
+#: "OpenHat" are one pattern; ``tokens`` must match a whole word, because the
+#: two-letter drum abbreviations are substrings of ordinary words ("oh" is
+#: inside "ohio", "ch" is inside "chorus") and a substring match on them
+#: mis-files half a sample library.
+_KIT_KEYWORDS: tuple[tuple[str, tuple[str, ...], tuple[str, ...]], ...] = (
+    ("ride_bell",  ("ridebell", "bellride"),                     ("bell", "rb")),
+    ("hat_pedal",  ("pedalhat", "hatpedal", "foothat", "hhpedal"), ("ph", "phh")),
+    ("hat_open",   ("openhat", "hatopen", "openhh", "hhopen", "hihatopen"),
+                                                                 ("oh", "ohh", "opnhat")),
+    ("hat_closed", ("closedhat", "hatclosed", "closedhh", "hhclosed", "hihatclosed",
+                    "hihat", "highhat"),                         ("ch", "chh", "hh", "hat")),
+    ("sidestick",  ("sidestick", "crossstick", "rimshot", "rimclick"),
+                                                                 ("rim", "xstick", "ss")),
+    ("tom_low",    ("floortom", "lowtom", "tomlow", "tomfloor", "tom3"),
+                                                                 ("ft", "lt")),
+    ("tom_mid",    ("midtom", "tommid", "middletom", "tom2"),    ("mt",)),
+    ("tom_high",   ("hightom", "tomhigh", "racktom", "tom1"),    ("ht",)),
+    ("crash",      ("crash", "cymbalcrash"),                     ("cr", "cy")),
+    ("ride",       ("ride", "cymbalride"),                       ("rd",)),
+    ("cowbell",    ("cowbell",),                                 ("cow", "cb")),
+    ("clap",       ("handclap", "clap"),                         ("cp",)),
+    ("kick",       ("kick", "bassdrum", "basedrum"),             ("bd", "kik", "kd")),
+    ("snare",      ("snare",),                                   ("sd", "sn", "snr")),
+    ("tom_low",    ("tom",),                                     ("tom",)),
+)
+
+
+def guess_class(name: str) -> str | None:
+    """Map an arbitrary kit folder or filename onto a drum class.
+
+    For kits a user uploaded rather than authored for this repo: sample
+    libraries name things "BD_01.wav", "Snr Hard", "closed hh". Returns None
+    when nothing matches, which is not an error -- an unmapped folder is
+    reported rather than guessed at, and the manifest's ``aliases`` is the
+    manual override for exactly that case.
+
+    A bare "tom" resolves to ``tom_low`` last of all, after every numbered and
+    named variant has had its chance: a kit with one unqualified tom is more
+    often a floor tom than anything else, and putting it on a real class beats
+    dropping it.
+    """
+    flat = re.sub(r"[^a-z0-9]+", "", name.lower())
+    tokens = set(re.split(r"[^a-z0-9]+", name.lower())) - {""}
+    for cls, phrases, toks in _KIT_KEYWORDS:
+        if any(p in flat for p in phrases) or (tokens & set(toks)):
+            return cls
+    return None
+
+
+@dataclass(frozen=True)
+class _Kit:
+    """Everything ``trigger`` needs, held as one object so it swaps atomically.
+
+    These three used to be three attributes on the bank, and ``hot_swap``
+    rebound them one at a time. That is three separate stores against three
+    separate loads in ``trigger``, and an audio callback lands between them:
+    it reads the new ``layers`` and the old ``rr``, then indexes
+    ``rr[(cls, idx)]`` for a layer the old kit did not have and raises
+    ``KeyError`` inside the callback. Rebinding one reference cannot tear --
+    a trigger holds either the whole old kit or the whole new one.
+    """
+    layers: dict[str, list[list[np.ndarray]]] = field(default_factory=dict)
+    groups: dict[str, str] = field(default_factory=dict)
+    rr: dict[tuple[str, int], RoundRobin] = field(default_factory=dict)
+    name: str = ""
 
 
 class SoundBank(ABC):
@@ -123,15 +198,32 @@ class SampleBank(SoundBank):
         self.sample_rate = sample_rate
         self.pool = VoicePool(max_voices=max_voices, sample_rate=sample_rate)
         self.seed = seed
-        self.layers: dict[str, list[list[np.ndarray]]] = {}   # cls -> layer -> variants
-        self.groups: dict[str, str] = {}                      # cls -> choke group
-        self.rr: dict[tuple[str, int], RoundRobin] = {}
-        self.name = ""
+        self._kit = _Kit()
+        self.unmapped: list[str] = []          # files no keyword matched
+        self.automapped: dict[str, str] = {}   # source name -> class
+
+    # Read-only views, so nothing outside can rebind half a kit.
+    @property
+    def layers(self) -> dict:
+        return self._kit.layers
+
+    @property
+    def groups(self) -> dict:
+        return self._kit.groups
+
+    @property
+    def rr(self) -> dict:
+        return self._kit.rr
+
+    @property
+    def name(self) -> str:
+        return self._kit.name
 
     # -- loading ------------------------------------------------------------
     def load(self, config: dict) -> None:
-        self.layers, self.groups, self.rr = self._read_kit(config)
-        self.name = str(config.get("name") or config.get("dir") or "")
+        layers, groups, rr = self._read_kit(config)
+        self._kit = _Kit(layers, groups, rr,
+                         str(config.get("name") or config.get("dir") or ""))
         self.pool.reset()
 
     def _read_kit(self, config: dict):
@@ -153,11 +245,26 @@ class SampleBank(SoundBank):
 
         layers: dict[str, list[list[np.ndarray]]] = {}
         rr: dict[tuple[str, int], RoundRobin] = {}
-        for d in sorted(p for p in root.iterdir() if p.is_dir()):
-            cls = alias.get(d.name, d.name)
-            files = sorted(d.glob("*.wav"))
+        self.unmapped: list[str] = []
+        self.automapped: dict[str, str] = {}
+
+        folders = sorted(p for p in root.iterdir() if p.is_dir())
+        by_class = ({d.name: sorted(d.glob("*.wav")) for d in folders} if folders
+                    else self._group_flat(sorted(root.glob("*.wav"))))
+
+        for name, files in by_class.items():
             if not files:
                 continue
+            # A manifest alias is a manual override and always wins; then the
+            # filename keywords; then the folder's own name, on the assumption
+            # that a kit authored for this repo already uses our class names.
+            if name in alias:
+                cls = alias[name]
+            else:
+                guess = guess_class(name)
+                cls = guess or name
+                if guess and guess != name:
+                    self.automapped[name] = guess
             # <layer>_<variant>.wav groups by layer; a flat folder is one layer
             by_layer: dict[str, list[Path]] = {}
             for f in files:
@@ -168,6 +275,44 @@ class SampleBank(SoundBank):
             for i, variants in enumerate(loaded):
                 rr[(cls, i)] = RoundRobin(len(variants), seed=self.seed + i)
         return layers, groups, rr
+
+    def _group_flat(self, files: "list[Path]") -> "dict[str, list[Path]]":
+        """A kit that is one folder of wavs, which is how most uploads arrive.
+
+        Each file is mapped on its own name and the class becomes the group, so
+        ``BD_01.wav BD_02.wav Snr.wav`` lands as two classes rather than three.
+        Files nothing matches are recorded, not guessed at -- ``mapping_report``
+        prints them with the manifest stanza that would fix them.
+        """
+        out: dict[str, list[Path]] = {}
+        for f in files:
+            cls = guess_class(f.stem)
+            if cls is None:
+                self.unmapped.append(f.name)
+                continue
+            self.automapped[f.name] = cls
+            out.setdefault(cls, []).append(f)
+        return out
+
+    def mapping_report(self) -> str:
+        """What auto-mapping did, and the manifest to write when it got it wrong.
+
+        The plan calls for a "manual-mapping fallback UI when confidence is
+        low". This is that fallback in the form this repo actually has: say
+        what was guessed, say what was dropped, and print the stanza that
+        overrides it -- ``aliases`` is already read and already wins.
+        """
+        lines = []
+        if self.automapped:
+            lines.append("auto-mapped by filename:")
+            for src, cls in sorted(self.automapped.items()):
+                lines.append(f"  {src:<24} -> {cls}")
+        if self.unmapped:
+            lines.append("unmapped (silent; add an alias to override):")
+            for name in sorted(self.unmapped):
+                lines.append(f"  {name}")
+            lines.append("\nmanifest.yaml:\naliases:\n  <class>: [<folder-or-file-stem>]")
+        return "\n".join(lines) or "every folder matched a class name directly"
 
     def _read_wav(self, sf, path: Path) -> np.ndarray:
         audio, sr = sf.read(path, dtype="float32", always_2d=True)
@@ -180,13 +325,18 @@ class SampleBank(SoundBank):
 
     # -- playing ------------------------------------------------------------
     def trigger(self, cls: str, velocity: float, t: float = 0.0) -> None:
-        stack = self.layers.get(cls)
+        # One read of the kit reference, then work entirely off that snapshot.
+        # A hot swap concurrent with this call rebinds self._kit; taking it
+        # once means this trigger finishes against the kit it started with
+        # rather than half of each.
+        kit = self._kit
+        stack = kit.layers.get(cls)
         if not stack:
             return                      # missing class: silence, not a crash
-        group = self.groups.get(cls)
+        group = kit.groups.get(cls)
         for idx, gain in layer_gains(velocity, len(stack)):
             variants = stack[idx]
-            buf = variants[self.rr[(cls, idx)].next()]
+            buf = variants[kit.rr[(cls, idx)].next()]
             self.pool.start(buf, gain=gain, group=group, cls=cls)
 
     def mix(self, n: int) -> np.ndarray:
@@ -210,8 +360,9 @@ class SampleBank(SoundBank):
         rather than an index into the bank.
         """
         layers, groups, rr = self._read_kit(new_config)
-        self.layers, self.groups, self.rr = layers, groups, rr
-        self.name = str(new_config.get("name") or new_config.get("dir") or "")
+        # Built first, then one store. See _Kit for why this cannot be three.
+        self._kit = _Kit(layers, groups, rr,
+                         str(new_config.get("name") or new_config.get("dir") or ""))
 
 
 def make_bank(source: str, kit, sample_rate: int, kit_dir: str | Path | None = None,

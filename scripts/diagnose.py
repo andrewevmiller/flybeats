@@ -76,7 +76,7 @@ def main(argv=None) -> int:
     all_rates = None                      # one batch, every neuron, for section 6
     seen = 0
     with torch.no_grad():
-        for wav, y, style, tempo in val_loader:
+        for wav, y, _vel_y, style, tempo in val_loader:
             sid = style if model.genre is not None else None
             drive = model.encoder(wav)
             tonic = model.genre(sid) if sid is not None else None

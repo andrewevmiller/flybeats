@@ -28,6 +28,9 @@ subgraph:
 kit:
   tier: 8piece          # within the 15 confirmed wing steering MN types
   bilateral: true       # left MNs -> left-hand classes, right -> right-hand
+  velocity_head: true   # a second readout for how hard, separate from whether.
+                        # Off builds the detection half alone, as models trained
+                        # before this head have.
 
 model:
   tau_ms_init: 20.0
@@ -64,6 +67,11 @@ train:
   tbptt_steps: 150
   pos_weight: 8.0       # onsets are sparse
   rate_weight: 0.1
+  # Weight on the velocity head's regression, which is scored only where there
+  # is a hit. At 1.0 it sits near the BCE in magnitude at initialisation; the
+  # two heads read the same motor pool, so raising this trades detection for
+  # dynamics rather than buying both.
+  velocity_weight: 1.0
   # One-sided: penalise mean activation above the ceiling, never below it.
   # 'auto' sets the ceiling from each model's own activity at initialisation,
   # which is the only scale the number can honestly be expressed in --

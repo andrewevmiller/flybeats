@@ -1,0 +1,159 @@
+# Roadmap: what happens next, and in what order
+
+The design this project implements is [PLAN.md](PLAN.md); what it currently
+does and does not do is the README's
+[Results](README.md#results-and-what-they-are-not) and
+[What is not done](README.md#what-is-not-done). This file is narrower: the
+order of the next few pieces of work, what each costs, and what would count as
+finishing it.
+
+**Two releases, because two different things are "done":**
+
+- **v0.1 — playable.** Someone installs, takes a bundle, and gets drums out of
+  their own audio. Gated on code and CPU only, so it is reachable now.
+- **v1.0 — the claim.** The Phase 4 arms across five seeds, answering whether
+  the connectome's topology earns its place. Gated on a GPU, not on code.
+
+**The rule that sets the order:** anything that changes the loss lands before
+anything expensive. That is why the velocity head went in ahead of the Phase 4
+arms, and it is why the velocity fixes below go ahead of the full-corpus run.
+Getting this backwards costs the run, not the fix.
+
+---
+
+## Where the model actually is
+
+One number frames the next phase: the last run trained on **256 of the 897
+available GMD training clips**, and the README already records this model as
+limited by data rather than by epochs. Three and a half times the corpus is
+sitting unused.
+
+| | |
+|---|---|
+| onset F (GMD, 12 epochs, 10k nodes) | 0.30 |
+| velocity, per class | one class right, two significantly backwards, the rest noise |
+| epoch cost, 256 clips | 495 s |
+| epoch cost, 897 clips | ~29 min (projected) |
+
+---
+
+## Phase A′ — make the velocity head use what it already receives
+
+The head is not starved. `scripts/probe_velocity.py` puts hit strength in the
+motor pool (tom_low 0.39, snare 0.23, crash 0.30) and the head reads it
+backwards on two classes. That is a decoder and optimisation problem, and these
+are the candidates, cheapest first.
+
+| | change | why | cost |
+|---|---|---|---|
+| A′1 | raise `velocity_weight` above 1.0 | At 1.0 the detection BCE dominates the gradient, and both heads read the same motor pool through the same scale | 100 min |
+| A′2 | linear head with the target centred, instead of the sigmoid | The sigmoid's gradient is flattest exactly where GMD's velocities cluster | 100 min |
+| A′3 | score only near the onset peak, not across the whole kernel support | That is where the streaming path reads velocity; training flat across the support teaches the head to average | 100 min |
+
+Each is a retrain at 256 clips plus `python scripts/probe_velocity.py --seed 0`.
+
+### A′1 result: it worked, and the head was simply outvoted
+
+`velocity_weight` 1.0 → 5.0, everything else held. Head correlation at the onset
+peak, baseline → A′1, with 95% bootstrap intervals:
+
+```
+class          baseline                    velocity_weight 5.0
+snare          -0.098  [-0.19, -0.01]      +0.062  [-0.01, +0.13]
+tom_low        -0.284  [-0.41, -0.14]      +0.306  [+0.13, +0.45]
+tom_mid        -0.140  [-0.29, +0.02]      +0.231  [+0.09, +0.37]
+crash          +0.473  [+0.33, +0.60]      +0.349  [+0.17, +0.50]
+kick, hats     span 0                      span 0
+```
+
+**No class is significantly negative any more**, and three are significantly
+positive. tom_low is the telling one: it was the class carrying the most unused
+motor signal (0.39 at the motor units, −0.28 at the head), and it flipped to
+significantly right. Head spread rose from 0.084 to 0.105 against a target
+spread of 0.272 — still compressed, so this is "reading dynamics weakly", not
+"solved".
+
+Two things this does **not** establish. Onset F came in at 0.2761 against the
+baseline's 0.3006, which is either a real detection cost from crowding the loss
+or run-to-run noise; one run with no seeds cannot tell those apart, and it
+needs seeds before it is quoted. And a weight of 5 is the first value tried,
+not a tuned one.
+
+**Done when** at least one class's head correlation is significantly positive
+without pushing another negative. Compare bootstrap intervals, never point
+estimates: the same analysis read hat_open as 0.37, then 0.18, then 0.26 on one
+checkpoint before its sampling was seeded, and a pooled correlation reported
+~0.35 while the per-class picture was incoherent.
+
+**Never run two of these at once.** Torch takes a thread per core in each
+process and the oversubscribed threads spin rather than progress — one epoch
+went from 76 s to 1,415 s. Sequential, or set `OMP_NUM_THREADS`.
+
+---
+
+## Phase B′ — the full-corpus run
+
+One long run at all 897 training clips: **~29 min/epoch, ~6 hours for 12.**
+This is the run that might move onset F off 0.30, and it produces the model
+worth shipping. It must come after A′ or it gets redone.
+
+**Done when** onset F has either moved or provably stopped moving with the data
+limit lifted — which turns "undertrained" from an assumption into a finding
+either way.
+
+---
+
+## Phase C — ship v0.1
+
+None of this needs the CPU, so it overlaps the runs above.
+
+- **Publish a bundle as a release.** The README's headline path names
+  `flybeats-8piece.fb`, and no such file exists anywhere in the repo — the
+  quick start is currently unfollowable by anyone who has not trained their own
+  model. `scripts/export_bundle.py` takes seconds and verifies the bundle
+  reproduces the checkpoint exactly before writing it. This is the cheapest
+  thing on this page that changes whether the project is usable.
+- **Verify the quick start** end to end from a clean checkout against the
+  published bundle, on a machine with no `data/` directory.
+- **Tag it**, with release notes that say plainly what it does and does not do:
+  it follows the music's energy rather than its groove, and its velocity is not
+  yet dynamics.
+
+**Done when** someone with no connectome, no corpus and no sampler can go from
+`git clone` to a wav of drums over their own audio.
+
+---
+
+## Phase D — the experiment that answers the question
+
+Still hardware-blocked:
+
+```bash
+python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5
+```
+
+`--seeds` is not optional — a gap smaller than the across-seed spread is not a
+result. What is worth doing before a GPU appears is making the harness
+seed-aware and one command, so the hardware turns into results the same day
+rather than a day of setup.
+
+---
+
+## Parked, with the reason
+
+- **`SoundFontBank`** ([SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md) step 7) — needs a
+  machine with a sound card. FluidSynth is not installed in the working
+  environment and there is no audio device, so it could not be exercised at
+  all, and the repo already carries "live audio has never been run" as a
+  hazard.
+- **Speed on fills only** ([SPEED_PLAN.md](SPEED_PLAN.md)) — driving `k(t)`
+  from pC1's own activity per frame, so the drummer speeds up where it is
+  already playing harder. The genuinely interesting one left, and the per-frame
+  schedule the fractional dial needed is exactly the mechanism it takes.
+  Nothing gates it.
+- **The Phase 1 trim claim** — 3 hops from JO reaches 154,853 of 162,517
+  neurons, so the subgraph is selected by `_trim` rather than by anatomy. A
+  real methodological weakness, but replacing the criterion invalidates the
+  subgraph cache and every model trained on it, so it belongs between
+  experiment campaigns rather than mid-flight.
+- **The 162k render tier** and **the spiking model** — neither blocks anything.

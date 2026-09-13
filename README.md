@@ -73,9 +73,9 @@ python src/realtime.py --config configs/v1_8piece.yaml --benchmark
 python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
 ```
 
-Setting this up on a laptop — disk, RAM and time for each step, which parts are
-worth doing before the training fixes land, and the Windows specifics — is in
-[SETUP.md](SETUP.md).
+Installing on a Windows laptop — every step with its disk, RAM and wall time,
+which parts of the install survive the work still in flight, and a
+troubleshooting table — is in [SETUP.md](SETUP.md).
 
 ---
 
@@ -346,6 +346,64 @@ steps. Bounding it through `tanh × max_current` keeps genres separable and
 interpolation smooth; a test pushes the embedding 1000× out of distribution and
 asserts the injected current stays inside its envelope.
 
+### What the velocity head can and cannot do
+
+The head landed, its loss falls, and it does not yet produce dynamics. Two runs
+say different things about why, and the difference is the point.
+
+**On the synthetic click track** (10k nodes, 12 epochs), hit strength is in the
+encoder drive and gone from the motor pool — a ridge probe recovers kick at
+*r* = 0.31 from the drive and −0.08 from the motor units. `scripts/diagnose.py`
+puts a number on the channel: relative temporal variation is **97.07 at the
+drive and 0.36 at the motor pool**, a 269× compression. The head's output has a
+standard deviation of 0.021 against a target spread of 0.189 — one constant per
+hit.
+
+**On real GMD audio** (`configs/velocity_probe_cpu.yaml`, 256 clips, 12 epochs,
+8-piece kit) that does not hold. Hit strength *does* partially reach the motor
+pool — snare 0.23, tom_low 0.39, crash 0.30 — and the head's spread rises from
+0.021 to 0.087. So the flat statement "a connectome-constrained readout cannot
+say how hard" was an artefact of the synthetic corpus, where every hit is the
+same synthesised sample at a scaled amplitude, and it is withdrawn.
+
+What replaces it is narrower and better evidenced. Per class, on held-out rows,
+with 95% bootstrap intervals:
+
+```
+class         n steps  target sd   drive r   motor r   head r     head 95% CI
+kick              837      0.214    -0.191     0.040   -0.016  [-0.17, +0.14]  spans 0
+snare            1785      0.300     0.221     0.227   -0.098  [-0.19, -0.01]
+hat_closed        905      0.227     0.141    -0.027    0.013  [-0.09, +0.12]  spans 0
+hat_open          225      0.266     0.428     0.052    0.117  [-0.14, +0.31]  spans 0
+tom_low           570      0.221     0.064     0.390   -0.284  [-0.41, -0.14]
+tom_mid           505      0.200     0.115     0.034   -0.140  [-0.29, +0.02]  spans 0
+crash             312      0.194     0.088     0.301    0.473  [+0.33, +0.60]
+```
+
+One class is strongly right (crash), two are *significantly backwards* (snare,
+tom_low), and the rest are indistinguishable from nothing. A head reading
+dynamics does not get the sign wrong on two classes. This one has latched onto
+something class-specific — crash is loud and rare, and predicting "crash means
+loud" earns a correlation without hearing a single dynamic — while the motor
+pool visibly carries signal it is not using: tom_low is 0.39 at the motor units
+and −0.28 at the head.
+
+That makes velocity a decoder and optimisation problem on real data, not an
+architectural limit, and worth pursuing rather than reporting as a result.
+
+**Two measurement traps, both of which caught this analysis first:**
+
+- **Never read a pooled velocity correlation.** Training reported ~0.35 pooled
+  across classes while the per-class picture above is incoherent. Crashes are
+  loud and hats are quiet, so pooling rewards a head that has learned nothing
+  but each class's average level. `velocity_r` is now computed within class and
+  averaged; the pooled figure is still printed so the gap stays visible.
+- **`GrooveDataset` picks a random window per clip per call**, so an unseeded
+  probe is not reproducible: hat_open read 0.37, then 0.18, then 0.26 on the
+  *same checkpoint*. `scripts/probe_velocity.py` now seeds its sampling and
+  reports bootstrap intervals, because at these magnitudes a point estimate
+  invites over-reading. Anything whose interval spans zero is not a finding.
+
 ### Bugs that would have produced plausible, wrong numbers
 
 Most of the work in this session was finding these. Each one is the kind that
@@ -503,11 +561,13 @@ to be an ordinary outcome rather than an error.
 it from pitch-enveloped sines and filtered noise. It is not a good kit. It is
 tiny, unambiguously ours to ship, and it exercises every path the player has.
 
-**One caveat.** The model was trained on binary onset targets, so its velocity
-is the height of the detection peak, not a learned dynamic — the layers
-crossfade correctly, but what they crossfade on is confidence. GMD's real MIDI
-velocities are in the corpus and currently discarded; see
-[What is not done](#what-is-not-done).
+**What the layers crossfade on.** Velocity comes from the decoder's velocity
+head, a second readout over the same motor pool trained against the drummer's
+own MIDI velocities — separate from the detection head, and wearing the same
+hemisphere mask, so a hit's strength comes from the hemisphere that produced
+the hit. Until it existed the layers crossfaded on the height of the detection
+peak, which meant a merely confident model played loudly. A bundle exported
+before the head still loads and still falls back to that.
 
 ---
 
@@ -585,10 +645,13 @@ data-path failure.
 
 ## What is not done
 
-- **Velocity is not learned.** The decoder's velocity is detection confidence,
-  not dynamics: targets are binary onsets and GMD's MIDI velocities are dropped
-  when events are built. A per-class velocity head would fix it, and should land
-  *before* the Phase 4 arms run rather than after, since it changes the loss.
+- **Velocity is built and does not yet produce dynamics.** The head, its loss,
+  its targets and its metrics are in place and tested. On real audio the motor
+  pool carries hit strength that the head is not using — it gets two classes
+  backwards. See
+  [What the velocity head can and cannot do](#what-the-velocity-head-can-and-cannot-do).
+  Watch `velocity_r` within class, never `velocity_mae` alone and never a
+  pooled correlation.
 - **No meaningful trained run.** Needs a GPU and the full corpus. This is the gap
   that matters. The model now learns *something* (see
   [the first run that learns anything](#the-first-run-that-learns-anything)), but
@@ -641,7 +704,7 @@ python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
 
 What to expect, honestly: a busy, snare-heavy performance that follows the
 music's energy rather than its groove. The model is undertrained (see below),
-and its velocity is detection confidence rather than dynamics. The mechanism is
+and its velocity head has only been trained at sanity scale. The mechanism is
 what has been verified end to end; the musicality has not.
 
 `--render` is the robust path — it needs no audio device. Live input
@@ -671,24 +734,34 @@ the loss still falling and onset F flat, which is a model limited by data.
 
 ### Then, in order
 
-- **The velocity head**, before anything expensive. Targets are binary onsets and
-  GMD's real MIDI velocities are discarded when events are built, so the
-  decoder's velocity is the height of a detection peak. A per-class velocity
-  regression fixes it and makes the sound layer's velocity crossfade mean
-  something. It changes the loss, so it must land *before* the Phase 4 arms run
-  or they get redone.
+- **Make the velocity head use what the motor pool already carries.** It is
+  reading signal that is there and getting the sign wrong on two classes
+  (tom_low: 0.39 at the motor units, −0.28 at the head), which is a decoder and
+  optimisation problem rather than an architectural one. Things to try, cheapest
+  first: raise `velocity_weight` — at 1.0 the detection BCE dominates and the
+  two heads share a readout scale; drop the sigmoid for a linear head with the
+  target centred, since the sigmoid's gradient is flattest exactly where GMD
+  velocities cluster; and score only near the onset peak rather than across the
+  whole kernel support, which is where the streaming path reads it anyway.
+  Re-run `scripts/probe_velocity.py --seed 0` after each and compare intervals,
+  not point estimates.
 - **Run the real experiment** (needs a GPU):
   `python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5`.
   `--seeds` is not optional: a gap smaller than the across-seed spread is not a
   result. Every arm is normalised to the same radius, so the comparison is still
   about topology.
-- **Finish the speed control** — [SPEED_PLAN.md](SPEED_PLAN.md) steps 4–6: a
-  benchmark-based guard on the live path, fractional speeds via a phase
-  accumulator, and the interesting one, driving `k(t)` from pC1's own activity
-  per frame so the drummer speeds up exactly where it is already playing harder.
-- **Finish the sound layer** — [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md) steps 5–8:
-  `hot_swap` is written but untested against a live callback, and
-  `SoundFontBank` and user-kit auto-mapping are not started.
+- **Speed on fills only** — the one interesting piece left in
+  [SPEED_PLAN.md](SPEED_PLAN.md). Steps 4–6 are done (a benchmark-based guard on
+  the live path, fractional speeds via a phase accumulator, ramping); what
+  remains is driving `k(t)` from pC1's own activity per frame, so the drummer
+  speeds up exactly where it is already playing harder. The per-frame schedule
+  the fractional dial needed is the mechanism that makes it possible.
+- **`SoundFontBank`** — the only piece of [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md)
+  left, and it needs a machine with a sound card: FluidSynth is not installed
+  here and there is no audio device, so it could not be exercised at all.
+  `hot_swap` is now genuinely atomic and tested against a live callback (it was
+  three attribute stores, which a callback could land between — see the plan),
+  and user-kit auto-mapping is done.
 - **Fix the weakest claim in Phase 1.** 3 hops from JO reaches 154,853 of 162,517
   neurons, so the subgraph is selected by `_trim`, not by anatomy — the code now
   says so plainly, which is the honest half of the fix. The other half is a

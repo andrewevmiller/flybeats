@@ -65,12 +65,25 @@ class DrumKit:
 
 
 class MotorToDrums(nn.Module):
-    """One linear layer: motor-neuron rate -> per-class drum velocity logit.
+    """Motor-neuron rate -> per-class drum onsets, and how hard they are hit.
+
+    Two linear readouts over the same motor pool, through the same hemisphere
+    mask. ``forward`` answers *whether* a class fires at this step;
+    :meth:`velocity` answers *how hard*. They were one output until now, and
+    conflating them meant the "velocity" a drum machine received was really the
+    height of a detection peak -- confidence wearing dynamics' clothes. A
+    hesitant model played quietly and a certain one played loudly, which is not
+    what a drummer does.
 
     ``bilateral`` splits the readout by hemisphere: left-hemisphere motor
     neurons drive the left-hand classes and right the right-hand ones, with the
     cross-hemisphere weights masked out. That is limb independence for free --
-    the constraint is anatomical, not a regulariser we invented.
+    the constraint is anatomical, not a regulariser we invented. The velocity
+    head wears the same mask: a hit's strength has to come from the same
+    hemisphere that produced the hit.
+
+    ``velocity_head=False`` builds the detection half alone, which is what a
+    checkpoint trained before this head existed contains.
     """
 
     def __init__(
@@ -79,12 +92,27 @@ class MotorToDrums(nn.Module):
         kit: DrumKit,
         motor_side: np.ndarray | None = None,
         bilateral: bool = False,
+        velocity_head: bool = True,
+        velocity_activation: str = "sigmoid",
     ):
         super().__init__()
         self.kit = kit
         self.readout = nn.Linear(n_motor, kit.n, bias=True)
         nn.init.normal_(self.readout.weight, std=1.0 / max(n_motor, 1) ** 0.5)
         nn.init.constant_(self.readout.bias, -2.0)   # onsets are sparse; start quiet
+
+        if velocity_activation not in ("sigmoid", "linear"):
+            raise ValueError(f"velocity_activation must be sigmoid or linear, "
+                             f"got {velocity_activation!r}")
+        self.velocity_activation = velocity_activation
+        if velocity_head:
+            self.vel_readout = nn.Linear(n_motor, kit.n, bias=True)
+            nn.init.normal_(self.vel_readout.weight, std=1.0 / max(n_motor, 1) ** 0.5)
+            # sigmoid(0) and linear 0.5 are both "mid velocity" at init
+            nn.init.constant_(self.vel_readout.bias,
+                              0.0 if velocity_activation == "sigmoid" else 0.5)
+        else:
+            self.vel_readout = None
 
         mask = torch.ones(kit.n, n_motor)
         if bilateral:
@@ -104,10 +132,34 @@ class MotorToDrums(nn.Module):
                     mask[c] = 1.0
         self.register_buffer("mask", mask)
 
+    @property
+    def has_velocity(self) -> bool:
+        return self.vel_readout is not None
+
     def forward(self, rates: torch.Tensor) -> torch.Tensor:
         """``(batch, steps, n_motor)`` -> ``(batch, steps, n_classes)`` logits."""
         w = self.readout.weight * self.mask
         return torch.nn.functional.linear(rates, w, self.readout.bias)
+
+    def velocity(self, rates: torch.Tensor) -> torch.Tensor | None:
+        """How hard each class is struck, in 0..1. ``None`` without the head.
+
+        ``sigmoid`` bounds the output, because every consumer downstream -- the
+        sample player's velocity layers, MIDI's 1..127 -- wants 0..1 and would
+        have to clamp an unbounded head anyway.
+
+        ``linear`` exists because that argument has a cost the bounded version
+        hides: the sigmoid's gradient is flattest at its extremes, and GMD's
+        velocities cluster in the middle-to-upper range where a head sitting
+        near the mean has least reason to move. A linear head can leave 0..1,
+        and the streaming path already clips it; being visibly out of range is
+        more useful than being squashed into range by a saturating unit.
+        """
+        if self.vel_readout is None:
+            return None
+        w = self.vel_readout.weight * self.mask
+        out = torch.nn.functional.linear(rates, w, self.vel_readout.bias)
+        return torch.sigmoid(out) if self.velocity_activation == "sigmoid" else out
 
 
 def _hand_of(drum_class: str) -> str:

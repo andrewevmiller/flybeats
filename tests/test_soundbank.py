@@ -179,11 +179,19 @@ def _ramp_drummer(classes, **kw):
         def __call__(self, drive, state=None, tonic=None, substeps=1):
             # the real core holds the drive across sub-steps, which is exactly
             # repeat_interleave -- see tests/test_speed.py
-            return torch.repeat_interleave(drive, substeps, dim=1), state
+            reps = (torch.tensor(substeps) if not isinstance(substeps, int)
+                    else substeps)
+            return torch.repeat_interleave(drive, reps, dim=1), state
 
     class FakeDecoder:
         def __init__(self):
             self.i = 0
+
+        def velocity(self, rates):
+            # No velocity head, as a model trained before it existed. The
+            # drummer must fall back to peak height, which is what these
+            # tests measure.
+            return None
 
         def __call__(self, rates):
             k = rates.shape[1]
@@ -225,3 +233,181 @@ def test_a_class_without_an_entry_gets_the_default():
     d = _ramp_drummer(["kick", "snare"], refractory_ms=45.0,
                       class_refractory_ms={"kick": 5.0})
     assert d.refractory_ms == {"kick": 5.0, "snare": 45.0}
+
+
+# --- user-uploaded kits (SOUNDBANK_PLAN step 8) ----------------------------
+
+def test_filename_keywords_map_a_third_party_kit():
+    from soundbank import guess_class
+
+    assert guess_class("BD_01") == "kick"
+    assert guess_class("Snr Hard") == "snare"
+    assert guess_class("closed hh") == "hat_closed"
+    assert guess_class("OpenHat") == "hat_open"
+    assert guess_class("ride bell") == "ride_bell"
+    assert guess_class("floor tom") == "tom_low"
+    assert guess_class("909 CP") == "clap"
+
+
+def test_the_specific_pattern_beats_the_generic_one():
+    """Every generic name is a substring of a specific one, in the direction
+    that breaks things: an open hat must not file as a closed hat, and a ride
+    bell must not file as a ride."""
+    from soundbank import guess_class
+
+    assert guess_class("open hat") == "hat_open"
+    assert guess_class("hi hat open") == "hat_open"
+    assert guess_class("ride bell") == "ride_bell"
+    assert guess_class("hihat") == "hat_closed"
+    assert guess_class("rack tom") == "tom_high"
+
+
+def test_short_abbreviations_need_a_word_boundary():
+    """'oh' is inside 'ohio' and 'ch' is inside 'chorus'. Substring-matching
+    the two-letter drum abbreviations mis-files half a sample library."""
+    from soundbank import guess_class
+
+    assert guess_class("ohio") is None
+    assert guess_class("chorus") is None
+    assert guess_class("cheese") is None
+    assert guess_class("oh_02") == "hat_open"
+    assert guess_class("ch 01") == "hat_closed"
+
+
+def test_nothing_recognisable_is_left_alone_rather_than_guessed():
+    from soundbank import guess_class
+
+    assert guess_class("mystery") is None
+    assert guess_class("track07") is None
+
+
+def test_a_flat_folder_of_wavs_loads_as_a_kit(tmp_path):
+    """How most uploads arrive: no subfolders, no manifest, arbitrary names."""
+    import soundfile as sf
+    from soundbank import SampleBank
+
+    sr = 22_050
+    tone = np.sin(2 * np.pi * 220 * np.arange(sr // 20) / sr).astype(np.float32)
+    for name in ("BD_01.wav", "BD_02.wav", "Snr.wav", "closed hh.wav", "mystery.wav"):
+        sf.write(tmp_path / name, tone, sr)
+
+    bank = SampleBank(sample_rate=sr)
+    bank.load({"dir": str(tmp_path)})
+
+    assert set(bank.layers) == {"kick", "snare", "hat_closed"}
+    assert bank.unmapped == ["mystery.wav"]
+    # the two kick files are one class, not two
+    assert sum(len(v) for v in bank.layers["kick"]) == 2
+
+    report = bank.mapping_report()
+    assert "kick" in report and "mystery.wav" in report and "aliases" in report
+
+
+def test_a_manifest_alias_overrides_the_keyword_guess(tmp_path):
+    """The manual-mapping fallback: when auto-mapping gets it wrong, the
+    manifest wins and nothing has to be renamed on disk."""
+    import soundfile as sf
+    from soundbank import SampleBank
+
+    sr = 22_050
+    tone = np.sin(2 * np.pi * 220 * np.arange(sr // 20) / sr).astype(np.float32)
+    (tmp_path / "crash").mkdir()
+    sf.write(tmp_path / "crash" / "0_0.wav", tone, sr)
+    (tmp_path / "manifest.yaml").write_text("aliases:\n  ride: [crash]\n")
+
+    bank = SampleBank(sample_rate=sr)
+    bank.load({"dir": str(tmp_path)})
+    assert set(bank.layers) == {"ride"}, "the alias must beat the keyword match"
+
+
+# --- hot swap against a live callback (SOUNDBANK_PLAN step 5) --------------
+
+def _kit_on_disk(root, classes, layers_per_class):
+    """A minimal kit: <class>/<layer>_0.wav, so kits can differ in layer count."""
+    import soundfile as sf
+
+    sr = 22_050
+    tone = np.sin(2 * np.pi * 330 * np.arange(sr // 40) / sr).astype(np.float32)
+    for cls in classes:
+        d = root / cls
+        d.mkdir(parents=True, exist_ok=True)
+        for layer in range(layers_per_class):
+            sf.write(d / f"{layer}_0.wav", tone, sr)
+    return root
+
+
+def test_hot_swap_never_shows_a_callback_half_a_kit(tmp_path):
+    """The race this is here for: a kit used to be three attributes rebound one
+    at a time, so a callback could read the new layers with the old round-robin
+    table and index a layer the old kit never had. Swapping to a kit with *more*
+    layers is what makes that a KeyError rather than a silent wrong sample.
+    """
+    import threading
+
+    from soundbank import SampleBank
+
+    small = _kit_on_disk(tmp_path / "small", ["kick", "snare"], layers_per_class=1)
+    big = _kit_on_disk(tmp_path / "big", ["kick", "snare"], layers_per_class=4)
+
+    bank = SampleBank(sample_rate=22_050)
+    bank.load({"dir": str(small)})
+
+    errors: list[BaseException] = []
+    stop = threading.Event()
+
+    def callback():
+        """Stands in for the audio thread: trigger and mix, without pausing."""
+        try:
+            while not stop.is_set():
+                bank.trigger("kick", 0.9)
+                bank.trigger("snare", 0.4)
+                block = bank.mix(256)
+                assert np.all(np.isfinite(block)), "callback mixed a non-finite block"
+        except BaseException as e:          # noqa: BLE001 - re-raised on the main thread
+            errors.append(e)
+
+    t = threading.Thread(target=callback, daemon=True)
+    t.start()
+    try:
+        for _ in range(40):
+            bank.hot_swap({"dir": str(big), "name": "big"})
+            bank.hot_swap({"dir": str(small), "name": "small"})
+    finally:
+        stop.set()
+        t.join(timeout=10)
+
+    assert not errors, f"the callback saw a torn kit: {errors[0]!r}"
+    assert not t.is_alive()
+
+
+def test_a_swapped_kit_is_all_or_nothing():
+    """Whatever a trigger reads, layers and round-robin must come from the same
+    kit -- the invariant the atomic swap exists to keep."""
+    from soundbank import _Kit
+
+    kit = _Kit(layers={"kick": [[np.zeros(4, np.float32)]]}, groups={},
+               rr={("kick", 0): None}, name="x")
+    assert set(kit.layers) == {"kick"}
+    assert ("kick", 0) in kit.rr
+    with pytest.raises(Exception):
+        kit.layers = {}          # frozen: a kit cannot be edited in place
+
+
+def test_voices_already_sounding_survive_a_swap(tmp_path):
+    """A Voice holds the array, not an index into the bank, so notes that were
+    ringing when the kit changed ring out on the old samples instead of cutting."""
+    from soundbank import SampleBank
+
+    a = _kit_on_disk(tmp_path / "a", ["kick"], layers_per_class=1)
+    b = _kit_on_disk(tmp_path / "b", ["kick"], layers_per_class=2)
+
+    bank = SampleBank(sample_rate=22_050)
+    bank.load({"dir": str(a)})
+    bank.trigger("kick", 1.0)
+    before = bank.mix(64)
+    assert np.abs(before).max() > 0, "the test needs a sounding voice"
+
+    bank.hot_swap({"dir": str(b), "name": "b"})
+    after = bank.mix(64)
+    assert np.abs(after).max() > 0, "the swap cut a sounding voice dead"
+    assert np.all(np.isfinite(after))

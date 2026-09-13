@@ -31,7 +31,16 @@ import torch
 #: Bumped when the on-disk layout changes in a way an older loader would
 #: misread. A bundle that says a version this code does not know is refused
 #: rather than loaded into a wrong-shaped model.
-FORMAT_VERSION = 1
+#:
+#: v2 added the decoder's velocity head. v1 bundles stay readable, because a
+#: bundle is the only durable form a trained model has here -- refusing one
+#: would strand a model that cost hours to train, and the shape difference is
+#: recoverable from the state dict itself.
+FORMAT_VERSION = 2
+
+#: Every version this build can load. Older entries must stay loadable; the
+#: loader adapts the model to what the bundle actually contains.
+READABLE_VERSIONS = (1, 2)
 
 #: Rebuilt by ``ConnectomeRNN.__init__`` from the edge list, so storing them
 #: would be storing the same information three more times.
@@ -89,10 +98,11 @@ def load_bundle(path: str | Path, device=None):
 
     device = device or torch.device("cpu")
     b = torch.load(Path(path), map_location="cpu", weights_only=False)
-    if int(b.get("format", -1)) != FORMAT_VERSION:
+    if int(b.get("format", -1)) not in READABLE_VERSIONS:
         raise ValueError(
             f"{path} is bundle format {b.get('format')!r}, this build reads "
-            f"{FORMAT_VERSION}. Re-export it with scripts/export_bundle.py."
+            f"{', '.join(str(v) for v in READABLE_VERSIONS)}. Re-export it with "
+            f"scripts/export_bundle.py."
         )
 
     cfg = b["config"]
@@ -123,8 +133,15 @@ def load_bundle(path: str | Path, device=None):
         standardize=cfg["audio"].get("standardize_features", True),
         nonneg=cfg["audio"].get("nonneg_to_jo", True),
     )
+    # What the bundle contains decides the shape, not what this build would
+    # build by default: a v1 bundle has no velocity head, and constructing one
+    # anyway would fail the strict-ish load below on a missing key.
+    has_vel = any(k.startswith("decoder.vel_readout") for k in b["state"])
     dec = MotorToDrums(n_motor=len(motor), kit=kit, motor_side=b["motor_side"],
-                       bilateral=cfg["kit"].get("bilateral", False))
+                       bilateral=cfg["kit"].get("bilateral", False),
+                       velocity_head=has_vel,
+                       velocity_activation=cfg["kit"].get("velocity_activation",
+                                                          "sigmoid"))
     genre = None
     n_styles = int(b.get("n_styles", 1) or 1)
     if any(k.startswith("genre.") for k in b["state"]):

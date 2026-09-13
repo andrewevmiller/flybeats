@@ -1,0 +1,6 @@
+# Test dependencies. requirements.txt is the runtime set; pytest is not in it,
+# so `pytest -q` on a fresh checkout fails with "No module named pytest" unless
+# this file is installed too.
+-r requirements.txt
+
+pytest>=8.0
