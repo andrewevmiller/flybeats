@@ -35,6 +35,18 @@ from build import build_model, get_subgraph, load_config  # noqa: E402
 from decoder import DrumKit                          # noqa: E402
 
 
+def test_slice(n, split=0.7):
+    """The rows the probe is scored on. Everything must be scored on these.
+
+    The head is a linear readout of the motor pool, so a ridge probe on the
+    motor pool is an upper bound on it -- if the head ever scores higher, the
+    two were not measured on the same rows. That happened: the probe held out
+    30% and the head was scored on all of them, which is not a fair comparison
+    in either direction.
+    """
+    return slice(int(n * split), None)
+
+
 def ridge_r(X, y, lam=1.0, split=0.7):
     """Fit on the first `split` of rows, report correlation on the rest."""
     n = len(X)
@@ -52,12 +64,41 @@ def ridge_r(X, y, lam=1.0, split=0.7):
     return float(np.corrcoef(pred, yte)[0, 1]), float(np.abs(pred - yte).mean())
 
 
+def boot_ci(a, b, n_boot=2000, seed=0):
+    """A 95% interval on a correlation, by resampling the scored rows.
+
+    These correlations are small and some classes contribute only a few hundred
+    steps, which is exactly where a point estimate invites over-reading. Two
+    runs of this probe on the same checkpoint moved hat_open from 0.37 to 0.18
+    before the sampling was seeded; an interval says outright whether that
+    range is signal.
+    """
+    if len(a) < 20 or a.std() < 1e-8 or b.std() < 1e-8:
+        return float("nan"), float("nan")
+    rng = np.random.default_rng(seed)
+    idx = rng.integers(0, len(a), size=(n_boot, len(a)))
+    rs = []
+    for row in idx:
+        x, y = a[row], b[row]
+        if x.std() > 1e-8 and y.std() > 1e-8:
+            rs.append(np.corrcoef(x, y)[0, 1])
+    if not rs:
+        return float("nan"), float("nan")
+    return float(np.percentile(rs, 2.5)), float(np.percentile(rs, 97.5))
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--checkpoint", type=Path,
                     default=ROOT / "runs" / "sanity_3piece_run" / "best.pt")
     ap.add_argument("--ridge", type=float, default=1.0)
+    ap.add_argument("--seed", type=int, default=0,
+                    help="GrooveDataset picks a random window per clip per call, "
+                         "so without this the probe is not reproducible and small "
+                         "correlations move between runs of the same checkpoint")
     args = ap.parse_args(argv)
+    np.random.seed(args.seed)
+    torch.manual_seed(args.seed)
     if not args.checkpoint.exists():
         raise SystemExit(f"no checkpoint at {args.checkpoint}")
 
@@ -105,8 +146,9 @@ def main(argv=None):
 
 def _table(kit, D, M, V, Y, model, thresh):
     print(f"{'class':<12}{'n steps':>9}{'target sd':>11}"
-          f"{'drive r':>10}{'motor r':>10}{'head r':>9}")
-    print("-" * 61)
+          f"{'drive r':>10}{'motor r':>10}{'head r':>9}"
+          f"{'  head 95% CI':>16}")
+    print("-" * 77)
     for c, name in enumerate(kit.classes):
         hit = Y[:, :, c] > thresh
         if hit.sum() < 50:
@@ -115,14 +157,24 @@ def _table(kit, D, M, V, Y, model, thresh):
         target = V[:, :, c][hit].astype(np.float32)
         dr, _ = ridge_r(D[hit].astype(np.float32), target)
         mr, _ = ridge_r(M[hit].astype(np.float32), target)
-        hr = float("nan")
+        hr, lo, hi = float("nan"), float("nan"), float("nan")
         if model.decoder.has_velocity:
             with torch.no_grad():
                 head = model.decoder.velocity(torch.from_numpy(M))[:, :, c].numpy()[hit]
-            hr = (float(np.corrcoef(head, target)[0, 1])
-                  if head.std() > 1e-8 else 0.0)
+            # the same held-out rows the probes were scored on, or the head
+            # gets an easier question than its own upper bound
+            te = test_slice(len(target))
+            h, t_ = head[te], target[te]
+            hr = (float(np.corrcoef(h, t_)[0, 1])
+                  if h.std() > 1e-8 and t_.std() > 1e-8 else 0.0)
+            lo, hi = boot_ci(h, t_)
+        ci = (f"  [{lo:+.2f}, {hi:+.2f}]" if model.decoder.has_velocity
+              and not np.isnan(lo) else "  --")
+        crosses = (model.decoder.has_velocity and not np.isnan(lo)
+                   and lo <= 0.0 <= hi)
         print(f"{name:<12}{int(hit.sum()):>9}{target.std():>11.3f}"
-              f"{dr:>10.3f}{mr:>10.3f}{hr:>9.3f}")
+              f"{dr:>10.3f}{mr:>10.3f}{hr:>9.3f}{ci:>16}"
+              f"{'  (spans 0)' if crosses else ''}")
 
     # How much does the head's own output actually move?
     if not model.decoder.has_velocity:

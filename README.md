@@ -346,46 +346,63 @@ steps. Bounding it through `tanh × max_current` keeps genres separable and
 interpolation smooth; a test pushes the embedding 1000× out of distribution and
 asserts the injected current stays inside its envelope.
 
-### Hit strength does not survive the recurrence
+### What the velocity head can and cannot do
 
-The velocity head landed and its loss falls, but `velocity_r` sits at ~0.05 on
-the 12-epoch sanity run and the head's own output has a standard deviation of
-**0.0205 against a target spread of 0.1886** — it is predicting one constant,
-near the mean, for every hit.
+The head landed, its loss falls, and it does not yet produce dynamics. Two runs
+say different things about why, and the difference is the point.
 
-`scripts/probe_velocity.py` says why, and it is not the head. A ridge probe on
-the encoder drive recovers hit strength weakly but really (kick *r* = 0.31 at
-the onset peak, hat 0.15); the same probe on the **motor pool recovers nothing**
-(−0.08, −0.03, −0.10). Ridge standardises its inputs, so this is not a signal
-that is merely small — it is a signal that is gone.
+**On the synthetic click track** (10k nodes, 12 epochs), hit strength is in the
+encoder drive and gone from the motor pool — a ridge probe recovers kick at
+*r* = 0.31 from the drive and −0.08 from the motor units. `scripts/diagnose.py`
+puts a number on the channel: relative temporal variation is **97.07 at the
+drive and 0.36 at the motor pool**, a 269× compression. The head's output has a
+standard deviation of 0.021 against a target spread of 0.189 — one constant per
+hit.
+
+**On real GMD audio** (`configs/velocity_probe_cpu.yaml`, 256 clips, 12 epochs,
+8-piece kit) that does not hold. Hit strength *does* partially reach the motor
+pool — snare 0.23, tom_low 0.39, crash 0.30 — and the head's spread rises from
+0.021 to 0.087. So the flat statement "a connectome-constrained readout cannot
+say how hard" was an artefact of the synthetic corpus, where every hit is the
+same synthesised sample at a scaled amplitude, and it is withdrawn.
+
+What replaces it is narrower and better evidenced. Per class, on held-out rows,
+with 95% bootstrap intervals:
 
 ```
-                    drive r    motor r    head r
-kick                  0.307     -0.077     0.076
-snare                 0.086     -0.095     0.079
-hat_closed            0.154     -0.026    -0.004
+class         n steps  target sd   drive r   motor r   head r     head 95% CI
+kick              837      0.214    -0.191     0.040   -0.016  [-0.17, +0.14]  spans 0
+snare            1785      0.300     0.221     0.227   -0.098  [-0.19, -0.01]
+hat_closed        905      0.227     0.141    -0.027    0.013  [-0.09, +0.12]  spans 0
+hat_open          225      0.266     0.428     0.052    0.117  [-0.14, +0.31]  spans 0
+tom_low           570      0.221     0.064     0.390   -0.284  [-0.41, -0.14]
+tom_mid           505      0.200     0.115     0.034   -0.140  [-0.29, +0.02]  spans 0
+crash             312      0.194     0.088     0.301    0.473  [+0.33, +0.60]
 ```
 
-`scripts/diagnose.py` puts a number on the channel: relative temporal variation
-is **97.07 at the drive and 0.36 at the motor pool**, a 269× compression. Onset
-detection survives that, because *when* is a threshold crossing and needs almost
-no dynamic range — the same checkpoint scores `|corr(pred, target)|` 0.44 and
-onset F 0.60. *How hard* is a graded quantity, and graded quantities are what a
-269× compression destroys.
+One class is strongly right (crash), two are *significantly backwards* (snare,
+tom_low), and the rest are indistinguishable from nothing. A head reading
+dynamics does not get the sign wrong on two classes. This one has latched onto
+something class-specific — crash is loud and rare, and predicting "crash means
+loud" earns a correlation without hearing a single dynamic — while the motor
+pool visibly carries signal it is not using: tom_low is 0.39 at the motor units
+and −0.28 at the head.
 
-So velocity is not blocked on the head, the loss, or the targets, all of which
-are now in place and tested. It is blocked on the same washout that the
-spectral-radius work addressed for timing, showing up again for amplitude — and
-this time the radius fix does not clear it. Worth stating plainly because it is
-a claim about the architecture, not a bug: **a connectome-constrained readout of
-this subgraph can say when the drummer hits, and cannot say how hard.**
+That makes velocity a decoder and optimisation problem on real data, not an
+architectural limit, and worth pursuing rather than reporting as a result.
 
-Caveats, honestly: one 12-epoch run, 10k-node subgraph, synthetic click track,
-where velocity is a per-hit amplitude the encoder should find easy. The probe is
-in the repo so the same question can be asked of a GMD run at 30k nodes, which
-is the measurement that would settle it.
+**Two measurement traps, both of which caught this analysis first:**
 
----
+- **Never read a pooled velocity correlation.** Training reported ~0.35 pooled
+  across classes while the per-class picture above is incoherent. Crashes are
+  loud and hats are quiet, so pooling rewards a head that has learned nothing
+  but each class's average level. `velocity_r` is now computed within class and
+  averaged; the pooled figure is still printed so the gap stays visible.
+- **`GrooveDataset` picks a random window per clip per call**, so an unseeded
+  probe is not reproducible: hat_open read 0.37, then 0.18, then 0.26 on the
+  *same checkpoint*. `scripts/probe_velocity.py` now seeds its sampling and
+  reports bootstrap intervals, because at these magnitudes a point estimate
+  invites over-reading. Anything whose interval spans zero is not a finding.
 
 ### Bugs that would have produced plausible, wrong numbers
 
@@ -628,12 +645,13 @@ data-path failure.
 
 ## What is not done
 
-- **Velocity is built but does not work, and the reason is not the head.** The
-  head, its loss, its targets and its metrics are in place and tested; hit
-  strength does not reach the motor pool to be read. See
-  [Hit strength does not survive the recurrence](#hit-strength-does-not-survive-the-recurrence).
-  Watch `velocity_r`, never `velocity_mae` alone — a head predicting one
-  constant scores a respectable MAE, because drummers are not that dynamic.
+- **Velocity is built and does not yet produce dynamics.** The head, its loss,
+  its targets and its metrics are in place and tested. On real audio the motor
+  pool carries hit strength that the head is not using — it gets two classes
+  backwards. See
+  [What the velocity head can and cannot do](#what-the-velocity-head-can-and-cannot-do).
+  Watch `velocity_r` within class, never `velocity_mae` alone and never a
+  pooled correlation.
 - **No meaningful trained run.** Needs a GPU and the full corpus. This is the gap
   that matters. The model now learns *something* (see
   [the first run that learns anything](#the-first-run-that-learns-anything)), but
@@ -716,15 +734,17 @@ the loss still falling and onset F flat, which is a model limited by data.
 
 ### Then, in order
 
-- **Decide what to do about velocity.** The head has landed — a second readout,
-  a regression scored only where a hit is, `velocity_weight` in the config,
-  `velocity_mae` / `velocity_r` each epoch — and it went in before the Phase 4
-  arms because it changes the loss. But the probe says the motor pool carries no
-  hit strength to read. Two honest options, in order of cost: run
-  `scripts/probe_velocity.py` on a GMD run at 30k nodes to check the finding
-  holds where it matters, and if it does, either report it as a result about the
-  architecture or widen the velocity readout beyond the motor pool — which
-  weakens the connectome constraint and should be argued for, not slipped in.
+- **Make the velocity head use what the motor pool already carries.** It is
+  reading signal that is there and getting the sign wrong on two classes
+  (tom_low: 0.39 at the motor units, −0.28 at the head), which is a decoder and
+  optimisation problem rather than an architectural one. Things to try, cheapest
+  first: raise `velocity_weight` — at 1.0 the detection BCE dominates and the
+  two heads share a readout scale; drop the sigmoid for a linear head with the
+  target centred, since the sigmoid's gradient is flattest exactly where GMD
+  velocities cluster; and score only near the onset peak rather than across the
+  whole kernel support, which is where the streaming path reads it anyway.
+  Re-run `scripts/probe_velocity.py --seed 0` after each and compare intervals,
+  not point estimates.
 - **Run the real experiment** (needs a GPU):
   `python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5`.
   `--seeds` is not optional: a gap smaller than the across-seed spread is not a
