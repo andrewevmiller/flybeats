@@ -476,8 +476,8 @@ data-path failure.
   that matters. The model now learns *something* (see
   [the first run that learns anything](#the-first-run-that-learns-anything)), but
   64 clips on a 10k-neuron subgraph settles nothing about the connectome.
-- **The radius is calibrated for the 10k tier only.** Re-run
-  `scripts/propagation.py` before training the 30k one.
+- **The radius has been checked on both trained tiers, not all of them.** 10k and
+  30k both land on ρ = 10; re-run `scripts/propagation.py` for any other.
 - **Spiking model** — the rate relaxation converges, so the surrogate-gradient
   LIF version is now unblocked, but unwritten.
 - **v2 modes** — continue, call-and-response, accompany; leg mode; 8-limb kit;
@@ -517,16 +517,22 @@ know where it plateaus.
    python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
    ```
 
-2. **Re-run the radius sweep for the 30k tier.** The 10 was chosen on the
-   10k-node subgraph. A different tier has a different hub structure, so the
-   number does not transfer by assumption:
+2. **Done: the radius transfers to the 30k tier.** It was chosen on the 10k
+   subgraph, and a different tier has a different hub structure, so it was worth
+   checking rather than assuming. `scripts/propagation.py` on the 30k graph
+   (2.94M edges) recommends ρ = 10 as well, with more headroom — 1.7% of
+   unit-steps at the state clip against 3.6% at 10k:
 
-   ```bash
-   python scripts/propagation.py --config configs/v1_8piece.yaml
+   ```
+     radius     hop 0     hop 1     hop 2     hop 3     motor   at clip
+       0.90   0.47742   0.01515   0.00566   0.00281   0.01438      0.0%
+      10.00   0.49843   0.70039   0.80929   0.41622   0.81323      1.7%
+      25.00   0.59288   4.07836   4.35288   3.04419   2.51344      5.7%
    ```
 
-   It prints a recommended radius under a stated rule (motor modulation at least
-   half the JO afferents' own, under 5% of unit-steps at the state clip).
+   Re-run it for any tier not listed here; it prints a recommendation under a
+   stated rule (motor modulation at least half the JO afferents' own, under 5%
+   of unit-steps at the clip).
 
 3. **Watch the saturation end.** ρ = 10 pins 3.6% of unit-steps against
    `state_clip` at initialisation and the trained model's hop-4 population sits
