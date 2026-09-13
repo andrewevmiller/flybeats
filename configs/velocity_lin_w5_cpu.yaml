@@ -1,0 +1,14 @@
+# The composition A'1 and A'2 point at. They fixed different faults:
+# velocity_weight 5.0 stopped the head being outvoted by the detection BCE and
+# cleared every significantly-negative class; the linear head stopped the
+# sigmoid squashing the output and gave much the widest spread yet (sd 0.154
+# against 0.105 and a target of 0.272) -- but left snare significantly
+# backwards, which the weight change had fixed.
+#
+# Neither alone does both, so try both.
+_base_: velocity_probe_cpu.yaml
+name: velocity_lin_w5_cpu
+kit:
+  velocity_activation: linear
+train:
+  velocity_weight: 5.0

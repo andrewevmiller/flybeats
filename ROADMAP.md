@@ -79,6 +79,33 @@ or run-to-run noise; one run with no seeds cannot tell those apart, and it
 needs seeds before it is quoted. And a weight of 5 is the first value tried,
 not a tuned one.
 
+### A′2 result: the linear head fixes a different fault, and fails the gate
+
+Linear head, `velocity_weight` left at 1.0. Head correlation at the onset peak,
+with 95% bootstrap intervals, against the baseline and A′1:
+
+```
+class          baseline                A′1 weight 5.0        A′2 linear head
+snare          -0.098 [-.19,-.01]      +0.062 [-.01,+.13]     -0.138 [-.22,-.06]
+tom_low        -0.284 [-.41,-.14]      +0.306 [+.13,+.45]     +0.433 [+.32,+.54]
+tom_mid        -0.140 [-.29,+.02]      +0.231 [+.09,+.37]     +0.283 [+.13,+.43]
+hat_open       +0.117 spans 0          -0.039 spans 0         +0.172 [+.02,+.29]
+crash          +0.473 [+.33,+.60]      +0.349 [+.17,+.50]     +0.120 spans 0
+head sd        0.084                   0.105                  0.154
+onset F        0.3006                  0.2761                 0.2831
+```
+
+**A′2 fails the gate**: snare is still significantly negative, which A′1 had
+fixed. But it is not a failure to discard, because it is clearly better on the
+axis A′1 barely moved — head spread 0.154 against 0.105, on a target spread of
+0.272, and the strongest tom_low of the three.
+
+So the two fixes address different faults and neither does both. The weight
+change stops the head being outvoted by the detection BCE, which is what
+cleared the negative classes. The linear head stops the sigmoid squashing the
+output, which is what widened the spread. **`velocity_lin_w5_cpu` runs the
+composition**, which is the obvious thing neither experiment alone tested.
+
 **Done when** at least one class's head correlation is significantly positive
 without pushing another negative. Compare bootstrap intervals, never point
 estimates: the same analysis read hat_open as 0.37, then 0.18, then 0.26 on one
