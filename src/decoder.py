@@ -93,6 +93,7 @@ class MotorToDrums(nn.Module):
         motor_side: np.ndarray | None = None,
         bilateral: bool = False,
         velocity_head: bool = True,
+        velocity_activation: str = "sigmoid",
     ):
         super().__init__()
         self.kit = kit
@@ -100,10 +101,16 @@ class MotorToDrums(nn.Module):
         nn.init.normal_(self.readout.weight, std=1.0 / max(n_motor, 1) ** 0.5)
         nn.init.constant_(self.readout.bias, -2.0)   # onsets are sparse; start quiet
 
+        if velocity_activation not in ("sigmoid", "linear"):
+            raise ValueError(f"velocity_activation must be sigmoid or linear, "
+                             f"got {velocity_activation!r}")
+        self.velocity_activation = velocity_activation
         if velocity_head:
             self.vel_readout = nn.Linear(n_motor, kit.n, bias=True)
             nn.init.normal_(self.vel_readout.weight, std=1.0 / max(n_motor, 1) ** 0.5)
-            nn.init.constant_(self.vel_readout.bias, 0.0)   # sigmoid(0): mid velocity
+            # sigmoid(0) and linear 0.5 are both "mid velocity" at init
+            nn.init.constant_(self.vel_readout.bias,
+                              0.0 if velocity_activation == "sigmoid" else 0.5)
         else:
             self.vel_readout = None
 
@@ -137,16 +144,22 @@ class MotorToDrums(nn.Module):
     def velocity(self, rates: torch.Tensor) -> torch.Tensor | None:
         """How hard each class is struck, in 0..1. ``None`` without the head.
 
-        Bounded by a sigmoid because every consumer downstream -- the sample
-        player's velocity layers, MIDI's 1..127 -- wants 0..1 and would have to
-        clamp an unbounded head anyway. Clamping after the fact hides where the
-        model is out of range; a sigmoid makes it representable.
+        ``sigmoid`` bounds the output, because every consumer downstream -- the
+        sample player's velocity layers, MIDI's 1..127 -- wants 0..1 and would
+        have to clamp an unbounded head anyway.
+
+        ``linear`` exists because that argument has a cost the bounded version
+        hides: the sigmoid's gradient is flattest at its extremes, and GMD's
+        velocities cluster in the middle-to-upper range where a head sitting
+        near the mean has least reason to move. A linear head can leave 0..1,
+        and the streaming path already clips it; being visibly out of range is
+        more useful than being squashed into range by a saturating unit.
         """
         if self.vel_readout is None:
             return None
         w = self.vel_readout.weight * self.mask
-        return torch.sigmoid(
-            torch.nn.functional.linear(rates, w, self.vel_readout.bias))
+        out = torch.nn.functional.linear(rates, w, self.vel_readout.bias)
+        return torch.sigmoid(out) if self.velocity_activation == "sigmoid" else out
 
 
 def _hand_of(drum_class: str) -> str:

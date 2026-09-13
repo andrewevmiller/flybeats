@@ -41,7 +41,7 @@ def onset_loss(logits: torch.Tensor, target: torch.Tensor, pos_weight: float) ->
 
 
 def velocity_loss(pred: torch.Tensor, target: torch.Tensor,
-                  onsets: torch.Tensor) -> torch.Tensor:
+                  onsets: torch.Tensor, peak_only: float = 0.0) -> torch.Tensor:
     """How hard, scored only where there is a hit to be that hard.
 
     Weighted by the onset target itself, so a step contributes in proportion to
@@ -50,10 +50,19 @@ def velocity_loss(pred: torch.Tensor, target: torch.Tensor,
     and the head would learn the mean of nothing. The weights are the same
     smoothed plane the BCE sees, so both heads agree on where the hits are.
 
+    ``peak_only`` drops every step whose onset target sits below it, so the
+    head is scored on the frames it is actually read at. The streaming path
+    takes velocity at the picked peak and nowhere else, while this weighting
+    spreads over the kernel's whole +/-3 sigma support -- roughly 25 steps per
+    hit, all carrying the same flat velocity target but wildly different drive.
+    Training across all of them asks the head to be invariant to where in the
+    envelope it is, which is a different and harder task than the one that
+    matters, and averaging is the cheapest way to satisfy it.
+
     Returns 0 for a chunk with no onsets in it at all, which happens on quiet
     intros and would otherwise divide by zero.
     """
-    w = onsets
+    w = onsets if peak_only <= 0.0 else onsets * (onsets >= peak_only)
     denom = w.sum()
     if float(denom) <= 0.0:
         return torch.zeros((), device=pred.device, dtype=pred.dtype)
@@ -183,7 +192,8 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
                 vloss = torch.zeros((), device=loss.device, dtype=loss.dtype)
                 if model.decoder.has_velocity:
                     vloss = velocity_loss(model.decoder.velocity(motor).float(),
-                                          vel_y[:, a:b], y[:, a:b])
+                                          vel_y[:, a:b], y[:, a:b],
+                                          peak_only=tb.get("velocity_peak_only", 0.0))
                     loss = loss + tb.get("velocity_weight", 1.0) * vloss
 
             if train:

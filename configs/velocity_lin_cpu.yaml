@@ -1,0 +1,8 @@
+# Phase A' experiment 2: is the sigmoid the thing holding the head at the mean?
+# Its gradient is flattest at the extremes, and GMD's velocities cluster in the
+# middle-to-upper range where a head sitting near the mean has least reason to
+# move. A linear head can leave 0..1; the streaming path already clips it.
+_base_: velocity_probe_cpu.yaml
+name: velocity_lin_cpu
+kit:
+  velocity_activation: linear

@@ -216,3 +216,47 @@ def test_a_model_without_a_head_still_plays_with_peak_height():
     hits = _drummer(None).push(np.zeros(110 * 4, dtype=np.float32))
     assert len(hits) == 1
     assert hits[0].velocity == pytest.approx((0.9 - 0.3) / 0.7, abs=1e-3)
+
+
+# --- the Phase A' knobs ------------------------------------------------------
+
+def test_a_linear_head_is_allowed_to_leave_the_unit_interval():
+    """The sigmoid's gradient is flattest exactly where GMD's velocities sit,
+    so the bounded head has least reason to move where it matters most. A
+    linear head can overshoot; the streaming path clips it, and being visibly
+    out of range beats being squashed into range."""
+    kit = DrumKit(["kick", "snare"])
+    rates = torch.randn(1, 6, 16, generator=torch.Generator().manual_seed(3)) * 8
+
+    with torch.no_grad():
+        bounded = MotorToDrums(16, kit).velocity(rates)
+        linear = MotorToDrums(16, kit, velocity_activation="linear").velocity(rates)
+
+    assert 0.0 <= float(bounded.min()) and float(bounded.max()) <= 1.0
+    assert float(linear.min()) < 0.0 or float(linear.max()) > 1.0
+
+
+def test_an_unknown_velocity_activation_is_refused():
+    with pytest.raises(ValueError, match="sigmoid or linear"):
+        MotorToDrums(16, DrumKit(["kick"]), velocity_activation="softmax")
+
+
+def test_peak_only_scores_the_step_the_drummer_is_read_at():
+    """The streaming path reads velocity at the picked peak and nowhere else,
+    so an error out on the kernel's skirt must stop counting."""
+    onsets = torch.tensor([[[1.0], [0.6]]])       # one peak step, one skirt step
+    target = torch.zeros(1, 2, 1)
+    pred = torch.tensor([[[0.0], [1.0]]])         # right at the peak, wrong off it
+
+    full = float(T.velocity_loss(pred, target, onsets))
+    peak = float(T.velocity_loss(pred, target, onsets, peak_only=0.95))
+    assert full > 0.3, "the off-peak error should dominate the unrestricted loss"
+    assert peak == pytest.approx(0.0), "peak-only must ignore the skirt entirely"
+
+
+def test_peak_only_off_by_default_keeps_the_old_weighting():
+    onsets = torch.tensor([[[1.0], [0.6]]])
+    target = torch.zeros(1, 2, 1)
+    pred = torch.tensor([[[0.0], [1.0]]])
+    assert float(T.velocity_loss(pred, target, onsets)) == pytest.approx(
+        float(T.velocity_loss(pred, target, onsets, peak_only=0.0)))

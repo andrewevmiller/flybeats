@@ -1,0 +1,9 @@
+# Phase A' experiment 3: score the head only where it is actually read.
+# The streaming path takes velocity at the picked peak; the loss spreads over
+# the kernel's whole support, ~25 steps per hit with one flat target and wildly
+# different drive. That asks for invariance to envelope phase, and averaging is
+# the cheapest way to give it.
+_base_: velocity_probe_cpu.yaml
+name: velocity_peak_cpu
+train:
+  velocity_peak_only: 0.95

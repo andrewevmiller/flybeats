@@ -139,7 +139,9 @@ def load_bundle(path: str | Path, device=None):
     has_vel = any(k.startswith("decoder.vel_readout") for k in b["state"])
     dec = MotorToDrums(n_motor=len(motor), kit=kit, motor_side=b["motor_side"],
                        bilateral=cfg["kit"].get("bilateral", False),
-                       velocity_head=has_vel)
+                       velocity_head=has_vel,
+                       velocity_activation=cfg["kit"].get("velocity_activation",
+                                                          "sigmoid"))
     genre = None
     n_styles = int(b.get("n_styles", 1) or 1)
     if any(k.startswith("genre.") for k in b["state"]):
