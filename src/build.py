@@ -139,6 +139,7 @@ def build_model(cfg: dict, sg: SubGraph, n_styles: int = 1, verified: dict | Non
     dec = MotorToDrums(
         n_motor=len(motor), kit=kit,
         motor_side=sg.side[motor], bilateral=cfg["kit"].get("bilateral", False),
+        velocity_head=cfg["kit"].get("velocity_head", True),
     )
 
     genre = None

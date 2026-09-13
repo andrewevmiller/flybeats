@@ -359,14 +359,21 @@ class FlyBeats(nn.Module):
         self.genre = genre
         self._slider_base: dict[str, torch.Tensor] = {}
 
-    def forward(self, wav, state=None, style_id=None, return_rates=False, substeps: int = 1):
+    def forward(self, wav, state=None, style_id=None, return_rates=False,
+                substeps: int = 1, with_velocity: bool = False):
+        """``with_velocity`` appends the velocity plane (or ``None``) to the
+        tuple. It rides along here rather than being fetched by a second call
+        so that both heads are read from one pass over the recurrence, which is
+        the expensive part; asking for the rates back instead would mean
+        holding every node's activation just to reach the motor slice."""
         drive = self.encoder(wav)
         tonic = self.genre(style_id) if (self.genre is not None and style_id is not None) else None
         rates, state = self.rnn(drive, state=state, tonic=tonic, return_all=return_rates,
                                 substeps=substeps)
         motor = rates[:, :, self.rnn.motor_idx] if return_rates else rates
         logits = self.decoder(motor)
-        return (logits, state, rates) if return_rates else (logits, state)
+        out = (logits, state, rates) if return_rates else (logits, state)
+        return (*out, self.decoder.velocity(motor)) if with_velocity else out
 
     # -- biological sliders -------------------------------------------------
     def set_slider(self, name: str, value: float, roles: dict[str, np.ndarray]) -> None:

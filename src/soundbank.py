@@ -16,11 +16,11 @@ Velocity is a float in 0..1 at this interface, not a MIDI 1..127. The MIDI
 scaling belongs at the MIDI edge; a sample backend converting 1..127 back into
 a gain would be a lossy round trip through a unit it should never have seen.
 
-    One caveat worth stating plainly: the model was trained on binary onset
-    targets, so its velocity is the peak height of the detection, not a learned
-    dynamic. The layers crossfade correctly; what they are crossfading on is
-    confidence. GMD's real MIDI velocities are in the corpus and unused -- see
-    the README's open items.
+    Velocity now comes from the decoder's own velocity head, trained against
+    the drummer's MIDI velocities, so the layers crossfade on dynamics rather
+    than on detection confidence. A model exported before that head existed has
+    no such output and falls back to peak height, which is the old behaviour
+    and reads as a hesitant model playing quietly.
 """
 from __future__ import annotations
 

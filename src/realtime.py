@@ -124,6 +124,8 @@ class StreamingDrummer:
         rates, self.state = self.model.rnn(drive, state=self.state, tonic=self.tonic,
                                            substeps=self.substeps)
         prob = torch.sigmoid(self.model.decoder(rates)).squeeze(0).cpu().numpy()
+        vhat = self.model.decoder.velocity(rates)
+        vhat = None if vhat is None else vhat.squeeze(0).cpu().numpy()
 
         events: list[Trigger] = []
         # The *true* frame duration, not the nominal step_ms. The encoder hop is
@@ -146,10 +148,18 @@ class StreamingDrummer:
                 if (rising and not climbing
                         and (t - self.last_fire[name]) * 1000.0 >= self.refractory_ms[name]):
                     self.last_fire[name] = t
-                    # peak height above the threshold, normalised -- the same
-                    # ramp the MIDI path used, now in the unit every backend wants
-                    vel = float(np.clip((v - self.threshold) / max(1 - self.threshold, 1e-6),
-                                        0.0, 1.0))
+                    if vhat is not None:
+                        # How hard, read at the peak from the head trained on
+                        # the drummer's own MIDI velocities.
+                        vel = float(np.clip(vhat[k, c], 0.0, 1.0))
+                    else:
+                        # No velocity head: a model trained before there was
+                        # one. Fall back to peak height above the threshold,
+                        # normalised -- confidence standing in for dynamics,
+                        # which is what every bundle exported before this
+                        # change contains.
+                        vel = float(np.clip((v - self.threshold) / max(1 - self.threshold, 1e-6),
+                                            0.0, 1.0))
                     events.append(Trigger(cls=name, velocity=vel, t=t,
                                           note=self.kit.notes[c]))
                 self.prev[c] = v

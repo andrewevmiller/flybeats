@@ -185,6 +185,12 @@ def _ramp_drummer(classes, **kw):
         def __init__(self):
             self.i = 0
 
+        def velocity(self, rates):
+            # No velocity head, as a model trained before it existed. The
+            # drummer must fall back to peak height, which is what these
+            # tests measure.
+            return None
+
         def __call__(self, rates):
             k = rates.shape[1]
             vals = ramp[self.i: self.i + k]

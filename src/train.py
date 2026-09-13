@@ -40,6 +40,26 @@ def onset_loss(logits: torch.Tensor, target: torch.Tensor, pos_weight: float) ->
     return F.binary_cross_entropy_with_logits(logits, target, pos_weight=pw)
 
 
+def velocity_loss(pred: torch.Tensor, target: torch.Tensor,
+                  onsets: torch.Tensor) -> torch.Tensor:
+    """How hard, scored only where there is a hit to be that hard.
+
+    Weighted by the onset target itself, so a step contributes in proportion to
+    how much of a hit is there. Steps between hits carry no velocity to predict
+    and must not be scored: unweighted, 98% of the loss would come from silence
+    and the head would learn the mean of nothing. The weights are the same
+    smoothed plane the BCE sees, so both heads agree on where the hits are.
+
+    Returns 0 for a chunk with no onsets in it at all, which happens on quiet
+    intros and would otherwise divide by zero.
+    """
+    w = onsets
+    denom = w.sum()
+    if float(denom) <= 0.0:
+        return torch.zeros((), device=pred.device, dtype=pred.dtype)
+    return ((pred - target).pow(2) * w).sum() / denom
+
+
 def rate_penalty(rates: torch.Tensor, ceiling: float) -> torch.Tensor:
     """Penalise mean activity *above* ``ceiling``. Nothing below it is penalised.
 
@@ -115,7 +135,7 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
     chunk = int(tb.get("tbptt_steps", 150))
     amp = bool(tb.get("bf16", False)) and device.type == "cuda"
     ckpt = bool(tb.get("grad_checkpoint", False)) and train
-    totals = {"loss": 0.0, "bce": 0.0, "rate": 0.0, "n": 0}
+    totals = {"loss": 0.0, "bce": 0.0, "rate": 0.0, "vel": 0.0, "n": 0}
     if "target_rate_hz" in tb:
         raise SystemExit(
             "train.target_rate_hz is gone: it compared a dimensionless softplus "
@@ -124,8 +144,8 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
             "with train.rate_headroom."
         )
 
-    for wav, y, style, _tempo in loader:
-        wav, y = wav.to(device), y.to(device)
+    for wav, y, vel_y, style, _tempo in loader:
+        wav, y, vel_y = wav.to(device), y.to(device), vel_y.to(device)
         style = style.to(device) if (use_genre and model.genre is not None) else None
 
         state = model.rnn.initial_state(wav.shape[0], device)
@@ -160,12 +180,18 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
                 bce = onset_loss(logits.float(), y[:, a:b], tb.get("pos_weight", 8.0))
                 reg = rate_penalty(rates.float(), resolve_rate_ceiling(model, tb, rates))
                 loss = bce + tb.get("rate_weight", 0.1) * reg
+                vloss = torch.zeros((), device=loss.device, dtype=loss.dtype)
+                if model.decoder.has_velocity:
+                    vloss = velocity_loss(model.decoder.velocity(motor).float(),
+                                          vel_y[:, a:b], y[:, a:b])
+                    loss = loss + tb.get("velocity_weight", 1.0) * vloss
 
             if train:
                 (loss / n_total).backward()
             totals["loss"] += float(loss.detach())
             totals["bce"] += float(bce.detach())
             totals["rate"] += float(reg.detach())
+            totals["vel"] += float(vloss.detach())
             n_chunks += 1
 
         if train:
@@ -204,14 +230,27 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
 
     by_thr = {t: [] for t in sweep}
     ba_all, gs_all, dev_all = [], [], []
+    vel_err, vel_pred, vel_ref = [], [], []
 
-    for wav, y, style, tempo in loader:
+    for wav, y, vel_y, style, tempo in loader:
         wav = wav.to(device)
         sid = style.to(device) if (use_genre and model.genre is not None) else None
-        logits, _ = model(wav, style_id=sid)
+        logits, _, vhat = model(wav, style_id=sid, with_velocity=True)
         prob = torch.sigmoid(logits.float()).cpu().numpy()
         ref = y.numpy()
         steps = min(prob.shape[1], ref.shape[1])
+        if vhat is not None:
+            # Score velocity only where a hit is, and weight by how much of one
+            # -- the same weighting the loss uses, so the reported error is the
+            # quantity being optimised rather than a differently-shaped cousin.
+            vp = vhat.float().cpu().numpy()[:, :steps]
+            vt = vel_y.numpy()[:, :steps]
+            w = ref[:, :steps]
+            hit = w > 0.5
+            if hit.any():
+                vel_err.append(float(np.abs(vp - vt)[hit].mean()))
+                vel_pred.append(vp[hit])
+                vel_ref.append(vt[hit])
         for i in range(prob.shape[0]):
             fs = onset_f_sweep(prob[i, :steps], ref[i, :steps], step_ms, sweep, tol)
             for t, f in fs.items():
@@ -231,8 +270,21 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
 
     means = {t: (float(np.mean(v)) if v else 0.0) for t, v in by_thr.items()}
     best_t = max(means, key=means.get)
+    vel_r = float("nan")
+    if vel_pred:
+        a, b = np.concatenate(vel_pred), np.concatenate(vel_ref)
+        # A head that has collapsed to one constant velocity still scores a
+        # respectable MAE, because drummers are not that dynamic. Correlation
+        # is what separates "predicts the mean" from "predicts the dynamics",
+        # so both are reported and this is the one to watch.
+        if a.std() > 1e-6 and b.std() > 1e-6:
+            vel_r = float(np.corrcoef(a, b)[0, 1])
+        else:
+            vel_r = 0.0
     return {
         "onset_f": means[best_t],
+        "velocity_mae": float(np.mean(vel_err)) if vel_err else float("nan"),
+        "velocity_r": vel_r,
         "onset_f_fixed": means[fixed],
         "best_threshold": best_t,
         "beat_align_ms": float(np.mean(ba_all)) if ba_all else float("nan"),
@@ -309,10 +361,16 @@ def main(argv=None) -> int:
         rec = {"epoch": ep, **{f"train_{k}": v for k, v in tr.items()}, **ev,
                "seconds": round(time.time() - t0, 1)}
         history.append(rec)
+        vel = ""
+        if not np.isnan(ev.get("velocity_mae", float("nan"))):
+            # r, not MAE, is the number that says the head learned dynamics:
+            # drummers are not that dynamic, so predicting one constant
+            # velocity scores a respectable MAE and a correlation of zero.
+            vel = (f" vel mae {ev['velocity_mae']:.3f} r {ev['velocity_r']:+.3f}")
         print(f"ep{ep:>3} loss {tr['loss']:.4f} (bce {tr['bce']:.4f}) | "
               f"val onset_F {ev['onset_f']:.4f} @thr {ev['best_threshold']:.2f} "
-              f"(fixed {ev['onset_f_fixed']:.4f}) groove {ev['groove_sim']:.3f} | "
-              f"{rec['seconds']}s")
+              f"(fixed {ev['onset_f_fixed']:.4f}) groove {ev['groove_sim']:.3f}"
+              f"{vel} | {rec['seconds']}s")
 
         if ev["onset_f"] > best:
             best = ev["onset_f"]

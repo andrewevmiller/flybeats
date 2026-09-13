@@ -16,6 +16,24 @@ executed on a Windows machine. Anything not verified either way is marked.
 
 ---
 
+## Two ways in
+
+This guide installs the **build** path: the connectome, the corpus, and
+everything needed to train a model. There is a much smaller **play** path — a
+trained model exports as a self-contained ~10 MB bundle that needs no
+connectome, no corpus and no `data/` directory at all:
+
+```powershell
+pip install -r requirements.txt
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav `
+    --sound-source samples --out drums.wav
+```
+
+That is roughly 1 GB and five minutes. **But no bundle is published yet** — the
+repo ships no `.fb` file, so today the only way to get one is to train it via
+the build path below and run `scripts/export_bundle.py`. Shipping a bundle is a
+release task, not an install step.
+
 ## Contents
 
 1. [Do this part first](#1-do-this-part-first) — what's worth installing now
@@ -39,15 +57,21 @@ executed on a Windows machine. Anything not verified either way is marked.
 
 ## 1. Do this part first
 
-Work is still landing on the training loop and the features, so part of this
-install will be thrown away and part of it will not. The slow half is the half
-that survives.
+Work is still landing on the features, so part of this install will be thrown
+away and part of it will not. The slow half is the half that survives.
+
+> **Changed since this guide was written.** The three faults that had the model
+> converging to a constant predictor are fixed — the rate regulariser, the
+> encoder's DC collapse, and a global gain losing 28× at the first synapse — and
+> a CPU run now beats the best constant predictor. A velocity head has landed
+> since, so the decoder's velocity is trained dynamics rather than detection
+> confidence. What is still in flight is below.
 
 **Stable — nothing pending touches these. Do them now.**
 
 | step | why it survives |
 |---|---|
-| Python, venv, `pip install` | The two known fixes are in `src/train.py` (the rate regulariser) and `src/encoder.py` (the DC collapse). Neither adds a dependency. Later work can *add* to `requirements.txt`, and re-running the same command picks that up. |
+| Python, venv, `pip install` | The dependency set has held across every change so far. Later work can *add* to `requirements.txt`, and re-running the same command picks that up. |
 | `scripts/fetch_data.py` | MaleCNS v1.0 is a frozen public release. 1.11 GB, downloaded once, never invalidated by anything in this repo. |
 | `scripts/fetch_egmd.py` | Magenta GMD `groove-v1.0.0` is likewise frozen, and the README pins the corpus to GMD rather than E-GMD. 5.11 GB, once. |
 | `scripts/verify_types.py` | The Phase 0 gate. Its output is already committed to the repo and regenerating it takes 4 seconds, so it costs nothing either way. |
@@ -57,9 +81,9 @@ that survives.
 | step | what invalidates it | cost to redo |
 |---|---|---|
 | `data/cache/subgraph*.npz` | The Phase 1 to-do is to *replace the pathway-strength trim* with a path-based criterion, which changes which neurons the trim selects. | 8 s |
-| anything in `runs/` | Both pending fixes change what the model converges to, so every checkpoint made before them is a constant predictor. | minutes |
-| edits to `configs/*.yaml` | `target_rate_hz` and the rate term are exactly what is being reworked. | — |
-| `sounddevice` / `mido` / `python-rtmidi` | Commented out of `requirements.txt`, the only install here that can need a C++ compiler, and useless until there is a checkpoint worth playing back. | — |
+| anything in `runs/` | `runs/` is gitignored, so a checkpoint is not durable regardless — **export a bundle or lose it**. The velocity head also changed the loss, so anything trained before it is not comparable. | minutes to hours |
+| edits to `configs/*.yaml` | The loss keys are still moving; `velocity_weight` is the newest. | — |
+| `sounddevice` / `mido` / `python-rtmidi` | Commented out of `requirements.txt`, the only install here that can need a C++ compiler, and needed only for *live* input — the offline render and the MIDI file path work without them. | — |
 
 Steps 3 through 10 below cover the stable half plus a one-off proof that the
 pipeline runs. Steps 11 and 12 are optional.
@@ -436,7 +460,7 @@ both rebuild from what remains.
 
 ---
 
-## 16. When the training fixes land
+## 16. Keeping up with the repo
 
 ```powershell
 cd C:\dev\flybeats
@@ -449,7 +473,16 @@ python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
 
 No re-downloading: `data\raw\` and `data\egmd\` are frozen public datasets.
 
-Read [Picking this up again](README.md#picking-this-up-again) first. The model
-converges to a constant predictor today, and `scripts/diagnose.py` is how you
-tell whether that has been fixed — watch for `gain over constant` turning
-positive and `|corr(pred, target)|` rising off ~0.03.
+Read [Picking this up again](README.md#picking-this-up-again) first, and
+**export a bundle from any run worth keeping** — `runs/` is gitignored, so a
+bundle is the only durable form a trained model has:
+
+```powershell
+python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
+```
+
+`scripts/diagnose.py` is how you tell a model that is learning from one that is
+not: watch `gain over constant` staying positive and `|corr(pred, target)|`
+well off ~0.03. Per-epoch, `velocity_r` is the one to watch for the velocity
+head — a head that has collapsed to a single constant velocity still scores a
+respectable MAE, because drummers are not that dynamic.

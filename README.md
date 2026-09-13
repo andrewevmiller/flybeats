@@ -74,7 +74,7 @@ python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
 ```
 
 Installing on a Windows laptop — every step with its disk, RAM and wall time,
-which parts are worth doing before the training fixes land, and a
+which parts of the install survive the work still in flight, and a
 troubleshooting table — is in [SETUP.md](SETUP.md).
 
 ---
@@ -346,6 +346,47 @@ steps. Bounding it through `tanh × max_current` keeps genres separable and
 interpolation smooth; a test pushes the embedding 1000× out of distribution and
 asserts the injected current stays inside its envelope.
 
+### Hit strength does not survive the recurrence
+
+The velocity head landed and its loss falls, but `velocity_r` sits at ~0.05 on
+the 12-epoch sanity run and the head's own output has a standard deviation of
+**0.0205 against a target spread of 0.1886** — it is predicting one constant,
+near the mean, for every hit.
+
+`scripts/probe_velocity.py` says why, and it is not the head. A ridge probe on
+the encoder drive recovers hit strength weakly but really (kick *r* = 0.31 at
+the onset peak, hat 0.15); the same probe on the **motor pool recovers nothing**
+(−0.08, −0.03, −0.10). Ridge standardises its inputs, so this is not a signal
+that is merely small — it is a signal that is gone.
+
+```
+                    drive r    motor r    head r
+kick                  0.307     -0.077     0.076
+snare                 0.086     -0.095     0.079
+hat_closed            0.154     -0.026    -0.004
+```
+
+`scripts/diagnose.py` puts a number on the channel: relative temporal variation
+is **97.07 at the drive and 0.36 at the motor pool**, a 269× compression. Onset
+detection survives that, because *when* is a threshold crossing and needs almost
+no dynamic range — the same checkpoint scores `|corr(pred, target)|` 0.44 and
+onset F 0.60. *How hard* is a graded quantity, and graded quantities are what a
+269× compression destroys.
+
+So velocity is not blocked on the head, the loss, or the targets, all of which
+are now in place and tested. It is blocked on the same washout that the
+spectral-radius work addressed for timing, showing up again for amplitude — and
+this time the radius fix does not clear it. Worth stating plainly because it is
+a claim about the architecture, not a bug: **a connectome-constrained readout of
+this subgraph can say when the drummer hits, and cannot say how hard.**
+
+Caveats, honestly: one 12-epoch run, 10k-node subgraph, synthetic click track,
+where velocity is a per-hit amplitude the encoder should find easy. The probe is
+in the repo so the same question can be asked of a GMD run at 30k nodes, which
+is the measurement that would settle it.
+
+---
+
 ### Bugs that would have produced plausible, wrong numbers
 
 Most of the work in this session was finding these. Each one is the kind that
@@ -503,11 +544,13 @@ to be an ordinary outcome rather than an error.
 it from pitch-enveloped sines and filtered noise. It is not a good kit. It is
 tiny, unambiguously ours to ship, and it exercises every path the player has.
 
-**One caveat.** The model was trained on binary onset targets, so its velocity
-is the height of the detection peak, not a learned dynamic — the layers
-crossfade correctly, but what they crossfade on is confidence. GMD's real MIDI
-velocities are in the corpus and currently discarded; see
-[What is not done](#what-is-not-done).
+**What the layers crossfade on.** Velocity comes from the decoder's velocity
+head, a second readout over the same motor pool trained against the drummer's
+own MIDI velocities — separate from the detection head, and wearing the same
+hemisphere mask, so a hit's strength comes from the hemisphere that produced
+the hit. Until it existed the layers crossfaded on the height of the detection
+peak, which meant a merely confident model played loudly. A bundle exported
+before the head still loads and still falls back to that.
 
 ---
 
@@ -585,10 +628,12 @@ data-path failure.
 
 ## What is not done
 
-- **Velocity is not learned.** The decoder's velocity is detection confidence,
-  not dynamics: targets are binary onsets and GMD's MIDI velocities are dropped
-  when events are built. A per-class velocity head would fix it, and should land
-  *before* the Phase 4 arms run rather than after, since it changes the loss.
+- **Velocity is built but does not work, and the reason is not the head.** The
+  head, its loss, its targets and its metrics are in place and tested; hit
+  strength does not reach the motor pool to be read. See
+  [Hit strength does not survive the recurrence](#hit-strength-does-not-survive-the-recurrence).
+  Watch `velocity_r`, never `velocity_mae` alone — a head predicting one
+  constant scores a respectable MAE, because drummers are not that dynamic.
 - **No meaningful trained run.** Needs a GPU and the full corpus. This is the gap
   that matters. The model now learns *something* (see
   [the first run that learns anything](#the-first-run-that-learns-anything)), but
@@ -641,7 +686,7 @@ python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
 
 What to expect, honestly: a busy, snare-heavy performance that follows the
 music's energy rather than its groove. The model is undertrained (see below),
-and its velocity is detection confidence rather than dynamics. The mechanism is
+and its velocity head has only been trained at sanity scale. The mechanism is
 what has been verified end to end; the musicality has not.
 
 `--render` is the robust path — it needs no audio device. Live input
@@ -671,12 +716,15 @@ the loss still falling and onset F flat, which is a model limited by data.
 
 ### Then, in order
 
-- **The velocity head**, before anything expensive. Targets are binary onsets and
-  GMD's real MIDI velocities are discarded when events are built, so the
-  decoder's velocity is the height of a detection peak. A per-class velocity
-  regression fixes it and makes the sound layer's velocity crossfade mean
-  something. It changes the loss, so it must land *before* the Phase 4 arms run
-  or they get redone.
+- **Decide what to do about velocity.** The head has landed — a second readout,
+  a regression scored only where a hit is, `velocity_weight` in the config,
+  `velocity_mae` / `velocity_r` each epoch — and it went in before the Phase 4
+  arms because it changes the loss. But the probe says the motor pool carries no
+  hit strength to read. Two honest options, in order of cost: run
+  `scripts/probe_velocity.py` on a GMD run at 30k nodes to check the finding
+  holds where it matters, and if it does, either report it as a result about the
+  architecture or widen the velocity readout beyond the motor pool — which
+  weakens the connectome constraint and should be argued for, not slipped in.
 - **Run the real experiment** (needs a GPU):
   `python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5`.
   `--seeds` is not optional: a gap smaller than the across-seed spread is not a

@@ -116,6 +116,11 @@ def test_streaming_timestamps_land_on_the_finer_grid():
         def __init__(self, pattern):
             self.pattern, self.i = pattern, 0
 
+        def velocity(self, rates):
+            # No velocity head: this test is about where hits land in time,
+            # so the drummer should use the peak-height fallback.
+            return None
+
         def __call__(self, rates):
             n = rates.shape[1]
             vals = self.pattern[self.i: self.i + n]

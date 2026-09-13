@@ -149,9 +149,10 @@ def test_feel_report_measures_a_deliberate_lag():
 def test_synthetic_dataset_shapes_line_up():
     ds = SyntheticDrums(["kick", "snare", "hat_closed"], n_clips=4, seconds=2.0,
                         sample_rate=22050, step_ms=5.0)
-    wav, y, style, tempo = ds[0]
+    wav, y, vel, style, tempo = ds[0]
     assert wav.shape[0] == 44100
     assert y.shape == (400, 3)
+    assert vel.shape == y.shape
     assert y.max() > 0.5, "targets must contain onsets"
     assert 0 <= int(style) < 4 and float(tempo) > 0
 
@@ -217,6 +218,12 @@ def test_streaming_peak_state_survives_block_boundaries():
     class FakeDecoder:
         def __init__(self):
             self.i = 0
+
+        def velocity(self, rates):
+            # No velocity head, as a model trained before it existed. The
+            # drummer must fall back to peak height, which is what these
+            # tests measure.
+            return None
 
         def __call__(self, rates):
             n = rates.shape[1]
