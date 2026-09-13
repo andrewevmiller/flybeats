@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 import time
 from collections import deque
+from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -27,18 +28,45 @@ import torch
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@dataclass(frozen=True)
+class Trigger:
+    """One drum hit: what, how hard, and *when*.
+
+    ``velocity`` is 0..1 here, not MIDI's 1..127 -- the MIDI scaling belongs at
+    the MIDI edge, and a sample bank converting 1..127 back into a gain would be
+    a lossy round trip through a unit it should never see. ``note`` rides along
+    so MidiBank need not look it up again.
+
+    ``t`` is seconds from the start of the stream, at step resolution. It used
+    to be the enclosing audio block's start time, which quantised every hit to
+    the block (20 ms) in a model whose whole claim is timing.
+    """
+
+    cls: str
+    velocity: float
+    t: float
+    note: int
+
+
 class StreamingDrummer:
     """Stateful block-wise inference with per-class refractory gating."""
 
     def __init__(self, model, kit, sample_rate: int, step_ms: float,
                  threshold: float = 0.3, refractory_ms: float = 50.0,
+                 class_refractory_ms: dict[str, float] | None = None,
                  device: torch.device | None = None):
         self.model = model.eval()
         self.kit = kit
         self.sample_rate = sample_rate
         self.step_ms = step_ms
         self.threshold = threshold
-        self.refractory_steps = max(1, int(refractory_ms / step_ms))
+        # Per class and in milliseconds, not one count of steps. Per class
+        # because that is what "hats flutter while the kick stays human" is;
+        # in milliseconds because once the core sub-steps at a rate that varies
+        # with the music, a refractory measured in steps no longer names a
+        # fixed span of time.
+        self.refractory_ms = {c: float((class_refractory_ms or {}).get(c, refractory_ms))
+                              for c in kit.classes}
         self.device = device or torch.device("cpu")
 
         self.hop = model.encoder.hop
@@ -49,7 +77,7 @@ class StreamingDrummer:
 
         self.state = None
         self.step = 0
-        self.last_fire = {c: -10_000 for c in kit.classes}
+        self.last_fire = {c: -1e9 for c in kit.classes}     # seconds
         self.prev = np.zeros(kit.n, dtype=np.float32)
         self.tonic = None
 
@@ -62,8 +90,8 @@ class StreamingDrummer:
             self.tonic = self.model.genre(torch.tensor([style_id], device=self.device))
 
     @torch.no_grad()
-    def push(self, block: np.ndarray) -> list[tuple[int, float, str]]:
-        """Feed one audio block; return ``(midi_note, velocity, class)`` triggers."""
+    def push(self, block: np.ndarray) -> list[Trigger]:
+        """Feed one audio block; return the hits it produced."""
         ctx = np.fromiter(self.context, dtype=np.float32, count=len(self.context))
         self.context.extend(block.astype(np.float32).tolist())
 
@@ -81,9 +109,15 @@ class StreamingDrummer:
         rates, self.state = self.model.rnn(drive, state=self.state, tonic=self.tonic)
         prob = torch.sigmoid(self.model.decoder(rates)).squeeze(0).cpu().numpy()
 
-        events = []
+        events: list[Trigger] = []
+        # The *true* frame duration, not the nominal step_ms. The encoder hop is
+        # a whole number of samples -- 110 at 22.05 kHz, which is 4.9887 ms, not
+        # 5 -- so a clock built from step_ms drifts 0.23% against the audio it is
+        # supposed to be locked to: 9 ms over a four-second clip, 2.3 s over an
+        # album side.
+        span = self.hop / self.sample_rate
         for k in range(prob.shape[0]):
-            step = self.step + k
+            t = (self.step + k) * span
             for c, name in enumerate(self.kit.classes):
                 v = float(prob[k, c])
                 rising = v >= self.threshold and v > self.prev[c]
@@ -93,11 +127,14 @@ class StreamingDrummer:
                 # is why prev must be updated on every path through this loop.
                 climbing = k + 1 < prob.shape[0] and prob[k + 1, c] > v
                 if (rising and not climbing
-                        and step - self.last_fire[name] >= self.refractory_steps):
-                    self.last_fire[name] = step
-                    vel = int(np.clip(40 + 87 * (v - self.threshold) / max(1 - self.threshold, 1e-6),
-                                      1, 127))
-                    events.append((self.kit.notes[c], vel, name))
+                        and (t - self.last_fire[name]) * 1000.0 >= self.refractory_ms[name]):
+                    self.last_fire[name] = t
+                    # peak height above the threshold, normalised -- the same
+                    # ramp the MIDI path used, now in the unit every backend wants
+                    vel = float(np.clip((v - self.threshold) / max(1 - self.threshold, 1e-6),
+                                        0.0, 1.0))
+                    events.append(Trigger(cls=name, velocity=vel, t=t,
+                                          note=self.kit.notes[c]))
                 self.prev[c] = v
         self.step += prob.shape[0]
         return events
@@ -106,7 +143,7 @@ class StreamingDrummer:
         self.state = None
         self.step = 0
         self.prev[:] = 0
-        self.last_fire = {c: -10_000 for c in self.kit.classes}
+        self.last_fire = {c: -1e9 for c in self.kit.classes}
 
 
 def benchmark(model, kit, cfg, block_ms: float = 20.0, n_blocks: int = 50) -> dict:
@@ -156,15 +193,16 @@ def run_live(model, kit, cfg, style: int | None = None, block_ms: float = 20.0,
     drummer = drummer_for(model, kit, cfg, threshold)
     drummer.set_style(style)
 
+    from soundbank import MidiBank
     port = mido.open_output(midi_port) if midi_port else mido.open_output()
+    bank = MidiBank(kit, port=port)
     print(f"MIDI -> {port.name}; listening at {sr} Hz, {block_ms} ms blocks. Ctrl-C to stop.")
 
     def callback(indata, frames, time_info, status):
         if status:
             print(status)
-        for note, vel, _ in drummer.push(indata[:, 0]):
-            port.send(mido.Message("note_on", channel=9, note=note, velocity=vel))
-            port.send(mido.Message("note_off", channel=9, note=note, velocity=0))
+        for hit in drummer.push(indata[:, 0]):
+            bank.trigger(hit.cls, hit.velocity, hit.t)
 
     with sd.InputStream(channels=1, samplerate=sr,
                         blocksize=int(sr * block_ms / 1000.0), callback=callback):
@@ -190,6 +228,8 @@ def render_file(model, kit, cfg, wav_path: Path, out_path: Path,
     import soundfile as sf
     import pretty_midi
 
+    from soundbank import MidiBank
+
     sr = cfg["audio"]["sample_rate"]
     audio, in_sr = sf.read(wav_path, dtype="float32", always_2d=True)
     audio = audio.mean(axis=1)
@@ -206,23 +246,21 @@ def render_file(model, kit, cfg, wav_path: Path, out_path: Path,
     block = int(sr * block_ms / 1000.0)
     audible = bank is not None and bank.produces_audio
     out_blocks: list[np.ndarray] = []
-    pm = pretty_midi.PrettyMIDI()
+    # 960 ticks/beat puts the MIDI grid at ~0.5 ms, below the 5 ms step the
+    # model resolves. The default 220 quantises to 2.3 ms, which would throw
+    # away timing the model actually has.
+    pm = pretty_midi.PrettyMIDI(resolution=960)
     inst = pretty_midi.Instrument(program=0, is_drum=True, name="flybeats")
     n = 0
-    thr = drummer.threshold
-
     for a in range(0, len(audio) - block + 1, block):
-        t = a / sr
-        for note, vel, name in drummer.push(audio[a: a + block]):
+        for hit in drummer.push(audio[a: a + block]):
             n += 1
             if audible:
-                # back to 0..1: the bank's unit, not MIDI's. The drummer's
-                # velocity is already a linear map of the peak height above
-                # threshold, so this inverts exactly that.
-                bank.trigger(name, (vel - 40) / 87.0, t)
+                bank.trigger(hit.cls, hit.velocity, hit.t)
             else:
-                inst.notes.append(pretty_midi.Note(velocity=vel, pitch=note,
-                                                   start=t, end=t + 0.05))
+                inst.notes.append(pretty_midi.Note(
+                    velocity=MidiBank.to_midi_velocity(hit.velocity), pitch=hit.note,
+                    start=hit.t, end=hit.t + 0.05))
         if audible:
             out_blocks.append(bank.mix(block))
 

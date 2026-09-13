@@ -8,6 +8,7 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
 import numpy as np
 import torch
 
@@ -235,7 +236,16 @@ def test_streaming_peak_state_survives_block_boundaries():
 
     fired = d.push(block) + d.push(block)
     assert len(fired) == 1, f"expected exactly one peak across the two blocks, got {fired}"
-    assert fired[0][0] == kit.notes[0]
+    assert fired[0].note == kit.notes[0]
+    assert fired[0].cls == "kick"
+    # The hit's own time: the ramp peaks at index 3. It used to be stamped with
+    # the enclosing block's start -- 0.0 here -- which quantised every hit to the
+    # 20 ms block. And the frame is the encoder's true hop, 110/22050 = 4.9887 ms,
+    # not the nominal 5: a clock built from step_ms drifts 0.23% against the audio.
+    assert fired[0].t == pytest.approx(3 * 110 / 22050, abs=1e-9)
+    assert fired[0].t != pytest.approx(3 * 0.005, abs=1e-9), "nominal step_ms drifts"
+
+    assert 0.0 <= fired[0].velocity <= 1.0
 
 
 def test_missing_corpus_raises_instead_of_silently_using_synthetic():

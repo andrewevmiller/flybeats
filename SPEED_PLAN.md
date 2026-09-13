@@ -111,6 +111,20 @@ python src/realtime.py --bundle m.fb --benchmark --speed 4           # can it?
 
 ## Order
 
+0. **Done.** A time-based, per-class peak picker. Both features need it before
+   either can work: with `k` varying per frame a refractory measured in *steps*
+   stops naming a fixed span of time, and "hats flutter while the kick stays
+   human" *is* a per-class refractory. `push` now returns `Trigger(cls,
+   velocity, t, note)` with velocity in 0..1 and `t` the hit's own time.
+
+   Two timing bugs fell out of writing it, both of which were throwing away
+   resolution the model already had: every hit was stamped with its enclosing
+   audio block's start time (20 ms quantisation), and the step clock used the
+   nominal `step_ms` rather than the encoder's true hop -- 110 samples at
+   22.05 kHz is 4.9887 ms, so the drum track drifted 0.23% against the music,
+   9 ms over a four-second clip. Onsets now land on the true step grid within
+   0.25 ms, which is the MIDI tick grid and nothing else.
+
 1. `substeps` in `ConnectomeRNN.forward`, plus the equivalence test against
    `repeat_interleave`. Nothing else moves yet.
 2. `StreamingDrummer` speed: substeps, refractory in steps, event timing.
@@ -133,6 +147,26 @@ python src/realtime.py --bundle m.fb --benchmark --speed 4           # can it?
 * **State stays bounded** at speed 16 (no drift into the clip at either end).
 * **Event timestamps** land on the `step_ms / k` grid and the last event is
   inside the clip.
+
+## Per-class speed, and speed on fills only
+
+These are the two the dial exists to serve, and they compose rather than
+compete: **global sub-stepping generates temporal resolution; per-class rules
+allocate it.** Shortening the hi-hat's refractory cannot invent peaks the
+dynamics never produced, so per-class speed does nothing until the core can run
+fast -- and a fast core without per-class rules is just a buzz roll.
+
+* **Per-class speed** = one core pass at the highest requested `k`, then a
+  per-class refractory (step 0, done) and optionally a per-class threshold.
+  Not one core per class: the connectome is a single coupled network and there
+  is no per-class subnetwork to run at its own rate.
+* **Speed on fills only** = let `k` vary per frame, driven by the pC1
+  population's own activity rather than a static dial. pC1 is already the
+  `drive` slider's target and already means "fill density, intensity", so the
+  signal is there: read its mean rate per frame, map it through a curve to
+  `k(t)`, and the drummer speeds up exactly where it is already playing harder.
+  This is why `t` has to be real time -- with `k` varying, there is no uniform
+  grid to count steps on.
 
 ## Open questions
 

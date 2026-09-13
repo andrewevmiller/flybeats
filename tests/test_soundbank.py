@@ -151,3 +151,75 @@ def test_make_bank_selects_the_backend():
     assert isinstance(make_bank("samples", kit, 22_050, KIT), SampleBank)
     with pytest.raises(ValueError):
         make_bank("gramophone", kit, 22_050)
+
+
+def _ramp_drummer(classes, **kw):
+    """A drummer over a fake model whose output is a fixed per-class ramp."""
+    import torch
+    from decoder import DrumKit
+    from realtime import StreamingDrummer
+
+    n = len(classes)
+    # every class peaks on the same steps, so only the refractory can separate
+    # what fires from what does not
+    ramp = np.array([0.05, 0.9, 0.05, 0.9, 0.05, 0.9, 0.05, 0.9,
+                     0.05, 0.9, 0.05, 0.9, 0.05, 0.9, 0.05, 0.05], dtype=np.float32)
+
+    class FakeEncoder:
+        hop = 110
+        context_samples = 256
+
+        def forward_window(self, wav, start, k):
+            return torch.zeros(1, k, 1)
+
+    class FakeRNN:
+        def initial_state(self, b, device=None, dtype=None):
+            return torch.zeros(b, 1)
+
+        def __call__(self, drive, state=None, tonic=None):
+            return drive, state
+
+    class FakeDecoder:
+        def __init__(self):
+            self.i = 0
+
+        def __call__(self, rates):
+            k = rates.shape[1]
+            vals = ramp[self.i: self.i + k]
+            self.i += k
+            logits = torch.tensor([[float(np.log(v / (1 - v)))] * n for v in vals])
+            return logits.unsqueeze(0)
+
+    class FakeModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.encoder, self.rnn, self.decoder, self.genre = \
+                FakeEncoder(), FakeRNN(), FakeDecoder(), None
+
+    return StreamingDrummer(FakeModel(), DrumKit(list(classes)), 22_050, 5.0,
+                            threshold=0.3, **kw)
+
+
+def test_per_class_refractory_lets_one_class_flutter():
+    """'Hats flutter while the kick stays human' is this, and nothing else:
+    the dynamics offer the peaks, the refractory decides who may use them."""
+    d = _ramp_drummer(["kick", "hat_closed"],
+                      class_refractory_ms={"kick": 60.0, "hat_closed": 5.0})
+    hits = d.push(np.zeros(110 * 16, dtype=np.float32))
+    hats = [h for h in hits if h.cls == "hat_closed"]
+    kicks = [h for h in hits if h.cls == "kick"]
+    assert len(hats) > len(kicks), f"hats {len(hats)} vs kicks {len(kicks)}"
+    assert len(kicks) >= 1, "the slow class must still play"
+
+
+def test_refractory_is_honoured_in_milliseconds():
+    d = _ramp_drummer(["kick"], class_refractory_ms={"kick": 60.0})
+    hits = d.push(np.zeros(110 * 16, dtype=np.float32))
+    gaps = [(b.t - a.t) * 1000.0 for a, b in zip(hits, hits[1:])]
+    assert all(g >= 60.0 - 1e-9 for g in gaps), gaps
+
+
+def test_a_class_without_an_entry_gets_the_default():
+    d = _ramp_drummer(["kick", "snare"], refractory_ms=45.0,
+                      class_refractory_ms={"kick": 5.0})
+    assert d.refractory_ms == {"kick": 5.0, "snare": 45.0}
