@@ -9,9 +9,16 @@ See [PLAN.md](PLAN.md) for the design this implements.
 
 > **Status.** The pipeline is complete and runs end to end: Phase 0 gate through
 > Phase 5 streaming playback, with the full Phase 4 ablation harness. What has
-> **not** happened is a trained run that answers the project's central question —
-> and the model currently converges to a constant predictor, so that run is
-> blocked on two fixes rather than on compute.
+> **not** happened is a trained run that answers the project's central question.
+>
+> The two faults that blocked it are fixed: the rate regulariser no longer
+> rewards silence, and the encoder no longer cancels its own input. Both are
+> verified at their own layer. They were hiding a third, which blocks it now and
+> is not a tuning problem: **at the configured operating point the subgraph does
+> not carry the drive's modulation to the wing motor pool at all** — the signal
+> dies at the first synapse, and no gradient on the connectome's gains can
+> create modulation that never arrives. It is measured, and it has a fix with
+> numbers behind it; see [Where the signal stops](#where-the-signal-stops).
 >
 > Resuming work: **[Picking this up again](#picking-this-up-again)**.
 > Read [Results](#results-and-what-they-are-not) before quoting any number here.
@@ -111,11 +118,11 @@ gru                  724,379    0.2521    0.299      32.6    -13.0
 shortcut              79,499    0.2683    0.446      39.8    -22.0
 ```
 
-### The real-corpus run, and the fault it exposed
+### The real-corpus run, and the faults it exposed
 
 A short run on real GMD audio (10k-neuron subgraph, 8-piece kit, 64 clips,
 6 epochs, CPU) is in `runs/v1_8piece_cpu/`. It is not a result either — it is
-the run that found the problem below.
+the run that found the problems below. These were its numbers:
 
 ```
 ep 0  loss 0.7391   onset F 0.2132   groove 0.275
@@ -123,29 +130,103 @@ ep 5  loss 0.6561   onset F 0.2147   groove 0.259
 ```
 
 **Loss falls; onset F and groove do not.** `scripts/diagnose.py` separates the
-causes by layer, and the answer is a design fault, not undertraining:
+causes by layer, and the answer was a design fault, not undertraining:
 
-- The model is **worse than the best constant predictor** (BCE 0.6588 vs
-  0.6344), and its per-class outputs sit on the closed-form weighted optimum —
-  kick predicts 0.313 against an optimum of 0.316, snare 0.568 against 0.555.
-- Mean `|corr(prediction, target)|` is **0.029**. There is no timing in the
-  output at all.
-- Encoder drive varies strongly (0.47 relative); motor rates barely move
-  (0.0056 relative). The time-varying signal is washed out in the recurrence.
-- **96% of the encoder's `to_jo` weights are negative**, having been initialised
-  non-negative from the JO zone prior, and the drive is now mostly a DC offset.
-  The encoder has learned to suppress its own sensory input.
+- The model was **worse than the best constant predictor** (BCE 0.6588 vs
+  0.6344), and its per-class outputs sat on the closed-form weighted optimum —
+  kick predicting 0.313 against an optimum of 0.316, snare 0.568 against 0.555.
+- Mean `|corr(prediction, target)|` was **0.029**. No timing in the output at all.
+- Encoder drive varied strongly (0.47 relative); motor rates barely moved
+  (0.0056 relative). The time-varying signal was washed out downstream.
+- **96% of the encoder's `to_jo` weights were negative**, having been
+  initialised non-negative from the JO zone prior, leaving the drive as mostly a
+  DC offset. The encoder had learned to suppress its own sensory input.
 
-The root cause is the rate regulariser (`src/train.py:43`). `target_rate_hz: 5.0`
-becomes a target *activation* of `5 × 5ms/1000 = 0.025`, compared against
-`softplus(v − θ)` — a dimensionless activation with no Hz interpretation, sitting
-at 0.74. The units are meaningless and the penalty is a constant ~30× downward
-pressure on all activity, so silencing the sensory input is the cheapest way to
-satisfy it. The decoder is then left with the base rate, and BCE genuinely falls
-as it moves onto the optimal constant.
+Two causes, both fixed:
+
+1. **The rate regulariser rewarded silence.** `target_rate_hz: 5.0` became a
+   target *activation* of `5 × 5ms/1000 = 0.025`, compared against
+   `softplus(v − θ)` — a dimensionless activation with no Hz interpretation,
+   sitting at 0.74. The units were meaningless and the penalty was a constant
+   ~30× downward pressure on all activity, so silencing the sensory input was
+   the cheapest way to satisfy it. It is now **one-sided** — nothing below the
+   ceiling is penalised — and the ceiling is measured from each model's own
+   activity at initialisation, in the units the network actually has. A config
+   still carrying `target_rate_hz` is refused rather than reinterpreted.
+2. **The encoder was fighting its own DC.** `log1p` band energy is a large
+   positive constant plus a small fluctuation, and cancelling that constant with
+   negative weights cancels the signal with it. Features are now standardised
+   per channel by a **fixed affine**, calibrated once on training audio and
+   saved with the weights — fixed rather than per-clip, so the streaming path
+   still matches the training path exactly (`tests/test_encoder.py` pins it).
+   `to_jo` is constrained **non-negative** by projection after each optimiser
+   step: an onset function driving JO afferents should excite them, and the DC
+   offset is the bias's job.
+
+Both worked, at their own layer. Same config, same corpus, same 6 epochs:
+
+| | before | after |
+|---|---|---|
+| relative temporal variation of the drive | 0.47 | **2.91** |
+| `to_jo` weights negative | 96% | **0%** |
+| drive DC / temporal sd | ≫1 | **0.34** |
+
+What they did *not* do is move onset F (0.215 → 0.200) or `|corr(pred, target)|`
+(0.029 → 0.019). That is not the fixes failing. It is the fault they were
+hiding, which the next section is about.
 
 At one epoch the simplest arms lead, which is what one epoch measures. Drawing
 "the rewired graph beats the connectome" from this would be wrong.
+
+### Where the signal stops
+
+The drive now varies (2.91 relative) and the wing motor pool still does not
+(0.0064). "Washed out in the recurrence" is a guess; `scripts/diagnose.py`
+section 6 measures it, as relative temporal variation of the firing rate by hop
+distance from the JO afferents:
+
+```
+hop     neurons  mean rate  sd over time   relative
+---------------------------------------------------
+0           405     1.1403      0.695646    0.55147
+1           376     0.7203      0.014983    0.01945   /28
+2          4969     0.7471      0.007273    0.00609   /3
+3          4209     0.7024      0.003086    0.00390   /2
+4            41     0.7178      0.003523    0.00396   /1
+motor pool sits at hops {2: 62, 3: 4}
+```
+
+**The loss is not spread through the depth of the connectome. It is a 28× drop
+at the first synapse**, after which each hop costs a factor of 2–3. And the
+giveaway is the mean rate: every neuron past hop 0 sits at ~0.72, which is
+`softplus(0)` — they are receiving essentially nothing.
+
+The suspect is not the topology but the operating point. `gain_scale: auto`
+normalises the recurrent operator to `spectral_radius: 0.9`, which is what makes
+the Phase 4 arms comparable — but ρ is carried by a small, strongly connected
+hub subnetwork, so pinning it at 0.9 divides every weight by that hub's gain and
+leaves the typical neuron's synaptic input far below its own resting activation.
+`scripts/propagation.py` sweeps it on an **untrained** model over real audio,
+forward passes only:
+
+```
+  radius     hop 0     hop 1     hop 2     hop 3     motor  mean rate  at clip
+      0.90   0.55564   0.01608   0.00788   0.00497   0.00760     0.7429     0.0%
+      2.00   0.55630   0.03935   0.02794   0.02475   0.01766     1.0477     0.9%
+      5.00   0.55817   0.16779   0.15022   0.11071   0.06244     1.2863     1.7%
+     10.00   0.56059   0.72660   1.06303   0.76519   1.00240     1.8206     3.6%
+     25.00   0.56473   4.13316   5.06504   4.19136   3.84961     3.1754     9.4%
+```
+
+So the architecture *can* carry the signal; at the configured radius it does
+not, and it is not something training can recover — no gradient on a
+connection's gain can create modulation that never arrives. Between ρ 5 and 10
+the motor pool goes from 0.06 to 1.00, at the cost of 3.6% of unit-steps pinned
+against the state clip. ρ = 25 is louder and a tenth saturated, which is the
+same failure from the other side.
+
+This does not touch the Phase 4 fairness argument: every arm is still normalised
+to one common radius, and only the value of that constant changes.
 
 Running the suite properly needs a GPU and the real corpus. `--seeds` matters
 here: `rewired` and `sign_shuffled` each draw *one* random topology, so a single
@@ -224,6 +305,16 @@ trains, evaluates, prints a number, and is silently meaningless.
    Across ablation arms that is not just noisy but unfair. Now swept per model,
    with the chosen threshold reported.
 
+8. **The rate regulariser's units were meaningless** — a target in Hz compared
+   against a dimensionless activation, which made it a constant downward pull on
+   all activity and taught the encoder to go quiet. Detailed
+   [above](#the-real-corpus-run-and-the-faults-it-exposed); it trained, it
+   evaluated, and its loss curve fell the whole way down.
+
+9. **The encoder's own DC gave it a way to cancel its input.** Same section. The
+   symptom was a metric that would not move while everything upstream looked
+   healthy.
+
 Two more, smaller: torch's CSR autograd returns a gradient sized to the
 *deduplicated* values when edges repeat, which the rewiring ablation can
 produce — so the backward is written out explicitly and checked against a dense
@@ -269,10 +360,14 @@ src/metrics.py               onset F, beat alignment, groove similarity
 src/feel.py                  measured swing and timing offsets — never imposed
 src/realtime.py              Phase 5: streaming inference, MIDI out, latency benchmark
 scripts/verify_types.py      Phase 0 gate
+scripts/diagnose.py          why a checkpoint is not learning, separated by layer
+scripts/propagation.py       what the subgraph carries, per hop, before training
 scripts/render_full_graph.py offline pass over all 162k neurons
-tests/                       54 tests: exact gradients, frozen signs and topology,
-                             ablation invariants, encoder window/full equivalence,
-                             checkpointing transparency, streaming peak state
+tests/                       62 tests: exact gradients, frozen signs and topology,
+                             ablation invariants, encoder window/full equivalence
+                             (calibrated and not), the non-negativity constraint,
+                             one-sided rate penalty, hop distances, checkpointing
+                             transparency, streaming peak state
 ```
 
 No module hardcodes a cell-type string. Every population is read from
@@ -319,6 +414,10 @@ data-path failure.
 
 ## What is not done
 
+- **The subgraph does not carry the drive to the motor pool** at the configured
+  spectral radius. Measured, with a fix that has numbers behind it, and it needs
+  one CPU training run to confirm before anything larger is worth starting. See
+  [Where the signal stops](#where-the-signal-stops).
 - **No meaningful trained run.** Needs a GPU. This is the gap that matters.
 - **Spiking model** — the rate relaxation converges, so the surrogate-gradient
   LIF version is now unblocked, but unwritten.
