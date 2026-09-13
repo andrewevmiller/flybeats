@@ -125,11 +125,23 @@ python src/realtime.py --bundle m.fb --benchmark --speed 4           # can it?
    9 ms over a four-second clip. Onsets now land on the true step grid within
    0.25 ms, which is the MIDI tick grid and nothing else.
 
-1. `substeps` in `ConnectomeRNN.forward`, plus the equivalence test against
-   `repeat_interleave`. Nothing else moves yet.
-2. `StreamingDrummer` speed: substeps, refractory in steps, event timing.
-3. `--speed` on the offline render. This is the whole feature for a user who
-   renders files.
+1. **Done.** `substeps` in `ConnectomeRNN.forward`: `k` core updates per encoder
+   frame with the drive built once outside the inner loop. Bit-identical to
+   `repeat_interleave` on the drive at every `k` tested, state included, and
+   `alpha` provably untouched.
+2. **Done.** `StreamingDrummer(speed=...)`, event times on the `hop / (sr * k)`
+   grid, and `--speed` / `--class-speed` on render, live and benchmark.
+
+   **The finding that changed the design:** with the refractory fixed at 50 ms,
+   the dial did nothing — 12.5, 17.5, 14.2, 12.5 hits/s across speeds 1, 2, 4, 8.
+   Every class is capped at 20 hits/s there, so sub-stepping generated peaks the
+   picker immediately discarded. This is the plan's own composition biting:
+   resolution without allocation is invisible. The default refractory now scales
+   with speed (12.5 → 22.2 → 34.0 → 36.5 hits/s, saturating around 8), while a
+   per-class override stays absolute — so `--speed 8 --class-speed kick=1` pins
+   the kick to a human timescale while everything else runs fast. Measured on
+   the same clip: 146 hits uniform against 50 with three classes pinned.
+3. `--speed` on the offline render. **Done** with 2.
 4. `--benchmark --speed` and a live-path guard: measure p95 against the block
    budget, warn and cap rather than glitch.
 5. Fractional speeds: accumulate a phase and run `k` or `k+1` updates per frame,
@@ -156,8 +168,8 @@ allocate it.** Shortening the hi-hat's refractory cannot invent peaks the
 dynamics never produced, so per-class speed does nothing until the core can run
 fast -- and a fast core without per-class rules is just a buzz roll.
 
-* **Per-class speed** = one core pass at the highest requested `k`, then a
-  per-class refractory (step 0, done) and optionally a per-class threshold.
+* **Per-class speed** = one core pass at `--speed`, then a per-class refractory
+  (`--class-speed`, done) and optionally a per-class threshold.
   Not one core per class: the connectome is a single coupled network and there
   is no per-class subnetwork to run at its own rate.
 * **Speed on fills only** = let `k` vary per frame, driven by the pC1

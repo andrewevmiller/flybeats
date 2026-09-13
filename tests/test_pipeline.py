@@ -206,8 +206,10 @@ def test_streaming_peak_state_survives_block_boundaries():
         def initial_state(self, b, device=None, dtype=None):
             return torch.zeros(b, 1)
 
-        def __call__(self, drive, state=None, tonic=None):
-            return drive, state
+        def __call__(self, drive, state=None, tonic=None, substeps=1):
+            # the real core holds the drive across sub-steps, which is exactly
+            # repeat_interleave -- see tests/test_speed.py
+            return torch.repeat_interleave(drive, substeps, dim=1), state
 
     # a single ramp that peaks in the middle, split across two pushes
     ramp = [0.05, 0.2, 0.5, 0.9, 0.6, 0.1, 0.05, 0.05]

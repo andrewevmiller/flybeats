@@ -54,18 +54,33 @@ class StreamingDrummer:
     def __init__(self, model, kit, sample_rate: int, step_ms: float,
                  threshold: float = 0.3, refractory_ms: float = 50.0,
                  class_refractory_ms: dict[str, float] | None = None,
+                 speed: float = 1.0,
                  device: torch.device | None = None):
         self.model = model.eval()
         self.kit = kit
         self.sample_rate = sample_rate
         self.step_ms = step_ms
         self.threshold = threshold
+        # Speed: core updates per encoder frame. Integer for now -- a fractional
+        # dial needs a phase accumulator running k or k+1 per frame, which is
+        # step 5 in SPEED_PLAN.md.
+        self.speed = float(speed)
+        self.substeps = max(1, int(round(self.speed)))
         # Per class and in milliseconds, not one count of steps. Per class
         # because that is what "hats flutter while the kick stays human" is;
         # in milliseconds because once the core sub-steps at a rate that varies
         # with the music, a refractory measured in steps no longer names a
         # fixed span of time.
-        self.refractory_ms = {c: float((class_refractory_ms or {}).get(c, refractory_ms))
+        #
+        # The default scales with speed, and it has to: at a fixed 50 ms every
+        # class is capped at 20 hits/s, so sub-stepping generates peaks the
+        # picker then throws away and the dial does nothing at all. Measured,
+        # the first time: 12.5 -> 17.5 -> 14.2 -> 12.5 hits/s across speeds
+        # 1, 2, 4, 8. Speed sets the resolution *and* the default allocation;
+        # a per-class override is absolute, so naming one pins it back to a
+        # human timescale while everything else runs fast.
+        default_ms = refractory_ms / max(self.speed, 1e-6)
+        self.refractory_ms = {c: float((class_refractory_ms or {}).get(c, default_ms))
                               for c in kit.classes}
         self.device = device or torch.device("cpu")
 
@@ -106,7 +121,8 @@ class StreamingDrummer:
 
         if self.state is None:
             self.state = self.model.rnn.initial_state(1, self.device, drive.dtype)
-        rates, self.state = self.model.rnn(drive, state=self.state, tonic=self.tonic)
+        rates, self.state = self.model.rnn(drive, state=self.state, tonic=self.tonic,
+                                           substeps=self.substeps)
         prob = torch.sigmoid(self.model.decoder(rates)).squeeze(0).cpu().numpy()
 
         events: list[Trigger] = []
@@ -114,8 +130,9 @@ class StreamingDrummer:
         # a whole number of samples -- 110 at 22.05 kHz, which is 4.9887 ms, not
         # 5 -- so a clock built from step_ms drifts 0.23% against the audio it is
         # supposed to be locked to: 9 ms over a four-second clip, 2.3 s over an
-        # album side.
-        span = self.hop / self.sample_rate
+        # album side. Divided by substeps, because that is what speed means:
+        # the same frame, resolved into more of them.
+        span = self.hop / (self.sample_rate * self.substeps)
         for k in range(prob.shape[0]):
             t = (self.step + k) * span
             for c, name in enumerate(self.kit.classes):
@@ -146,10 +163,16 @@ class StreamingDrummer:
         self.last_fire = {c: -1e9 for c in self.kit.classes}
 
 
-def benchmark(model, kit, cfg, block_ms: float = 20.0, n_blocks: int = 50) -> dict:
-    """Measure real inference latency per block on this machine."""
+def benchmark(model, kit, cfg, block_ms: float = 20.0, n_blocks: int = 50,
+              speed: float = 1.0) -> dict:
+    """Measure real inference latency per block on this machine.
+
+    Speed costs linearly: k core updates per frame is k times the recurrence.
+    Measure before trusting a fast setting live -- the offline renderer has no
+    such ceiling.
+    """
     sr = cfg["audio"]["sample_rate"]
-    d = StreamingDrummer(model, kit, sr, cfg["audio"]["step_ms"])
+    d = StreamingDrummer(model, kit, sr, cfg["audio"]["step_ms"], speed=speed)
     block = np.zeros(int(sr * block_ms / 1000.0), dtype=np.float32)
 
     d.push(block)                                   # warm up
@@ -163,6 +186,8 @@ def benchmark(model, kit, cfg, block_ms: float = 20.0, n_blocks: int = 50) -> di
     times = np.array(times)
     return {
         "block_ms": block_ms,
+        "speed": float(speed),
+        "substeps": d.substeps,
         "inference_ms_mean": float(times.mean()),
         "inference_ms_p95": float(np.percentile(times, 95)),
         "realtime_factor": float(block_ms / times.mean()),
@@ -170,7 +195,9 @@ def benchmark(model, kit, cfg, block_ms: float = 20.0, n_blocks: int = 50) -> di
     }
 
 
-def drummer_for(model, kit, cfg, threshold: float | None = None) -> "StreamingDrummer":
+def drummer_for(model, kit, cfg, threshold: float | None = None,
+                speed: float = 1.0,
+                class_refractory_ms: dict[str, float] | None = None) -> "StreamingDrummer":
     """Build the streaming drummer at the threshold this model was scored at.
 
     ``evaluate`` sweeps the peak-picking threshold and reports the one that
@@ -181,16 +208,18 @@ def drummer_for(model, kit, cfg, threshold: float | None = None) -> "StreamingDr
     """
     thr = threshold if threshold is not None else cfg.get("eval", {}).get("threshold", 0.3)
     return StreamingDrummer(model, kit, cfg["audio"]["sample_rate"],
-                            cfg["audio"]["step_ms"], threshold=float(thr))
+                            cfg["audio"]["step_ms"], threshold=float(thr),
+                            speed=speed, class_refractory_ms=class_refractory_ms)
 
 
 def run_live(model, kit, cfg, style: int | None = None, block_ms: float = 20.0,
-             midi_port: str | None = None, threshold: float | None = None) -> None:
+             midi_port: str | None = None, threshold: float | None = None,
+             speed: float = 1.0, class_refractory_ms: dict[str, float] | None = None) -> None:
     import mido
     import sounddevice as sd
 
     sr = cfg["audio"]["sample_rate"]
-    drummer = drummer_for(model, kit, cfg, threshold)
+    drummer = drummer_for(model, kit, cfg, threshold, speed, class_refractory_ms)
     drummer.set_style(style)
 
     from soundbank import MidiBank
@@ -217,7 +246,8 @@ def run_live(model, kit, cfg, style: int | None = None, block_ms: float = 20.0,
 
 def render_file(model, kit, cfg, wav_path: Path, out_path: Path,
                 style: int | None = None, block_ms: float = 20.0,
-                threshold: float | None = None, bank=None) -> int:
+                threshold: float | None = None, bank=None, speed: float = 1.0,
+                class_refractory_ms: dict[str, float] | None = None) -> int:
     """Offline: run a wav through the streaming path and write the result.
 
     Uses the same StreamingDrummer as live playback, so what this renders is
@@ -240,7 +270,7 @@ def render_file(model, kit, cfg, wav_path: Path, out_path: Path,
     if peak > 0:
         audio /= peak
 
-    drummer = drummer_for(model, kit, cfg, threshold)
+    drummer = drummer_for(model, kit, cfg, threshold, speed, class_refractory_ms)
     drummer.set_style(style)
 
     block = int(sr * block_ms / 1000.0)
@@ -314,6 +344,14 @@ def main(argv=None) -> int:
                     help="sample kit for --sound-source samples")
     ap.add_argument("--style", type=int, default=None)
     ap.add_argument("--block-ms", type=float, default=20.0)
+    ap.add_argument("--speed", type=float, default=1.0,
+                    help="core updates per encoder frame: 1 is as trained, 4 is the "
+                         "fly's own wingbeat timescale, above that is faster than the "
+                         "animal. Costs linearly; check --benchmark --speed first")
+    ap.add_argument("--class-speed", nargs="+", default=[], metavar="CLASS=SPEED",
+                    help="per-class speed, e.g. --speed 4 --class-speed kick=1 snare=1 "
+                         "to let the hats flutter while the kick stays human. The core "
+                         "runs at --speed for everyone; this decides who may use it")
     ap.add_argument("--threshold", type=float, default=None,
                     help="peak-picking threshold; default is whatever the model's own "
                          "eval sweep chose (see eval.threshold)")
@@ -355,12 +393,32 @@ def main(argv=None) -> int:
         print(f"lesioned {a.lesion} ({len(roles[a.lesion])} neurons)")
 
     if a.benchmark:
-        r = benchmark(model, kit, cfg, a.block_ms)
+        r = benchmark(model, kit, cfg, a.block_ms, speed=a.speed)
         print(f"block {r['block_ms']:.0f} ms | inference {r['inference_ms_mean']:.1f} ms mean, "
               f"{r['inference_ms_p95']:.1f} ms p95 | {r['realtime_factor']:.2f}x realtime")
         print("within budget" if r["meets_budget"] else
               "OVER BUDGET: lower subgraph.max_nodes or raise audio.step_ms")
         return 0 if r["meets_budget"] else 1
+
+    # A class's own speed is expressed as its refractory: the core runs once, at
+    # --speed, and each class decides how much of that resolution it takes.
+    # Running a core per class is not on the table -- the connectome is a single
+    # coupled network, with no per-class subnetwork to run at its own rate.
+    class_refractory = {}
+    for item in a.class_speed:
+        name, _, value = item.partition("=")
+        if name not in kit.classes:
+            ap.error(f"--class-speed: {name!r} is not in this kit ({', '.join(kit.classes)})")
+        try:
+            cs = float(value)
+        except ValueError:
+            ap.error(f"--class-speed: {item!r} should look like kick=1")
+        if cs <= 0:
+            ap.error(f"--class-speed: {name} needs a positive speed, got {cs}")
+        class_refractory[name] = 50.0 / cs
+    if class_refractory:
+        print("class speeds: " + ", ".join(
+            f"{k} {50.0 / v:g}x ({v:.1f} ms)" for k, v in class_refractory.items()))
 
     if a.render:
         from soundbank import make_bank
@@ -375,11 +433,12 @@ def main(argv=None) -> int:
                       f"-- those classes will be silent")
         out = a.out or (ROOT / "runs" / ("render.wav" if bank is not None else "render.mid"))
         n = render_file(model, kit, cfg, a.render, out, a.style, a.block_ms,
-                        a.threshold, bank)
+                        a.threshold, bank, a.speed, class_refractory or None)
         print(f"wrote {n} hits -> {out}")
         return 0
 
-    run_live(model, kit, cfg, a.style, a.block_ms, a.midi_port, a.threshold)
+    run_live(model, kit, cfg, a.style, a.block_ms, a.midi_port, a.threshold, a.speed,
+             class_refractory or None)
     return 0
 
 

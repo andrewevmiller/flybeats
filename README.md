@@ -452,7 +452,7 @@ scripts/verify_types.py      Phase 0 gate
 scripts/diagnose.py          why a checkpoint is not learning, separated by layer
 scripts/propagation.py       what the subgraph carries, per hop, before training
 scripts/render_full_graph.py offline pass over all 162k neurons
-tests/                       80 tests: exact gradients, frozen signs and topology,
+tests/                       95 tests: exact gradients, frozen signs and topology,
                              ablation invariants, encoder window/full equivalence
                              (calibrated and not), the non-negativity constraint,
                              one-sided rate penalty, hop distances, checkpointing
@@ -504,6 +504,41 @@ is the height of the detection peak, not a learned dynamic — the layers
 crossfade correctly, but what they crossfade on is confidence. GMD's real MIDI
 velocities are in the corpus and currently discarded; see
 [What is not done](#what-is-not-done).
+
+---
+
+## Speed
+
+The dial runs from a human drummer's timescale to the fly's own. It is
+inference-time only — no retraining, and at speed 1 the output is unchanged.
+
+```bash
+python src/realtime.py --bundle m.fb --render song.wav --speed 4
+python src/realtime.py --bundle m.fb --render song.wav --speed 8 --class-speed kick=1
+python src/realtime.py --bundle m.fb --benchmark --speed 4      # can this machine?
+```
+
+Speed is `k` recurrent updates per encoder frame, holding that frame's drive.
+That works because `alpha = step / tau`: going `k` times faster divides *both* by
+`k`, so the discrete update is exactly the one that was trained and only its
+mapping onto wall-clock time moves. Scaling τ instead saturates near 4× and then
+silently stops, because `alpha` clamps at 1.0 and τ at `tau_ms_min`.
+
+| speed | effective τ | |
+|---|---|---|
+| 1 | 20 ms | as trained |
+| 4 | 5 ms | **full fly** — the wingbeat period, and the model's own τ floor |
+| 8+ | ≤2.5 ms | faster than the animal; a musical effect, not a biological one |
+
+**Speed generates resolution; the refractory allocates it.** Both are needed: at
+a fixed 50 ms refractory every class caps at 20 hits/s and the dial does nothing
+at all (measured: 12.5, 17.5, 14.2, 12.5 hits/s across speeds 1–8). The default
+refractory therefore scales with speed — 12.5 → 22.2 → 34.0 → 36.5 hits/s — while
+`--class-speed` is absolute, so naming a class pins it back to a human timescale
+while the rest run fast.
+
+Cost is linear in `k`, so check `--benchmark --speed` before using it live; the
+offline renderer has no such ceiling. See [SPEED_PLAN.md](SPEED_PLAN.md).
 
 ---
 

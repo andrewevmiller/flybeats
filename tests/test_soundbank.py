@@ -176,8 +176,10 @@ def _ramp_drummer(classes, **kw):
         def initial_state(self, b, device=None, dtype=None):
             return torch.zeros(b, 1)
 
-        def __call__(self, drive, state=None, tonic=None):
-            return drive, state
+        def __call__(self, drive, state=None, tonic=None, substeps=1):
+            # the real core holds the drive across sub-steps, which is exactly
+            # repeat_interleave -- see tests/test_speed.py
+            return torch.repeat_interleave(drive, substeps, dim=1), state
 
     class FakeDecoder:
         def __init__(self):
