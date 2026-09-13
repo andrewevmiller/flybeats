@@ -177,13 +177,15 @@ def run_live(model, kit, cfg, style: int | None = None, block_ms: float = 20.0,
             port.close()
 
 
-def render_file(model, kit, cfg, wav_path: Path, out_mid: Path,
+def render_file(model, kit, cfg, wav_path: Path, out_path: Path,
                 style: int | None = None, block_ms: float = 20.0,
-                threshold: float | None = None) -> int:
-    """Offline: run a wav through the streaming path and write a MIDI file.
+                threshold: float | None = None, bank=None) -> int:
+    """Offline: run a wav through the streaming path and write the result.
 
     Uses the same StreamingDrummer as live playback, so what this renders is
     what the live path would have produced -- no separate offline code to drift.
+    With a sample bank, the mixer runs block by block exactly as it would in an
+    audio callback and the output is a wav; otherwise the output is MIDI.
     """
     import soundfile as sf
     import pretty_midi
@@ -202,18 +204,42 @@ def render_file(model, kit, cfg, wav_path: Path, out_mid: Path,
     drummer.set_style(style)
 
     block = int(sr * block_ms / 1000.0)
+    audible = bank is not None and bank.produces_audio
+    out_blocks: list[np.ndarray] = []
     pm = pretty_midi.PrettyMIDI()
     inst = pretty_midi.Instrument(program=0, is_drum=True, name="flybeats")
     n = 0
+    thr = drummer.threshold
+
     for a in range(0, len(audio) - block + 1, block):
         t = a / sr
-        for note, vel, _ in drummer.push(audio[a: a + block]):
-            inst.notes.append(pretty_midi.Note(velocity=vel, pitch=note,
-                                               start=t, end=t + 0.05))
+        for note, vel, name in drummer.push(audio[a: a + block]):
             n += 1
-    pm.instruments.append(inst)
-    out_mid.parent.mkdir(parents=True, exist_ok=True)
-    pm.write(str(out_mid))
+            if audible:
+                # back to 0..1: the bank's unit, not MIDI's. The drummer's
+                # velocity is already a linear map of the peak height above
+                # threshold, so this inverts exactly that.
+                bank.trigger(name, (vel - 40) / 87.0, t)
+            else:
+                inst.notes.append(pretty_midi.Note(velocity=vel, pitch=note,
+                                                   start=t, end=t + 0.05))
+        if audible:
+            out_blocks.append(bank.mix(block))
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    if audible:
+        # let the tails ring out rather than truncating mid-cymbal
+        for _ in range(int(sr * 2.0) // block):
+            out_blocks.append(bank.mix(block))
+        import soundfile as sf
+        mixed = np.concatenate(out_blocks) if out_blocks else np.zeros(1, dtype=np.float32)
+        peak = float(np.abs(mixed).max())
+        if peak > 1.0:
+            mixed = mixed / peak * 0.98        # only on overload; never quietly
+        sf.write(out_path, mixed.astype(np.float32), sr)
+    else:
+        pm.instruments.append(inst)
+        pm.write(str(out_path))
     return n
 
 
@@ -239,8 +265,15 @@ def main(argv=None) -> int:
                     help="benchmark an untrained model straight from a config, to size "
                          "the subgraph against the latency budget before training it")
     ap.add_argument("--benchmark", action="store_true", help="measure inference latency and exit")
-    ap.add_argument("--render", type=Path, help="wav in -> MIDI out, via the streaming path")
-    ap.add_argument("--out", type=Path, default=ROOT / "runs" / "render.mid")
+    ap.add_argument("--render", type=Path, help="wav in -> drums out, via the streaming path")
+    ap.add_argument("--out", type=Path, default=None,
+                    help="default: runs/render.wav with --sound-source samples, "
+                         "runs/render.mid otherwise")
+    ap.add_argument("--sound-source", choices=["midi", "samples"], default="midi",
+                    help="'samples' mixes a kit here and writes/plays audio, so no "
+                         "external sampler is needed")
+    ap.add_argument("--kit-dir", type=Path, default=ROOT / "kits" / "synth",
+                    help="sample kit for --sound-source samples")
     ap.add_argument("--style", type=int, default=None)
     ap.add_argument("--block-ms", type=float, default=20.0)
     ap.add_argument("--threshold", type=float, default=None,
@@ -292,9 +325,20 @@ def main(argv=None) -> int:
         return 0 if r["meets_budget"] else 1
 
     if a.render:
-        n = render_file(model, kit, cfg, a.render, a.out, a.style, a.block_ms,
-                        a.threshold)
-        print(f"wrote {n} notes -> {a.out}")
+        from soundbank import make_bank
+        bank = (make_bank("samples", kit, cfg["audio"]["sample_rate"], a.kit_dir)
+                if a.sound_source == "samples" else None)
+        if bank is not None:
+            missing = bank.validate(kit.classes)
+            if missing:
+                # silence, not a crash: lesion mode already needs "some classes
+                # do not sound" to be an ordinary outcome
+                print(f"warning: {a.kit_dir} has no samples for {', '.join(missing)} "
+                      f"-- those classes will be silent")
+        out = a.out or (ROOT / "runs" / ("render.wav" if bank is not None else "render.mid"))
+        n = render_file(model, kit, cfg, a.render, out, a.style, a.block_ms,
+                        a.threshold, bank)
+        print(f"wrote {n} hits -> {out}")
         return 0
 
     run_live(model, kit, cfg, a.style, a.block_ms, a.midi_port, a.threshold)

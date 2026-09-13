@@ -33,12 +33,23 @@ See [PLAN.md](PLAN.md) for the design this implements.
 ## Quick start
 
 **Just want to run a trained model?** A bundle is self-contained — no
-connectome, no corpus, no `data/` directory at all:
+connectome, no corpus, no `data/` directory, and no sampler or DAW:
 
 ```bash
 pip install -r requirements.txt
+
+# audio in -> drums out, as a wav you can play immediately
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --out drums.wav
+
+# or as MIDI, if you do have a sampler
 python src/realtime.py --bundle flybeats-8piece.fb --render song.wav --out drums.mid
 ```
+
+That works on a laptop with nothing else installed, Windows included: the
+`soundfile` and `sounddevice` wheels carry their own libraries, and the starter
+kit ships in `kits/synth/`. Live input (`--sound-source samples` with no
+`--render`) additionally needs `sounddevice`.
 
 The checkpoint already carries the whole topology, so a bundle is ~10 MB and
 `scripts/export_bundle.py` verifies it reproduces the original model's output
@@ -433,20 +444,66 @@ src/metrics.py               onset F, beat alignment, groove similarity
 src/feel.py                  measured swing and timing offsets — never imposed
 src/realtime.py              Phase 5: streaming inference, MIDI out, latency benchmark
 src/bundle.py                self-contained model files -- no dataset needed to play
+src/soundbank.py             MidiBank / SampleBank behind one interface
+src/voice.py                 voice pool, choke groups, layer crossfade, round-robin
+scripts/make_synth_kit.py    generates the starter kit in kits/synth/
 scripts/export_bundle.py     checkpoint -> bundle, verified against the original
 scripts/verify_types.py      Phase 0 gate
 scripts/diagnose.py          why a checkpoint is not learning, separated by layer
 scripts/propagation.py       what the subgraph carries, per hop, before training
 scripts/render_full_graph.py offline pass over all 162k neurons
-tests/                       62 tests: exact gradients, frozen signs and topology,
+tests/                       80 tests: exact gradients, frozen signs and topology,
                              ablation invariants, encoder window/full equivalence
                              (calibrated and not), the non-negativity constraint,
                              one-sided rate penalty, hop distances, checkpointing
-                             transparency, streaming peak state
+                             transparency, streaming peak state, bundle round
+                             trips, choke groups and velocity layers
 ```
 
 No module hardcodes a cell-type string. Every population is read from
 `data/verified_types.json`.
+
+---
+
+## Making sound
+
+The model decides *what to hit*; a `SoundBank` decides what that sounds like.
+Both are downstream of the same `(class, velocity, time)` tuple, so swapping
+kits needs no retraining, and the backends are interchangeable:
+
+| backend | what it does |
+|---|---|
+| `MidiBank` | notes out to a sampler or DAW — the original Phase 5 path |
+| `SampleBank` | WAV layers mixed here, so the model makes sound on its own |
+
+A kit is a folder per class, with `<layer>_<variant>.wav` files — layer 0 is the
+softest. Velocity crossfades between adjacent layers rather than stepping
+between them (a hard cutoff puts an audible seam mid-crescendo where the sample
+identity jumps), and variants within a layer are drawn from a shuffled bag that
+never repeats immediately, because pure random audibly repeats over a short loop.
+
+```
+kits/synth/
+  manifest.yaml     choke groups, and aliases so a kit using 'chh'/'bd' still maps
+  kick/   0_0.wav 0_1.wav 0_2.wav 1_0.wav ...
+  hat_closed/ ...   both hats are in the 'hihat' choke group
+```
+
+Choke groups live in the sound layer, not the model: one hi-hat cannot be open
+and closed at once, which is a fact about the instrument rather than something
+the connectome should have to learn. A kit missing a class plays everything else
+and says which are silent — lesion mode already needs "some classes do not fire"
+to be an ordinary outcome rather than an error.
+
+`kits/synth/` is generated, not sampled: `scripts/make_synth_kit.py` synthesises
+it from pitch-enveloped sines and filtered noise. It is not a good kit. It is
+tiny, unambiguously ours to ship, and it exercises every path the player has.
+
+**One caveat.** The model was trained on binary onset targets, so its velocity
+is the height of the detection peak, not a learned dynamic — the layers
+crossfade correctly, but what they crossfade on is confidence. GMD's real MIDI
+velocities are in the corpus and currently discarded; see
+[What is not done](#what-is-not-done).
 
 ---
 
@@ -489,6 +546,10 @@ data-path failure.
 
 ## What is not done
 
+- **Velocity is not learned.** The decoder's velocity is detection confidence,
+  not dynamics: targets are binary onsets and GMD's MIDI velocities are dropped
+  when events are built. A per-class velocity head would fix it, and should land
+  *before* the Phase 4 arms run rather than after, since it changes the loss.
 - **No meaningful trained run.** Needs a GPU and the full corpus. This is the gap
   that matters. The model now learns *something* (see
   [the first run that learns anything](#the-first-run-that-learns-anything)), but
