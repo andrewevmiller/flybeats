@@ -1,0 +1,10 @@
+# Baseline (velocity_weight 1.0) at seed 1. Three seeds of the baseline give
+# the across-seed spread of onset F, without which no comparison in Phase A'
+# means anything: A'1 read 0.2761 against this config's 0.3006 at seed 0, and
+# whether that gap is a detection cost or noise is exactly what the spread
+# decides. train.seed reaches weight init and, through the global numpy
+# stream, GrooveDataset's clip windowing too.
+_base_: velocity_probe_cpu.yaml
+name: velocity_probe_cpu_s1
+train:
+  seed: 1

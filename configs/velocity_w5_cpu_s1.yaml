@@ -1,0 +1,6 @@
+# velocity_weight 5.0 at seed 1, so the comparison has spread on both arms
+# rather than a spread on one and a point on the other.
+_base_: velocity_w5_cpu.yaml
+name: velocity_w5_cpu_s1
+train:
+  seed: 1

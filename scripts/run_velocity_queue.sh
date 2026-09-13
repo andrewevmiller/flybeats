@@ -1,44 +1,56 @@
 #!/bin/bash
-# Phase A' queue. Strictly sequential: two training jobs on four cores is the
-# documented 76s -> 1415s collapse, so each run waits for the last.
-# Override the output directory with OUT=... ; defaults to runs/queue.
+# Run training configs strictly in sequence, probing each.
+#
+#   scripts/run_velocity_queue.sh [config-name ...]
+#
+# Sequential is not a preference. Torch takes a thread per core in each
+# process, and two training jobs on four cores put one epoch from 76 s to
+# 1,415 s -- the oversubscribed threads spin rather than progress. The script
+# also waits out any training already in flight rather than racing it, so a
+# second batch can be chained behind a first while that one is still going.
+#
+# Results land in $OUT (default runs/queue): queue.log for progress,
+# probe_<run>.txt per run, SUMMARY.txt at the end. Nothing here is in version
+# control, so commit anything worth keeping.
+set -u
 cd "$(dirname "$0")/.."
-export OMP_NUM_THREADS=4
-Q=${OUT:-runs/queue}
-PY=.venv/bin/python
-mkdir -p "$Q"
+export OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
+OUT=${OUT:-runs/queue}
+PY=${PY:-.venv/bin/python}
+mkdir -p "$OUT"
 
-say() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$Q/queue.log"; }
+RUNS=("$@")
+if [ ${#RUNS[@]} -eq 0 ]; then
+  RUNS=(velocity_w5_cpu velocity_lin_cpu velocity_peak_cpu)
+fi
 
-probe() {   # $1 = run name
+say() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$OUT/queue.log"; }
+
+probe() {
   if [ -f "runs/$1/best.pt" ]; then
-    say "probing $1"
     $PY scripts/probe_velocity.py --checkpoint "runs/$1/best.pt" --seed 0 \
-      > "$Q/probe_$1.txt" 2>&1
-    say "probe $1 -> $Q/probe_$1.txt"
+      > "$OUT/probe_$1.txt" 2>&1
+    say "probed $1"
   else
-    say "no checkpoint for $1, skipping probe"
+    say "no checkpoint for $1; skipping probe"
   fi
 }
 
-# A'1 is already running; wait it out rather than racing it.
 while pgrep -f "src/train.py" >/dev/null; do sleep 60; done
-say "A'1 finished"
-probe velocity_w5_cpu
+say "starting batch: ${RUNS[*]}"
 
-for cfg in velocity_lin_cpu velocity_peak_cpu; do
+for cfg in "${RUNS[@]}"; do
   say "training $cfg"
-  $PY -u src/train.py --config "configs/$cfg.yaml" > "$Q/$cfg.log" 2>&1
-  say "$cfg exit $? (best: $(grep -o 'best val onset F: [0-9.]*' "$Q/$cfg.log" | tail -1))"
+  $PY -u src/train.py --config "configs/$cfg.yaml" > "$OUT/$cfg.log" 2>&1
+  say "$cfg -> $(grep -o 'best val onset F: [0-9.]*' "$OUT/$cfg.log" | tail -1)"
   probe "$cfg"
 done
 
-say "queue done"
 {
-  echo "=== Phase A' summary ==="
-  for r in velocity_probe_cpu velocity_w5_cpu velocity_lin_cpu velocity_peak_cpu; do
-    echo; echo "--- $r ---"
-    sed -n '/peak (y > 0.95)/,$p' "$Q/probe_$r.txt" 2>/dev/null || echo "(no probe)"
+  echo "=== queue summary: ${RUNS[*]} ==="
+  for r in "${RUNS[@]}"; do
+    echo; echo "--- $r  ($(grep -o 'best val onset F: [0-9.]*' "$OUT/$r.log" 2>/dev/null | tail -1)) ---"
+    sed -n '/peak (y > 0.95)/,$p' "$OUT/probe_$r.txt" 2>/dev/null || echo "(no probe)"
   done
-} > "$Q/SUMMARY.txt" 2>&1
-say "summary -> $Q/SUMMARY.txt"
+} > "$OUT/SUMMARY.txt" 2>&1
+say "batch done -> $OUT/SUMMARY.txt"
