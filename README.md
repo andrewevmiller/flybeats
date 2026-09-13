@@ -73,9 +73,9 @@ python src/realtime.py --config configs/v1_8piece.yaml --benchmark
 python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
 ```
 
-Setting this up on a laptop — disk, RAM and time for each step, which parts are
-worth doing before the training fixes land, and the Windows specifics — is in
-[SETUP.md](SETUP.md).
+Installing on a Windows laptop — every step with its disk, RAM and wall time,
+which parts are worth doing before the training fixes land, and a
+troubleshooting table — is in [SETUP.md](SETUP.md).
 
 ---
 
