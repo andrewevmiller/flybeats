@@ -35,6 +35,10 @@ python src/ablations.py --config configs/v1_8piece.yaml --lesion
 python src/realtime.py --config configs/v1_8piece.yaml --benchmark
 ```
 
+Setting this up on a laptop — disk, RAM and time for each step, which parts are
+worth doing before the training fixes land, and the Windows specifics — is in
+[SETUP.md](SETUP.md).
+
 ---
 
 ## Phase 0: what the gate actually found
