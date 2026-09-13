@@ -63,6 +63,10 @@ def main(argv=None) -> int:
                     default=[0.9, 2.0, 5.0, 10.0, 25.0])
     ap.add_argument("--clips", type=int, default=4)
     ap.add_argument("--steps", type=int, default=300)
+    ap.add_argument("--motor-fraction", type=float, default=0.5,
+                    help="required motor modulation as a fraction of the JO afferents' own")
+    ap.add_argument("--max-clipped", type=float, default=0.05,
+                    help="reject a radius that pins more than this share of unit-steps")
     a = ap.parse_args(argv)
 
     cfg = load_config(a.config)
@@ -87,6 +91,7 @@ def main(argv=None) -> int:
     print(f"{'radius':>8}{cols}{'motor':>10}{'mean rate':>11}{'at clip':>9}")
     print("-" * (8 + 10 * len(hops) + 30))
 
+    rows = []
     for rho in a.radii:
         torch.manual_seed(cfg["train"].get("seed", 0))
         np.random.seed(cfg["train"].get("seed", 0))
@@ -104,13 +109,29 @@ def main(argv=None) -> int:
         # Saturation check: the state is clamped at +/- state_clip, and a rate
         # of softplus(clip) means that neuron is pinned and carries nothing.
         at_clip = float((r > np.log1p(np.exp(clip - 1.0))).mean())
-        print(f"{rho:>8.2f}{row}{relative_variation(r, motor):>10.5f}"
-              f"{r.mean():>11.4f}{at_clip:>9.1%}")
+        motor_rel = relative_variation(r, motor)
+        print(f"{rho:>8.2f}{row}{motor_rel:>10.5f}{r.mean():>11.4f}{at_clip:>9.1%}")
+        rows.append((rho, relative_variation(r, dist == 0), motor_rel, at_clip))
 
     print("\nA radius that leaves the motor column near zero cannot be trained out of:"
           "\nno gradient on the connectome's gains can create modulation that never"
           "\narrives. A radius whose 'at clip' column is large is saturated, which"
           "\nis the same failure from the other side.")
+
+    # A stated rule beats an eyeballed one, and it is the smallest radius that
+    # satisfies it -- louder than necessary buys saturation, not signal.
+    ok = [r for r in rows if r[2] >= a.motor_fraction * r[1] and r[3] <= a.max_clipped]
+    rule = (f"motor modulation >= {a.motor_fraction:g}x the JO afferents' own "
+            f"and <= {a.max_clipped:.0%} of unit-steps at the state clip")
+    if ok:
+        rho, sens, m, c = min(ok, key=lambda r: r[0])
+        print(f"\nrecommended  model.spectral_radius: {rho:g}"
+              f"   (motor {m:.3f} vs sensory {sens:.3f}, {c:.1%} at clip)"
+              f"\n  rule: smallest swept radius with {rule}")
+    else:
+        print(f"\nNo swept radius meets the rule ({rule}). Widen --radii, or the"
+              "\nsubgraph cannot carry this drive at any operating point -- which"
+              "\nwould itself be the finding.")
     return 0
 
 
