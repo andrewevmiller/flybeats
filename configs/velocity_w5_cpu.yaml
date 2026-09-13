@@ -1,0 +1,9 @@
+# Phase A' experiment 1: does the velocity head collapse to the mean simply
+# because the detection BCE dominates the gradient? At velocity_weight 1.0 the
+# two heads read the same motor pool through the same scale and the BCE is an
+# order of magnitude larger. Everything else is held at velocity_probe_cpu so
+# the weight is the only variable.
+_base_: velocity_probe_cpu.yaml
+name: velocity_w5_cpu
+train:
+  velocity_weight: 5.0
