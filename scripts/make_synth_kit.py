@@ -104,7 +104,7 @@ aliases:             # so a third-party kit's folder names still map
   kick: [bd, bassdrum, kik]
   snare: [sd, sn]
   hat_closed: [chh, hh, hihat_closed]
-  hat_open: [ohh, hihat_open]
+  hat_open: [ohh, oh, hihat_open]
   crash: [cym, crash1]
 """
 

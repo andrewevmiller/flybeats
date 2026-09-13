@@ -603,76 +603,109 @@ data-path failure.
 ## Picking this up again
 
 Everything is committed and pushed on `claude/resume-previous-session-8r6f7g`;
-62 tests pass; the connectome cache, subgraph cache and GMD corpus are rebuilt by
-the `scripts/fetch_*.py` commands in [Quick start](#quick-start) (they are
-gitignored, not in the repo).
+95 tests pass. The connectome cache, subgraph cache and GMD corpus are rebuilt by
+the `scripts/fetch_*.py` commands in [Quick start](#quick-start) — they are
+gitignored, and so is `runs/`, so **a trained model only survives as an exported
+bundle**. Export one before you lose the machine that trained it.
 
-The three faults the last session's diagnostic found are fixed and verified: the
-rate regulariser is one-sided against a measured ceiling, the encoder is
-standardised and its map constrained non-negative, and `spectral_radius` is 10
-rather than 0.9. `scripts/diagnose.py` now reads *"output varies and tracks the
-target; likely undertrained rather than structurally broken"* — which it had
-never said before.
+### Testing it locally, with nothing installed
 
-**A GPU ablation run is no longer blocked on a known fault.** It is still worth
-one more CPU hour first, because nothing here has been trained long enough to
-know where it plateaus.
+This needs no connectome, no corpus and no sampler — see
+[Quick start](#quick-start) for the one-liner. Worth trying in this order:
 
-### First, on CPU
+```bash
+# 1. does it run at all, and how fast is this machine?
+python src/realtime.py --bundle flybeats-8piece.fb --benchmark
+python src/realtime.py --bundle flybeats-8piece.fb --benchmark --speed 4
 
-1. **Train longer at ρ = 10 and find the plateau.** 25 epochs on 64 clips ends
-   with the loss still falling (0.5658) and onset F flat around 0.29–0.31, which
-   is the signature of a model limited by data, not by epochs. Raise
-   `data.max_files` before raising `train.epochs`.
+# 2. drums over your own audio, as a wav you can just play
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --out drums.wav
 
-   ```bash
-   python src/train.py --config configs/v1_8piece_cpu.yaml --epochs 40
-   python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
-   ```
+# 3. the same performance at the fly's own timescale, and with the kick held back
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --speed 4 --out fly.wav
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --speed 8 --class-speed kick=1 snare=1 --out pocket.wav
 
-2. **Done: the radius transfers to the 30k tier.** It was chosen on the 10k
-   subgraph, and a different tier has a different hub structure, so it was worth
-   checking rather than assuming. `scripts/propagation.py` on the 30k graph
-   (2.94M edges) recommends ρ = 10 as well, with more headroom — 1.7% of
-   unit-steps at the state clip against 3.6% at 10k:
+# 4. the biology, audibly: mute a confirmed population mid-performance
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --lesion pIP10 --out lesioned.wav
+python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --slider drive 1.5 --out busier.wav
+```
 
-   ```
-     radius     hop 0     hop 1     hop 2     hop 3     motor   at clip
-       0.90   0.47742   0.01515   0.00566   0.00281   0.01438      0.0%
-      10.00   0.49843   0.70039   0.80929   0.41622   0.81323      1.7%
-      25.00   0.59288   4.07836   4.35288   3.04419   2.51344      5.7%
-   ```
+What to expect, honestly: a busy, snare-heavy performance that follows the
+music's energy rather than its groove. The model is undertrained (see below),
+and its velocity is detection confidence rather than dynamics. The mechanism is
+what has been verified end to end; the musicality has not.
 
-   Re-run it for any tier not listed here; it prints a recommendation under a
-   stated rule (motor modulation at least half the JO afferents' own, under 5%
-   of unit-steps at the clip).
+`--render` is the robust path — it needs no audio device. Live input
+(`--sound-source samples` with no `--render`) additionally needs `sounddevice`
+and a working input device, and it has had no hardware testing at all.
 
-3. **Watch the saturation end.** ρ = 10 pins 3.6% of unit-steps against
-   `state_clip` at initialisation and the trained model's hop-4 population sits
-   at a mean rate of 4.2. If a longer run pushes that up, the one-sided rate
-   penalty is the knob (`rate_headroom`), and `scripts/diagnose.py` section 6
-   will show it as a *rising* mean rate with falling relative modulation.
+### Where the model actually is
+
+The three faults that blocked training are fixed and verified: the rate
+regulariser is one-sided against a measured ceiling, the encoder is standardised
+with its map constrained non-negative, and `spectral_radius` is 10 rather than
+0.9. `scripts/diagnose.py` reads *"output varies and tracks the target; likely
+undertrained rather than structurally broken"* — which it had never said before.
+
+The last run started here was 256 GMD clips × 20 epochs at ρ = 10 and **did not
+finish**; at epoch 7 its best was onset F 0.305, groove 0.377 (better groove than
+the 64-clip model, on 4× the data). Its numbers are not in the repo. Re-run it:
+
+```bash
+python src/train.py --config configs/v1_8piece_cpu.yaml --epochs 20   # ~2 h on 4 CPU cores
+python scripts/diagnose.py --checkpoint runs/v1_8piece_cpu/best.pt
+python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
+```
+
+Raise `data.max_files` before `train.epochs`: 25 epochs on 64 clips ended with
+the loss still falling and onset F flat, which is a model limited by data.
 
 ### Then, in order
 
+- **The velocity head**, before anything expensive. Targets are binary onsets and
+  GMD's real MIDI velocities are discarded when events are built, so the
+  decoder's velocity is the height of a detection peak. A per-class velocity
+  regression fixes it and makes the sound layer's velocity crossfade mean
+  something. It changes the loss, so it must land *before* the Phase 4 arms run
+  or they get redone.
 - **Run the real experiment** (needs a GPU):
   `python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --seeds 5`.
   `--seeds` is not optional: a gap smaller than the across-seed spread is not a
   result. Every arm is normalised to the same radius, so the comparison is still
-  about topology — but check `propagation.py` for the 30k tier first, or all five
-  arms may sit at an operating point that carries nothing.
+  about topology.
+- **Finish the speed control** — [SPEED_PLAN.md](SPEED_PLAN.md) steps 4–6: a
+  benchmark-based guard on the live path, fractional speeds via a phase
+  accumulator, and the interesting one, driving `k(t)` from pC1's own activity
+  per frame so the drummer speeds up exactly where it is already playing harder.
+- **Finish the sound layer** — [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md) steps 5–8:
+  `hot_swap` is written but untested against a live callback, and
+  `SoundFontBank` and user-kit auto-mapping are not started.
 - **Fix the weakest claim in Phase 1.** 3 hops from JO reaches 154,853 of 162,517
   neurons, so the subgraph is selected by `_trim`, not by anatomy — the code now
   says so plainly, which is the honest half of the fix. The other half is a
   path-based criterion to replace the two-hop heuristic.
 - **Run the render tier** — `scripts/render_full_graph.py` has never been executed
   at 162k nodes.
-- **Deferred:** spiking model (the rate model now does something, so this is
-  genuinely next), v2 modes, leg/8-limb tiers, live playback on real hardware,
-  and the sound bank in [SOUNDBANK_PLAN.md](SOUNDBANK_PLAN.md).
+- **Deferred:** the spiking model (the rate model now does something, so this is
+  genuinely next), v2 modes, leg/8-limb tiers, live playback on real hardware.
 
 ### Things that will bite
 
+- `runs/` is gitignored, so **bundles are the only durable form of a trained
+  model**. `scripts/export_bundle.py` takes seconds; losing a checkpoint costs
+  the 1.1 GB download, the graph build and hours of training.
+- **Never run two training jobs on one small machine.** Torch defaults to a
+  thread per core in each process, and the oversubscribed threads spin rather
+  than progress: one epoch went from 76 s to 1,415 s. Set `OMP_NUM_THREADS`, or
+  run them in sequence.
+- **Live audio has never been run.** There is no audio device in this
+  environment, so the `sounddevice` paths are written and unexercised. The
+  offline render is the tested one.
 - `neuprint.janelia.org` is blocked from this environment; the Phase 0 gate reads
   the flat-connectome feather instead. `--neuprint` is implemented but has never
   been exercised.
