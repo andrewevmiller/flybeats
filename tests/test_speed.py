@@ -110,7 +110,9 @@ def test_streaming_timestamps_land_on_the_finer_grid():
             return torch.zeros(b, 1)
 
         def __call__(self, drive, state=None, tonic=None, substeps=1):
-            return torch.repeat_interleave(drive, substeps, dim=1), state
+            reps = (torch.tensor(substeps) if not isinstance(substeps, int)
+                    else substeps)
+            return torch.repeat_interleave(drive, reps, dim=1), state
 
     class FakeDecoder:
         def __init__(self, pattern):
@@ -146,3 +148,136 @@ def test_streaming_timestamps_land_on_the_finer_grid():
         assert abs(steps - round(steps)) < 1e-9, h.t
     # and inside the audio it came from: 4 frames is ~20 ms
     assert max(h.t for h in hits) < 4 * 110 / 22_050
+
+
+# --- fractional speeds and ramping (SPEED_PLAN steps 5 and 6) --------------
+
+def _sched_drummer(speed, classes=("kick",)):
+    """A drummer over a fake core that just repeats each frame's drive, so the
+    schedule the drummer chose is readable straight off the output length."""
+    from decoder import DrumKit
+    from realtime import StreamingDrummer
+
+    class FakeEncoder:
+        hop = 110
+        context_samples = 256
+
+        def forward_window(self, wav, start, n):
+            return torch.zeros(1, n, 1)
+
+    class FakeRNN:
+        def initial_state(self, b, device=None, dtype=None):
+            return torch.zeros(b, 1)
+
+        def __call__(self, drive, state=None, tonic=None, substeps=1):
+            reps = (torch.tensor(substeps) if not isinstance(substeps, int)
+                    else substeps)
+            return torch.repeat_interleave(drive, reps, dim=1), state
+
+    class FakeDecoder:
+        def __call__(self, rates):
+            n = rates.shape[1]
+            return torch.full((1, n, len(classes)), -4.0)   # never fires
+
+        def velocity(self, rates):
+            return None
+
+    class FakeModel(torch.nn.Module):
+        def __init__(self):
+            super().__init__()
+            self.encoder, self.rnn = FakeEncoder(), FakeRNN()
+            self.decoder, self.genre = FakeDecoder(), None
+
+    return StreamingDrummer(FakeModel(), DrumKit(list(classes)), 22_050, 5.0,
+                            threshold=0.3, speed=speed)
+
+
+def test_a_fractional_speed_alternates_rather_than_rounding():
+    """2.5 is not 2.5 updates on any one frame -- there is no such thing. It is
+    alternating 2 and 3, and the average is what the dial promises."""
+    d = _sched_drummer(2.5)
+    sched = d._schedule(8)
+    assert set(sched) == {2, 3}, sched
+    assert sum(sched) == 20, "eight frames at 2.5 is twenty updates"
+
+
+def test_the_phase_carries_across_blocks():
+    """Reset the phase per block and 2.5 with four frames per block becomes
+    3,2,3,2 every time -- an average of 2.5 by luck of the block size, drifting
+    the moment the block changes. The accumulator has to survive the boundary."""
+    d = _sched_drummer(2.5)
+    blocks = [d._schedule(3) for _ in range(4)]
+    flat = [k for b in blocks for k in b]
+    assert sum(flat) == 30, f"twelve frames at 2.5 is thirty updates, got {sum(flat)}"
+    assert blocks[0] != blocks[1] or blocks[1] != blocks[2], \
+        "identical blocks means the phase reset at the boundary"
+
+
+def test_an_integer_speed_still_gives_every_frame_the_same_k():
+    for speed in (1, 2, 4, 8):
+        d = _sched_drummer(float(speed))
+        assert d._schedule(6) == [speed] * 6
+
+
+def test_timestamps_stay_on_the_frame_grid_when_k_varies():
+    """With k varying there is no uniform grid, but every sub-step must still
+    sit inside its own frame's span, in order, and the frame boundaries must
+    land exactly where the encoder's hop puts them."""
+    d = _sched_drummer(2.5)
+    frame_s = 110 / 22_050
+    sched = d._schedule(4)
+    times = d._step_times(sched)
+
+    assert times == sorted(times), "sub-step times must be monotonic"
+    assert len(times) == sum(sched)
+    i = 0
+    for f, k in enumerate(sched):
+        assert times[i] == pytest.approx(f * frame_s), "frame must start on the hop grid"
+        for j in range(k):
+            lo, hi = f * frame_s, (f + 1) * frame_s
+            assert lo <= times[i] < hi, f"sub-step {j} escaped frame {f}"
+            i += 1
+
+
+def test_a_uniform_speed_reproduces_the_old_uniform_grid_exactly():
+    """The regression that matters: switching to per-frame timing must not move
+    a single event at an integer speed."""
+    for speed in (1, 2, 4):
+        d = _sched_drummer(float(speed))
+        sched = d._schedule(5)
+        times = d._step_times(sched)
+        span = 110 / (22_050 * speed)
+        assert times == pytest.approx([i * span for i in range(len(times))])
+
+
+def test_speed_can_change_between_blocks_without_a_discontinuity():
+    """Ramping: k may change block to block -- the state carries and no
+    parameter jumps -- but time must not go backwards at the seam."""
+    d = _sched_drummer(1.0)
+    t1 = d._step_times(d._schedule(4))
+    d.frame += 4
+    d.speed = 4.0
+    t2 = d._step_times(d._schedule(4))
+
+    assert t2[0] > t1[-1], "time went backwards when the dial moved"
+    frame_s = 110 / 22_050
+    assert t2[0] == pytest.approx(4 * frame_s), "the seam must land on a frame boundary"
+    assert len(t2) == 16 and t2 == sorted(t2)
+
+
+def test_a_uniform_schedule_is_exactly_the_scalar_it_spells_out():
+    """The generalisation must not perturb the scalar path by a single bit."""
+    rnn = _rnn()
+    drive = torch.randn(1, 5, 6, generator=torch.Generator().manual_seed(11))
+    a, va = rnn(drive, substeps=3)
+    b, vb = rnn(drive, substeps=[3] * 5)
+    assert torch.equal(a, b) and torch.equal(va, vb)
+
+
+def test_a_schedule_that_does_not_match_the_frames_is_refused():
+    rnn = _rnn()
+    drive = torch.randn(1, 4, 6, generator=torch.Generator().manual_seed(12))
+    with pytest.raises(ValueError, match="schedule"):
+        rnn(drive, substeps=[2, 2, 2])
+    with pytest.raises(ValueError, match="substeps"):
+        rnn(drive, substeps=[2, 0, 2, 2])

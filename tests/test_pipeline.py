@@ -210,7 +210,9 @@ def test_streaming_peak_state_survives_block_boundaries():
         def __call__(self, drive, state=None, tonic=None, substeps=1):
             # the real core holds the drive across sub-steps, which is exactly
             # repeat_interleave -- see tests/test_speed.py
-            return torch.repeat_interleave(drive, substeps, dim=1), state
+            reps = (torch.tensor(substeps) if not isinstance(substeps, int)
+                    else substeps)
+            return torch.repeat_interleave(drive, reps, dim=1), state
 
     # a single ramp that peaks in the middle, split across two pushes
     ramp = [0.05, 0.2, 0.5, 0.9, 0.6, 0.1, 0.05, 0.05]
@@ -332,5 +334,6 @@ def test_style_vocabulary_is_global_across_splits():
     # every id any split can emit must be inside the embedding built from n_styles
     for ds in (tr, va):
         for i in range(len(ds)):
-            assert 0 <= int(ds[i][2]) < ds.n_styles
+            _wav, _onsets, _vel, style, _tempo = ds[i]
+            assert 0 <= int(style) < ds.n_styles
             break

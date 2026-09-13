@@ -24,6 +24,7 @@ Frozen:    topology, edge signs.
 """
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -234,13 +235,22 @@ class ConnectomeRNN(nn.Module):
         state: torch.Tensor | None = None,
         tonic: torch.Tensor | None = None,   # (B, n_nodes) neuromodulatory bias
         return_all: bool = False,
-        substeps: int = 1,
+        substeps: int | Sequence[int] = 1,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Run the relaxation. Returns ``(motor_rates, final_state)``.
 
-        ``motor_rates`` is ``(B, T * substeps, n_motor)``; with ``return_all`` it
-        is the full ``(B, T * substeps, n_nodes)`` tensor instead (needed by the
-        rate regulariser and by lesion analysis).
+        ``motor_rates`` is ``(B, sum(substeps), n_motor)``; with ``return_all``
+        it is the full ``(B, sum(substeps), n_nodes)`` tensor instead (needed by
+        the rate regulariser and by lesion analysis). For a scalar ``substeps``
+        that is the familiar ``T * substeps``.
+
+        ``substeps`` may be a per-frame schedule rather than one number, which
+        is what makes a *fractional* dial possible: speed 2.5 is not 2.5 updates
+        on any one frame, it is alternating 2 and 3 so the average comes out
+        right. The caller accumulates the phase and hands the schedule down;
+        this loop just runs it. A varying schedule also means the output rows no
+        longer sit on a uniform time grid, so whoever consumes them has to carry
+        real timestamps -- see ``StreamingDrummer.push``.
 
         ``substeps`` is the speed control: run the core ``k`` times per encoder
         frame, holding that frame's drive. It works because ``alpha`` is
@@ -256,10 +266,19 @@ class ConnectomeRNN(nn.Module):
         envelope kernel and its standardisation affine are all tied to
         ``step_ms``. See SPEED_PLAN.md.
         """
-        substeps = int(substeps)
-        if substeps < 1:
-            raise ValueError(f"substeps must be >= 1, got {substeps}")
         b, t, _ = drive.shape
+        if isinstance(substeps, (int, np.integer)):
+            substeps = int(substeps)
+            if substeps < 1:
+                raise ValueError(f"substeps must be >= 1, got {substeps}")
+            schedule = [substeps] * t
+        else:
+            schedule = [int(k) for k in substeps]
+            if len(schedule) != t:
+                raise ValueError(
+                    f"substeps schedule has {len(schedule)} entries for {t} frames")
+            if any(k < 1 for k in schedule):
+                raise ValueError(f"substeps must be >= 1, got {min(schedule)}")
         v = self.initial_state(b, drive.device, drive.dtype) if state is None else state
         w = self.edge_weight()
         alpha = (1.0 / self.tau_steps).clamp(max=1.0)
@@ -274,7 +293,7 @@ class ConnectomeRNN(nn.Module):
                 1, self.sensory_idx,
                 drive[:, k, :].to(v.dtype) * self.cfg.input_scale,
             )
-            for _ in range(substeps):
+            for _ in range(schedule[k]):
                 r = self.rate(v)
                 rec = self.recurrent(w, r)
                 v = v + alpha * (-v + rec + inp + base)

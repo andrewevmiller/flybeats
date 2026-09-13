@@ -142,12 +142,25 @@ python src/realtime.py --bundle m.fb --benchmark --speed 4           # can it?
    the kick to a human timescale while everything else runs fast. Measured on
    the same clip: 146 hits uniform against 50 with three classes pinned.
 3. `--speed` on the offline render. **Done** with 2.
-4. `--benchmark --speed` and a live-path guard: measure p95 against the block
-   budget, warn and cap rather than glitch.
-5. Fractional speeds: accumulate a phase and run `k` or `k+1` updates per frame,
-   so the dial is continuous rather than 1/2/4/8.
-6. Ramping: changing `k` between blocks is safe (state carries, no parameter
-   jump), so a live dial needs no crossfade — but test for clicks anyway.
+4. **Done.** `fit_speed_to_budget` benchmarks the requested dial before the
+   live stream opens, halves it until p95 fits the block, and says so. Live
+   only: an overrunning audio callback drops buffers and clicks rather than
+   degrading gracefully, while the offline renderer has no ceiling and is not
+   capped. Below speed 1 it warns instead of pretending a slower dial helps.
+5. **Done.** Fractional speeds. `ConnectomeRNN.forward` takes a per-frame
+   schedule as well as a scalar, and `StreamingDrummer` accumulates a phase to
+   emit `k` or `k+1` per frame — 2.5 alternates 2 and 3. The phase carries
+   across block boundaries, not just across frames: reset per block, four
+   frames at 2.5 would be 3,2,3,2 every time and the average would drift with
+   the block size.
+
+   **What it forced:** with `k` varying there is no uniform grid, so event
+   times are now built per frame — each frame's sub-steps subdivide that
+   frame's own span — rather than as `step_index * span`. At an integer speed
+   this reproduces the old grid exactly, which is the regression test.
+6. **Done** with 5. Changing the dial between blocks moves no parameter and
+   carries the state, and the seam lands on a frame boundary with time strictly
+   increasing across it. Tested.
 
 ## Tests
 

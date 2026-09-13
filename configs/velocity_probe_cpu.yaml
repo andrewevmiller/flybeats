@@ -1,0 +1,19 @@
+# The run that asks whether hit strength reaches the motor pool on *real*
+# audio. The finding it is testing came from the synthetic click track at 10k
+# nodes, so this changes exactly one variable -- the corpus -- and holds the
+# subgraph tier fixed. Changing node count too would confound the answer and
+# cost roughly triple on CPU.
+#
+#   python src/train.py --config configs/velocity_probe_cpu.yaml
+#   python scripts/probe_velocity.py --checkpoint runs/velocity_probe_cpu/best.pt
+#
+# 256 clips rather than the 64 of v1_8piece_cpu: the README records 25 epochs
+# on 64 clips ending with the loss still falling and onset F flat, which is a
+# model limited by data, and a data-limited model is a poor place to ask
+# whether a signal exists.
+_base_: v1_8piece_cpu.yaml
+name: velocity_probe_cpu
+data:
+  max_files: 256
+train:
+  epochs: 12

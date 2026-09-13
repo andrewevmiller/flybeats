@@ -230,7 +230,15 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
 
     by_thr = {t: [] for t in sweep}
     ba_all, gs_all, dev_all = [], [], []
-    vel_err, vel_pred, vel_ref = [], [], []
+    vel_err = []
+    # Kept per class, not pooled. A drummer's crashes are loud and their hats
+    # are quiet, so pooling every class into one correlation rewards a head
+    # that has learned nothing but each class's average level -- it would score
+    # well while being deaf to dynamics within a class, which is the whole
+    # quantity of interest. Both are reported so the gap between them is
+    # visible.
+    vel_pred: dict[int, list] = {}
+    vel_ref: dict[int, list] = {}
 
     for wav, y, vel_y, style, tempo in loader:
         wav = wav.to(device)
@@ -249,8 +257,11 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
             hit = w > 0.5
             if hit.any():
                 vel_err.append(float(np.abs(vp - vt)[hit].mean()))
-                vel_pred.append(vp[hit])
-                vel_ref.append(vt[hit])
+                for c in range(vp.shape[-1]):
+                    m = hit[..., c]
+                    if m.any():
+                        vel_pred.setdefault(c, []).append(vp[..., c][m])
+                        vel_ref.setdefault(c, []).append(vt[..., c][m])
         for i in range(prob.shape[0]):
             fs = onset_f_sweep(prob[i, :steps], ref[i, :steps], step_ms, sweep, tol)
             for t, f in fs.items():
@@ -270,21 +281,26 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
 
     means = {t: (float(np.mean(v)) if v else 0.0) for t, v in by_thr.items()}
     best_t = max(means, key=means.get)
-    vel_r = float("nan")
+    # A head that has collapsed to one constant velocity still scores a
+    # respectable MAE, because drummers are not that dynamic. Correlation is
+    # what separates "predicts the mean" from "predicts the dynamics", so it is
+    # the number to watch -- within class, for the reason given above.
+    def _r(a, b):
+        return (float(np.corrcoef(a, b)[0, 1])
+                if a.std() > 1e-6 and b.std() > 1e-6 else 0.0)
+
+    vel_r, vel_r_pooled = float("nan"), float("nan")
     if vel_pred:
-        a, b = np.concatenate(vel_pred), np.concatenate(vel_ref)
-        # A head that has collapsed to one constant velocity still scores a
-        # respectable MAE, because drummers are not that dynamic. Correlation
-        # is what separates "predicts the mean" from "predicts the dynamics",
-        # so both are reported and this is the one to watch.
-        if a.std() > 1e-6 and b.std() > 1e-6:
-            vel_r = float(np.corrcoef(a, b)[0, 1])
-        else:
-            vel_r = 0.0
+        per_class = [_r(np.concatenate(vel_pred[c]), np.concatenate(vel_ref[c]))
+                     for c in sorted(vel_pred)]
+        vel_r = float(np.mean(per_class))
+        vel_r_pooled = _r(np.concatenate([np.concatenate(vel_pred[c]) for c in sorted(vel_pred)]),
+                          np.concatenate([np.concatenate(vel_ref[c]) for c in sorted(vel_ref)]))
     return {
         "onset_f": means[best_t],
         "velocity_mae": float(np.mean(vel_err)) if vel_err else float("nan"),
         "velocity_r": vel_r,
+        "velocity_r_pooled": vel_r_pooled,
         "onset_f_fixed": means[fixed],
         "best_threshold": best_t,
         "beat_align_ms": float(np.mean(ba_all)) if ba_all else float("nan"),
@@ -366,7 +382,8 @@ def main(argv=None) -> int:
             # r, not MAE, is the number that says the head learned dynamics:
             # drummers are not that dynamic, so predicting one constant
             # velocity scores a respectable MAE and a correlation of zero.
-            vel = (f" vel mae {ev['velocity_mae']:.3f} r {ev['velocity_r']:+.3f}")
+            vel = (f" vel mae {ev['velocity_mae']:.3f} r {ev['velocity_r']:+.3f}"
+                   f" (pooled {ev['velocity_r_pooled']:+.3f})")
         print(f"ep{ep:>3} loss {tr['loss']:.4f} (bce {tr['bce']:.4f}) | "
               f"val onset_F {ev['onset_f']:.4f} @thr {ev['best_threshold']:.2f} "
               f"(fixed {ev['onset_f_fixed']:.4f}) groove {ev['groove_sim']:.3f}"

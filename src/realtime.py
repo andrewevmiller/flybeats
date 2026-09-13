@@ -61,10 +61,15 @@ class StreamingDrummer:
         self.sample_rate = sample_rate
         self.step_ms = step_ms
         self.threshold = threshold
-        # Speed: core updates per encoder frame. Integer for now -- a fractional
-        # dial needs a phase accumulator running k or k+1 per frame, which is
-        # step 5 in SPEED_PLAN.md.
-        self.speed = float(speed)
+        # Speed: core updates per encoder frame, and the dial is continuous.
+        # A fractional speed is not a fractional number of updates on any one
+        # frame -- there is no such thing -- it is k or k+1 per frame with the
+        # remainder carried in a phase accumulator, so the *average* comes out
+        # at the dial setting. 2.5 alternates 2 and 3.
+        self.speed = max(float(speed), 1e-6)
+        self._phase = 0.0
+        # What an integer dial resolves to, kept for the benchmark's report and
+        # for anything that wants one representative number.
         self.substeps = max(1, int(round(self.speed)))
         # Per class and in milliseconds, not one count of steps. Per class
         # because that is what "hats flutter while the kick stays human" is;
@@ -91,7 +96,8 @@ class StreamingDrummer:
         self.context.extend([0.0] * model.encoder.context_samples)
 
         self.state = None
-        self.step = 0
+        self.step = 0           # core output rows emitted so far
+        self.frame = 0          # encoder frames consumed so far
         self.last_fire = {c: -1e9 for c in kit.classes}     # seconds
         self.prev = np.zeros(kit.n, dtype=np.float32)
         self.tonic = None
@@ -121,22 +127,17 @@ class StreamingDrummer:
 
         if self.state is None:
             self.state = self.model.rnn.initial_state(1, self.device, drive.dtype)
+        schedule = self._schedule(n_steps)
         rates, self.state = self.model.rnn(drive, state=self.state, tonic=self.tonic,
-                                           substeps=self.substeps)
+                                           substeps=schedule)
         prob = torch.sigmoid(self.model.decoder(rates)).squeeze(0).cpu().numpy()
         vhat = self.model.decoder.velocity(rates)
         vhat = None if vhat is None else vhat.squeeze(0).cpu().numpy()
 
         events: list[Trigger] = []
-        # The *true* frame duration, not the nominal step_ms. The encoder hop is
-        # a whole number of samples -- 110 at 22.05 kHz, which is 4.9887 ms, not
-        # 5 -- so a clock built from step_ms drifts 0.23% against the audio it is
-        # supposed to be locked to: 9 ms over a four-second clip, 2.3 s over an
-        # album side. Divided by substeps, because that is what speed means:
-        # the same frame, resolved into more of them.
-        span = self.hop / (self.sample_rate * self.substeps)
+        times = self._step_times(schedule)
         for k in range(prob.shape[0]):
-            t = (self.step + k) * span
+            t = times[k]
             for c, name in enumerate(self.kit.classes):
                 v = float(prob[k, c])
                 rising = v >= self.threshold and v > self.prev[c]
@@ -164,11 +165,51 @@ class StreamingDrummer:
                                           note=self.kit.notes[c]))
                 self.prev[c] = v
         self.step += prob.shape[0]
+        self.frame += n_steps
         return events
+
+    def _schedule(self, n_frames: int) -> list[int]:
+        """How many core updates each frame of this block gets.
+
+        The phase carries across blocks as well as frames, so a fractional dial
+        does not quietly round itself off at every block boundary -- at speed
+        2.5 and four frames per block, that would be 3,2,3,2 | 3,2,3,2 rather
+        than a true alternation, and the average would drift with block size.
+        """
+        out = []
+        for _ in range(n_frames):
+            self._phase += self.speed
+            k = int(self._phase)
+            self._phase -= k
+            out.append(max(1, k))
+        return out
+
+    def _step_times(self, schedule: list[int]) -> list[float]:
+        """Real time for every row the core produced, in seconds.
+
+        The *true* frame duration, not the nominal step_ms. The encoder hop is a
+        whole number of samples -- 110 at 22.05 kHz, which is 4.9887 ms, not 5 --
+        so a clock built from step_ms drifts 0.23% against the audio it is
+        supposed to be locked to: 9 ms over a four-second clip, 2.3 s over an
+        album side.
+
+        Each frame's sub-steps subdivide that frame's own span. With a uniform
+        k this is exactly the old ``step_index * hop / (sr * k)`` grid; with a
+        varying k there is no uniform grid to be on, which is the whole reason
+        hits carry a timestamp rather than a step count.
+        """
+        frame_s = self.hop / self.sample_rate
+        times = []
+        for f, k in enumerate(schedule):
+            t0 = (self.frame + f) * frame_s
+            times.extend(t0 + j * frame_s / k for j in range(k))
+        return times
 
     def reset(self) -> None:
         self.state = None
         self.step = 0
+        self.frame = 0
+        self._phase = 0.0
         self.prev[:] = 0
         self.last_fire = {c: -1e9 for c in self.kit.classes}
 
@@ -205,6 +246,30 @@ def benchmark(model, kit, cfg, block_ms: float = 20.0, n_blocks: int = 50,
     }
 
 
+def fit_speed_to_budget(model, kit, cfg, speed: float, block_ms: float = 20.0,
+                        n_blocks: int = 20) -> tuple[float, dict]:
+    """Find the fastest setting at or below ``speed`` that this machine can hold.
+
+    Speed costs linearly -- k core updates per encoder frame is k times the
+    recurrence -- so a dial that is fine offline will overrun the audio callback
+    live, and an overrunning callback does not degrade gracefully: it drops
+    buffers and clicks. The offline renderer has no such ceiling and should not
+    be capped, which is why this is called from the live path only.
+
+    Halves the dial until p95 fits the block budget, and never returns less than
+    1.0: below that the model is not keeping up with real time at all, and the
+    honest thing is to say so rather than to pretend a slower dial fixes it.
+    """
+    tried = []
+    s = float(speed)
+    while True:
+        r = benchmark(model, kit, cfg, block_ms=block_ms, n_blocks=n_blocks, speed=s)
+        tried.append(r)
+        if r["meets_budget"] or s <= 1.0:
+            return s, r
+        s = max(1.0, s / 2.0)
+
+
 def drummer_for(model, kit, cfg, threshold: float | None = None,
                 speed: float = 1.0,
                 class_refractory_ms: dict[str, float] | None = None) -> "StreamingDrummer":
@@ -229,6 +294,22 @@ def run_live(model, kit, cfg, style: int | None = None, block_ms: float = 20.0,
     import sounddevice as sd
 
     sr = cfg["audio"]["sample_rate"]
+
+    # Measure before opening the stream, and cap rather than glitch. An audio
+    # callback that overruns its block does not slow down gracefully; it drops
+    # buffers, and the result is clicks that sound like a broken model rather
+    # than a machine that is out of headroom.
+    safe, r = fit_speed_to_budget(model, kit, cfg, speed, block_ms)
+    if safe < speed:
+        print(f"speed {speed:g} needs {r['inference_ms_p95']:.1f} ms p95 against a "
+              f"{block_ms:g} ms block on this machine -- capping to {safe:g}. "
+              f"The offline renderer (--render) has no such ceiling.")
+        speed = safe
+    elif not r["meets_budget"]:
+        print(f"WARNING: even speed 1 misses the block budget here "
+              f"({r['inference_ms_p95']:.1f} ms p95 against {block_ms:g} ms). "
+              f"Expect dropouts; use --render instead, or a smaller subgraph.")
+
     drummer = drummer_for(model, kit, cfg, threshold, speed, class_refractory_ms)
     drummer.set_style(style)
 
