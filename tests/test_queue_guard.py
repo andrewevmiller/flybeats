@@ -279,3 +279,66 @@ def test_a_probe_that_produced_no_table_is_not_recorded(tmp_path):
 def test_a_probe_that_produced_a_table_is_recorded(tmp_path):
     """And the guard must not reject real output, or nothing ever lands."""
     assert _run_probe(tmp_path, A_REAL_PROBE).exists()
+
+
+# --- the session-start hook ------------------------------------------------
+#
+# The last line of defence for an unattended batch. The Routine that relaunched
+# a killed queue fired three times into a session that had hit its usage limit,
+# and the box idled for two and a half hours; a SessionStart hook does not need
+# the session to be able to answer.
+#
+# What has to hold is that it is inert unless told otherwise. It launches a
+# job that takes all four cores, so a checkout that never asked for one must
+# get nothing -- which is why the marker it keys off is gitignored and absent
+# by default.
+
+HOOK = ROOT / ".claude" / "hooks" / "session-start.sh"
+
+
+def _hook_tree(tmp_path, marker_lines=None, landed=()):
+    (tmp_path / ".claude" / "hooks").mkdir(parents=True)
+    shutil.copy(HOOK, tmp_path / ".claude" / "hooks" / HOOK.name)
+    (tmp_path / "results").mkdir()
+    for run in landed:
+        (tmp_path / "results" / f"probe_{run}.txt").write_text("peak (y > 0.95)\n")
+    if marker_lines is not None:
+        (tmp_path / ".claude" / "batch.active").write_text("\n".join(marker_lines) + "\n")
+    return tmp_path
+
+
+def _run_hook(tree):
+    return subprocess.run(
+        ["bash", str(tree / ".claude" / "hooks" / HOOK.name)],
+        capture_output=True, text=True, timeout=120, cwd=tree,
+        env={**os.environ, "CLAUDE_PROJECT_DIR": str(tree)},
+    )
+
+
+def test_the_hook_does_nothing_without_a_marker(tmp_path):
+    """A fresh clone has no marker, and must not start a four-core job."""
+    tree = _hook_tree(tmp_path, marker_lines=None)
+    r = _run_hook(tree)
+    assert r.returncode == 0, r.stderr
+    assert not (tree / ".claude" / "hooks" / "session-start.log").exists(), \
+        "the hook acted on a checkout that never asked for a batch"
+
+
+def test_a_marker_whose_runs_have_all_landed_is_retired(tmp_path):
+    """Otherwise every future session start relaunches a queue that instantly
+    finds nothing to do."""
+    tree = _hook_tree(tmp_path, marker_lines=["# a comment", "", "a", "b"],
+                      landed=["a", "b"])
+    r = _run_hook(tree)
+    assert r.returncode == 0, r.stderr
+    assert not (tree / ".claude" / "batch.active").exists()
+    assert "all runs landed" in (tree / ".claude" / "hooks" / "session-start.log").read_text()
+
+
+def test_comments_and_blank_lines_in_the_marker_are_not_run_names(tmp_path):
+    """If they were, the hook would look for results/probe_#-a-comment.txt,
+    never find it, and relaunch the queue forever."""
+    tree = _hook_tree(tmp_path, marker_lines=["# header", "", "a"], landed=["a"])
+    _run_hook(tree)
+    assert not (tree / ".claude" / "batch.active").exists(), \
+        "a comment line was counted as an outstanding run"

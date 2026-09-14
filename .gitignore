@@ -6,3 +6,8 @@ runs/
 __pycache__/
 .venv/
 *.egg-info/
+
+# Local statement that a training batch is meant to be running on THIS
+# machine. Never committed: a fresh clone must not start a four-core job.
+.claude/batch.active
+.claude/hooks/session-start.log
