@@ -351,7 +351,11 @@ def _atomic_save(obj, path: Path) -> None:
     the box went down mid-write.
     """
     tmp = path.with_suffix(path.suffix + ".tmp")
-    torch.save(obj, tmp)
+    try:
+        torch.save(obj, tmp)
+    except BaseException:
+        tmp.unlink(missing_ok=True)   # a ~100 MB partial file, on a box with
+        raise                         # a fixed disk allowance
     os.replace(tmp, path)
 
 

@@ -205,3 +205,77 @@ def test_no_arguments_is_refused_rather_than_guessed(tmp_path):
     happened to say, which is how a finished arm gets overwritten."""
     r = resume_plan(tmp_path, argv=[])
     assert r.returncode == 2 and "usage" in r.stderr
+
+
+# --- what the queue is willing to call a result ----------------------------
+#
+# The queue once filed a run that was three epochs into twelve as a landed
+# Phase A' arm. Training had been killed; the queue does not look at exit
+# status, so it probed the best.pt of whichever epoch had been reached. The
+# probe was killed too, so the file it committed held two torch warnings and no
+# table -- and results/probe_<run>.txt is what resume_velocity_queue.sh treats
+# as proof a run is finished, so that run would have been skipped for good.
+
+QUEUE = ROOT / "scripts" / "run_velocity_queue.sh"
+
+
+def _queue_tree(tmp_path, probe_output):
+    """A throwaway repo root with a stub probe, so probe() can be called."""
+    (tmp_path / "scripts").mkdir()
+    shutil.copy(QUEUE, tmp_path / "scripts" / QUEUE.name)
+    (tmp_path / "runs" / "arm").mkdir(parents=True)
+    (tmp_path / "runs" / "arm" / "best.pt").write_text("a checkpoint")
+
+    stub = tmp_path / "fake_python"
+    stub.write_text("#!/bin/bash\ncat <<'EOF'\n" + probe_output + "\nEOF\n")
+    stub.chmod(0o755)
+    return stub
+
+
+def _run_probe(tmp_path, probe_output):
+    stub = _queue_tree(tmp_path, probe_output)
+    out = tmp_path / "out"
+    out.mkdir()
+    script = tmp_path / "scripts" / QUEUE.name
+    # Three things this invocation has to get right, each of which produced a
+    # test that passed for the wrong reason on the way here:
+    #
+    #  - export, not `VAR=x source f`: that form scopes VAR to the source
+    #    itself, so probe() runs with OUT unset and dies under `set -u`,
+    #    writing no result and "passing" the negative test.
+    #  - run from scripts/, because the script opens with
+    #    `cd "$(dirname "$0")/.."` and $0 in a sourced file is the sourcing
+    #    shell ("bash"), so the cd is ./.. -- which lands in the temp tree only
+    #    if the shell starts one level down.
+    #  - do NOT set $0 to the script path to fix that. It makes
+    #    BASH_SOURCE[0] == $0, the __main__ guard fires, and sourcing the file
+    #    starts a real five-run batch.
+    r = subprocess.run(
+        ["bash", "-c",
+         f'export OUT="{out}" PY="{stub}"; source ./{QUEUE.name}; probe arm'],
+        capture_output=True, text=True, timeout=120, cwd=tmp_path / "scripts",
+    )
+    assert "unbound variable" not in r.stderr, r.stderr
+    return tmp_path / "results" / "probe_arm.txt"
+
+
+WARNINGS_ONLY = """/x/src/model.py:203: UserWarning: Sparse invariant checks are disabled.
+  a = torch.sparse_csr_tensor(self.crow, self.edge_col, vals,"""
+
+A_REAL_PROBE = """clips 120  steps 400
+
+== peak (y > 0.95) ==
+class         n steps  target sd   drive r   motor r   head r     head 95% CI
+crash             312      0.194     0.113     0.346    0.349  [+0.17, +0.50]"""
+
+
+def test_a_probe_that_produced_no_table_is_not_recorded(tmp_path):
+    """The retraction, as a test. A file of warnings must not become a result."""
+    assert not _run_probe(tmp_path, WARNINGS_ONLY).exists(), (
+        "a probe with no table was filed as a landed run"
+    )
+
+
+def test_a_probe_that_produced_a_table_is_recorded(tmp_path):
+    """And the guard must not reject real output, or nothing ever lands."""
+    assert _run_probe(tmp_path, A_REAL_PROBE).exists()
