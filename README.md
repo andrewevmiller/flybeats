@@ -83,8 +83,9 @@ which parts of the install survive the work still in flight, and a
 troubleshooting table — is in [SETUP.md](SETUP.md).
 
 Running the long work on your own machine, with a GPU — the CUDA smoke test
-that goes first, Phase B′, the Phase D campaign, and the thread setting that
-costs 13× if you get it wrong — is in [RUNBOOK.md](RUNBOOK.md).
+that goes first, Phase B′, the Phase D campaign, and why a latency number from
+someone else's machine tells you nothing about yours — is in
+[RUNBOOK.md](RUNBOOK.md).
 
 ---
 
@@ -541,13 +542,14 @@ scripts/diagnose.py          why a checkpoint is not learning, separated by laye
 scripts/propagation.py       what the subgraph carries, per hop, before training
 scripts/render_full_graph.py offline pass over all 162k neurons
 scripts/make_test_fixture.py a small real subgraph to test against, from a big one
-tests/                       134 tests: exact gradients, frozen signs and topology,
+tests/                       138 tests: exact gradients, frozen signs and topology,
                              ablation invariants, encoder window/full equivalence
                              (calibrated and not), the non-negativity constraint,
                              one-sided rate penalty, hop distances, checkpointing
                              transparency, streaming peak state, bundle round
                              trips, choke groups and velocity layers, fixed
-                             validation windows and replayable batch order
+                             validation windows and replayable batch order, and
+                             four GPU tests that skip without a CUDA device
 tests/fixtures/              two real subgraphs (10k and 2k), so every test that
                              needs a model runs without the 1.1 GB download
 ```
@@ -704,7 +706,8 @@ data-path failure.
 ## Picking this up again
 
 Everything is committed and pushed on `main`; 133 tests pass on a bare checkout
-(one more once the GMD corpus is present), and CI runs them on every push.
+(137 with a CUDA device, 138 with the GMD corpus too), and CI runs the non-GPU
+ones on every push.
 The connectome cache, subgraph cache and GMD corpus are rebuilt by
 the `scripts/fetch_*.py` commands in [Quick start](#quick-start) — they are
 gitignored, and so is `runs/`, so **a trained model only survives as an exported

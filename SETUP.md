@@ -99,7 +99,7 @@ pipeline runs. Steps 11 and 12 are optional.
 | **CPU** | x64 (Intel or AMD) | PyTorch publishes **no `win_arm64` wheel**. On a Snapdragon X / Copilot+ PC, `pip install torch` fails outright. Checked against PyPI: torch 2.14.0 ships `win_amd64` only. |
 | **RAM** | 16 GB | The neuron-graph build peaks at **5.74 GB resident** while reducing 151.8M edge rows. 8 GB will swap hard or die. |
 | **Disk** | 20 GB free | See the table below. The transient peak during GMD extraction is the binding constraint. |
-| **GPU** | not needed | Every step here is CPU-only. A GPU matters for the real ablation run, which is not ready to start. |
+| **GPU** | not needed *here* | Every step on this page is CPU-only. A GPU is what the Phase 4 ablation campaign needs, and four tests skip without one — [RUNBOOK.md](RUNBOOK.md) covers that machine. |
 
 ### Disk, exactly
 
@@ -293,12 +293,16 @@ extractions committed to the repo, so the tests that need a model to exist run
 straight from a clean clone. Expected, before or after step 6:
 
 ```
-133 passed, 1 skipped
+133 passed, 5 skipped
 ```
 
-The skip is the GMD-dependent pipeline test; it runs once step 11 is done, for
-**134 passed**. The same suite runs in CI on every push, so a failure here means
-something is wrong with your install rather than with the project.
+Four of those skips are the GPU tests, which need a CUDA device; the fifth is
+the GMD-dependent pipeline test, which runs once step 11 is done. On a machine
+with a card and the corpus, all **138 pass**.
+
+CI runs the non-GPU tests on every push, so a failure here is your install
+rather than the project. The GPU tests it can never run — see
+[RUNBOOK.md](RUNBOOK.md), which is the machine that does.
 
 ---
 
@@ -368,7 +372,7 @@ The default corpus is Magenta **GMD** (`groove-v1.0.0`): 1,150 clips, 18 styles,
 audio plus sample-aligned MIDI. `--corpus egmd` fetches E-GMD instead, whose
 audio archive is 96 GB — the README explains why GMD is the default.
 
-With the corpus present, `pytest -q` becomes **134 passed**, and the real-corpus
+With the corpus present, `pytest -q` becomes **134 passed, 4 skipped** (the GPU tests, unless this machine has a card), and the real-corpus
 CPU run becomes available:
 
 ```powershell
@@ -413,7 +417,7 @@ python src/realtime.py --config configs/v1_8piece.yaml --benchmark
 | 3 | `python -c "import torch; print(torch.__version__)"` | a 2.x version |
 | 4 | `dir data\raw` | 3 files, ~1.11 GB total |
 | 5 | `python scripts/verify_types.py` | every line `[OK ]` |
-| 6 | `pytest -q` | `133 passed, 1 skipped` |
+| 6 | `pytest -q` | `133 passed, 5 skipped` |
 | 7 | `python src/subgraph.py` | `SubGraph: 30,000 neurons, 2,942,102 edges` |
 | 8 | `python src/train.py --config configs/sanity_3piece_run.yaml` | `best val onset F: 0.67` |
 

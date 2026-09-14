@@ -29,10 +29,76 @@ Three things follow from having real hardware, in the order they pay off:
 
 ---
 
-## Setup
+## Start here: one command
 
-[SETUP.md](SETUP.md) is the step-by-step install with disk, RAM and timings.
-The short version, plus the GPU-specific part it does not cover in depth:
+From the clone — including the one at
+`C:\Users\ricos\Documents\AI Databases\flybeats\git`, which may be behind:
+
+```powershell
+cd "C:\Users\ricos\Documents\AI Databases\flybeats\git"
+git pull origin main
+py -3.12 scripts\bootstrap_local.py
+```
+
+It reports the machine, finds the card via `nvidia-smi`, checks whether the
+clone is behind `origin/main`, creates the venv, installs torch and the
+requirements, runs the suite, runs the CUDA smoke test, measures thread scaling,
+and writes a JSON report to `results/local/`. `--check` does the inspection
+without installing anything; `--pull` updates the clone first.
+
+**Commit the report.** Every number in this repository came off four shared
+cloud cores. There is no record of what real hardware does with any of it, and
+that is the first gap this machine closes.
+
+If the bootstrap reports `cuda_available=False` while `nvidia-smi` sees the
+card, it is the wheel — see the CUDA index below — and nothing after that point
+is worth reading until it is fixed.
+
+---
+
+## What testing looks like once it lives here
+
+| command | what it covers | where it can run |
+|---|---|---|
+| `pytest -q` | everything: 134 CPU tests + 4 GPU tests | this machine only |
+| `pytest -q -m "not gpu"` | exactly what CI runs | anywhere |
+| `pytest -q -m gpu` | the four that need a card | this machine only |
+| `python scripts/cuda_smoke.py` | the same GPU checks plus timings, VRAM and thread scaling | this machine only |
+
+Counts, so a surprise is legible: **133 passed, 5 skipped** on a machine with
+no card and no corpus; **137 passed, 1 skipped** with a working CUDA install
+(the remaining skip needs GMD); **138 passed** once the corpus is downloaded.
+If the GPU tests skip on the machine that has the card, the wheel is wrong.
+
+The GPU tests (`tests/test_cuda.py`) skip themselves without a card, so CI and
+cloud sessions stay green while simply never exercising them. That asymmetry is
+the point: **this machine is now the only place the full suite exists.** A
+change that breaks the CUDA path will pass CI and fail here, which is why the
+suite wants running here before anything long starts.
+
+What they check, and why each one is worth a test rather than trust:
+
+- **The sparse backward, with duplicate edges present on purpose.** It is
+  hand-written precisely because torch's CSR autograd returns a gradient sized
+  to the *deduplicated* values when an edge list repeats a pair — which is what
+  the Phase 4 rewiring arm emits. A wrong answer here trains, evaluates, and
+  reports a plausible onset F.
+- **bf16 gradients** finite, non-zero, and within a sane band of fp32.
+  `train.bf16` is honoured only on CUDA, so no run in this repo has ever had it
+  on.
+- **Gradient checkpointing** changing nothing. It is a memory optimisation; if
+  it moves the gradient, every result downstream is quietly wrong.
+- **GPU and CPU forward passes agreeing** past float32 noise. Not bitwise —
+  different kernels reduce in different orders — but a real disagreement means
+  the device path computes something else entirely.
+
+---
+
+## Setup, the manual version
+
+What the bootstrap does, in case you would rather do it yourself or it fails
+partway. [SETUP.md](SETUP.md) is the fuller step-by-step, with disk, RAM and
+timings.
 
 ```bash
 git clone https://github.com/andrewevmiller/flybeats && cd flybeats
@@ -55,7 +121,7 @@ On Linux the plain `pip install torch` gives you CUDA; on Windows it gives you
 a CPU build, so the index URL is not optional there.
 
 ```bash
-pytest -q                       # 133 passed, 1 skipped -- needs no downloads
+pytest -q                       # needs no downloads; see the counts below
 ```
 
 That suite runs off committed fixtures, so a failure here is the install, not
@@ -99,27 +165,31 @@ anything below. Point it at the tier you actually intend to train:
 python scripts/cuda_smoke.py --config configs/v1_8piece.yaml
 ```
 
-### Pin your CPU threads
+### Measure your thread count; do not copy anyone else's
 
-Measured here, same 10k model, same block:
+The same 10k model and the same 20 ms block, benchmarked on one cloud container
+under two conditions:
 
-| threads | per 20 ms block | realtime |
-|---|---|---|
-| 1 | 12.2 ms | 1.64× |
-| 4 | 160.9 ms | 0.12× |
+| | 1 thread | 2 threads | 4 threads |
+|---|---|---|---|
+| container under load | 12.2 ms | — | 160.9 ms |
+| same container, idle | 9.0 ms | 6.6 ms | 4.5 ms |
 
-A **13× penalty for more threads.** These are small sparse ops, and torch's
-intra-op parallelism spends more fanning out and joining each one than the work
-is worth. It is the same pathology the README records for two training jobs
-sharing a box (76 s → 1,415 s an epoch), here inside a single process.
+Under load, more threads cost 13×. Idle, they behave exactly as you would
+expect and the 20 ms budget is met with room to spare. **The first reading was
+contention, not a property of the code** — I recorded it as a finding before
+re-measuring on an idle box, which was wrong.
 
-So `export OMP_NUM_THREADS=1` (PowerShell: `$env:OMP_NUM_THREADS=1`) for the
-live path, and measure rather than assume for training — the right number is
-machine-specific, and the smoke test reports both when it sees a missed budget.
-GPU training is not affected by this directly, but the encoder and the
-dataloader workers still run on CPU.
+What survives is narrower and more useful: this benchmark is extremely
+sensitive to whatever else is running, so a number from someone else's machine
+predicts nothing about yours. `scripts/cuda_smoke.py` measures it on yours, and
+re-measures at one thread if the budget is missed — if that helps on your box,
+`OMP_NUM_THREADS=1` (PowerShell: `$env:OMP_NUM_THREADS=1`) is the fix for the
+live path; if it does not, leave the threads alone.
 
-**Never run two training jobs at once on one box.** Sequential, always.
+**Never run two training jobs at once on one box.** Sequential, always — and
+the numbers above are the reason: the second job does not halve throughput, it
+collapses it.
 
 ---
 

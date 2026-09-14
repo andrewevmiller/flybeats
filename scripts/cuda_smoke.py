@@ -236,16 +236,16 @@ def check_training_step(model, batch, cfg, device) -> bool:
 def check_inference(model, kit, cfg, device) -> bool:
     """The streaming path -- and how many CPU threads it should get.
 
-    Measured on this container: the same 10k model benchmarks at 12.2 ms per
-    20 ms block on one thread and 160.9 ms on four. A 13x *penalty* for more
-    threads. These are small sparse ops, and torch's intra-op parallelism
-    spends more on fanning out and joining each one than the work is worth --
-    the same pathology the README records for two training jobs sharing a box
-    (76 s to 1,415 s an epoch), inside a single process this time.
+    Thread scaling here is a property of the machine, not of the code. The same
+    10k model on one cloud container: 12.2 ms per 20 ms block on one thread and
+    160.9 ms on four while the box was loaded; 9.0 / 6.6 / 4.5 ms on 1 / 2 / 4
+    threads once it was idle. Contention inverts the scaling completely, so no
+    number from another machine is worth copying onto yours.
 
-    So a missed latency budget is worth one retry at a single thread before it
-    is believed: otherwise the conclusion is "this machine cannot play live"
-    when the truth is "this machine was asked to play live with four threads".
+    Hence the retry: a missed budget is worth one measurement at a single
+    thread before it is believed, because the conclusion "this machine cannot
+    play live" and the conclusion "this machine was busy" look identical from
+    one reading.
     """
     from realtime import benchmark
 
