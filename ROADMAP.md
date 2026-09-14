@@ -160,9 +160,31 @@ python src/ablations.py --config configs/v1_8piece.yaml --lesion --epochs 40 --s
 ```
 
 `--seeds` is not optional — a gap smaller than the across-seed spread is not a
-result. What is worth doing before a GPU appears is making the harness
-seed-aware and one command, so the hardware turns into results the same day
-rather than a day of setup.
+result. The harness was already seed-aware; what running it found instead were
+two things that would each have cost a rented GPU day:
+
+- **It crashed on the fourth arm.** `FlyBeats.forward` passes `substeps=` to
+  whichever core is installed, and the two arms that replace the core outright,
+  `gru` and `shortcut`, never gained the argument when the speed work added it.
+  So the harness trained `real`, `rewired` and `sign_shuffled` — the expensive
+  part — and then died. Nothing tested the control cores against the real
+  core's calling convention, so nothing caught it. Fixed, and they are now
+  tested against `ConnectomeRNN`'s signature itself rather than a copy of it,
+  so the next parameter added there fails in CI instead of mid-run.
+- **The spread it reports is over random graphs only.** Weight init and data
+  order are pinned to a single draw for every arm and every repeat. That makes
+  the arms exactly comparable — topology is the only thing that differs — but
+  it means a gap clearing the reported spread is a gap *at that one init*.
+  `--vary-init` repeats every arm across inits too, so each arm carries its own
+  spread and the comparison is between distributions rather than between a
+  distribution and a point. It costs `--seeds` times as many runs on the
+  deterministic arms, which is why it is opt-in, and it is where a published
+  number should come from.
+
+Whether the second point changes any conclusion is a quantity this project does
+not have yet — and the Phase A′ seed runs are measuring exactly it. If onset F
+moves more across inits than the arms differ by, the matched design cannot
+carry the claim by itself.
 
 ---
 

@@ -89,3 +89,66 @@ def test_gru_hidden_matches_parameter_budget():
         nxt = 3 * ((h + 1) * 405 + (h + 1) ** 2 + 2 * (h + 1)) + (h + 1) * 66 + 66
         assert got <= target, f"GRU exceeds budget at target={target}"
         assert nxt > target, f"GRU is not the largest fit at target={target}"
+
+
+# --- the control arms have to be callable the way the model calls them ------
+#
+# GRUCore and ShortcutCore replace model.rnn wholesale, so FlyBeats.forward
+# calls them with ConnectomeRNN's signature. When the speed work added
+# `substeps` to that signature, neither control arm got it, and both raised
+# TypeError on their first forward pass -- which meant `python src/ablations.py`
+# trained real, rewired and sign_shuffled and then died on the gru arm. Nothing
+# here tested the replacement cores against the real one's calling convention,
+# so nothing noticed.
+
+import inspect  # noqa: E402
+
+import pytest  # noqa: E402
+import torch  # noqa: E402
+
+from ablations import GRUCore, ShortcutCore  # noqa: E402
+from model import ConnectomeRNN, ModelConfig  # noqa: E402
+
+
+def _core(kind, n_in=4, n_out=3, hidden=16):
+    cfg = ModelConfig()
+    return (GRUCore(n_in, n_out, hidden, cfg) if kind == "gru"
+            else ShortcutCore(n_in, n_out, cfg))
+
+
+@pytest.mark.parametrize("kind", ["gru", "shortcut"])
+def test_a_control_core_accepts_every_argument_the_real_core_does(kind):
+    """Derived from ConnectomeRNN rather than spelled out, so the next
+    parameter added to the real core fails here instead of mid-run."""
+    real = set(inspect.signature(ConnectomeRNN.forward).parameters)
+    mine = set(inspect.signature(_core(kind).forward).parameters)
+    missing = real - mine - {"self"}
+    assert not missing, f"{kind} core cannot be called with: {sorted(missing)}"
+
+
+@pytest.mark.parametrize("kind", ["gru", "shortcut"])
+def test_a_control_core_returns_one_step_per_substep(kind):
+    """The real core returns sum(schedule) steps, not one per frame. A control
+    arm that ignored substeps would return the wrong length and score against
+    a misaligned target."""
+    core = _core(kind)
+    drive = torch.randn(2, 5, 4)
+
+    plain, _ = core(drive)
+    assert plain.shape[:2] == (2, 5)
+
+    trebled, _ = core(drive, substeps=3)
+    assert trebled.shape[:2] == (2, 15)
+
+    scheduled, _ = core(drive, substeps=[1, 2, 1, 3, 1])
+    assert scheduled.shape[:2] == (2, 8)
+
+
+@pytest.mark.parametrize("kind", ["gru", "shortcut"])
+def test_a_control_core_refuses_a_nonsense_schedule(kind):
+    core = _core(kind)
+    drive = torch.randn(1, 4, 4)
+    with pytest.raises(ValueError):
+        core(drive, substeps=0)
+    with pytest.raises(ValueError):
+        core(drive, substeps=[1, 2])          # four frames, two entries

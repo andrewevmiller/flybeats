@@ -19,6 +19,18 @@ not contributing and that is the result. Report it either way.
 a single run cannot tell "random topologies do worse" from "this particular
 random topology was unlucky". Run several and report the spread; a gap smaller
 than the spread is not a result.
+
+There are two such distributions, and by default this harness samples only one.
+Weight init and data order are held at a single draw for every arm and every
+rep, which makes the arms exactly comparable -- the topology is then the only
+thing that differs -- but it also means the reported spread is over random
+*graphs* alone. A gap that clears it is a gap at that one init. ``--vary-init``
+samples the other distribution too: rep *r* gets init seed ``base + r`` and
+every arm repeats, so each arm carries its own spread and the comparison is
+between distributions rather than between a distribution and a point. It costs
+``--seeds`` times as many runs on the deterministic arms, which is why it is a
+flag rather than the default, and it is the honest setting for a published
+number.
 """
 from __future__ import annotations
 
@@ -91,6 +103,29 @@ def shuffle_signs(sg: SubGraph, seed: int = 0) -> SubGraph:
 
 
 # ------------------------------------------------------------- baselines ----
+def _expand_for_substeps(drive, substeps):
+    """Run each encoder frame ``k`` times, as the real core does.
+
+    ConnectomeRNN takes ``substeps`` -- a count, or a per-frame schedule -- and
+    returns ``sum(schedule)`` steps rather than one per frame. The control arms
+    have no recurrence to step, but they have to honour the same contract or
+    their output is the wrong length, so each frame's drive is repeated instead.
+    """
+    if isinstance(substeps, (int, np.integer)):
+        k = int(substeps)
+        if k < 1:
+            raise ValueError(f"substeps must be >= 1, got {k}")
+        return drive if k == 1 else drive.repeat_interleave(k, dim=1)
+    schedule = [int(k) for k in substeps]
+    if len(schedule) != drive.shape[1]:
+        raise ValueError(f"substeps schedule has {len(schedule)} entries "
+                         f"for {drive.shape[1]} frames")
+    if min(schedule, default=1) < 1:
+        raise ValueError(f"substeps must be >= 1, got {min(schedule)}")
+    return drive.repeat_interleave(
+        torch.tensor(schedule, device=drive.device), dim=1)
+
+
 class GRUCore(nn.Module):
     """Dense GRU with no connectome structure, parameter-count matched.
 
@@ -115,10 +150,11 @@ class GRUCore(nn.Module):
                            device=device or self.readout.weight.device,
                            dtype=dtype or self.readout.weight.dtype)
 
-    def forward(self, drive, state=None, tonic=None, return_all=False):
+    def forward(self, drive, state=None, tonic=None, return_all=False,
+                substeps=1):
         if state is not None and state.dim() == 2:
             state = state.unsqueeze(0)
-        h, state = self.gru(drive, state)
+        h, state = self.gru(_expand_for_substeps(drive, substeps), state)
         rates = torch.nn.functional.softplus(self.readout(h))
         return rates, state
 
@@ -177,7 +213,9 @@ class ShortcutCore(nn.Module):
                            device=device or self.proj.weight.device,
                            dtype=dtype or self.proj.weight.dtype)
 
-    def forward(self, drive, state=None, tonic=None, return_all=False):
+    def forward(self, drive, state=None, tonic=None, return_all=False,
+                substeps=1):
+        drive = _expand_for_substeps(drive, substeps)
         return torch.nn.functional.softplus(self.proj(drive)), self.initial_state(
             drive.shape[0], drive.device, drive.dtype)
 
@@ -263,6 +301,11 @@ def main(argv=None) -> int:
                     help="repeats per arm. rewired and sign_shuffled each draw one random "
                          "topology, so a single run cannot separate 'random is worse' from "
                          "'this draw was unlucky'. 3-5 gives a usable spread")
+    ap.add_argument("--vary-init", action="store_true",
+                    help="repeat every arm over --seeds weight inits, not just the "
+                         "random-topology arms. Without it the spread reported is over "
+                         "random graphs at one fixed init, and a gap that clears it is "
+                         "a gap at that init only")
     ap.add_argument("--lesion", action="store_true",
                     help="after training the real arm, sweep lesions over confirmed populations")
     ap.add_argument("--smoke", action="store_true")
@@ -288,17 +331,22 @@ def main(argv=None) -> int:
 
     base_seed = cfg["train"].get("seed", 0)
     for arm in a.arms:
-        # A deterministic arm is the same model every time, so repeating it only
-        # measures optimiser noise; the random-topology arms are the ones that
-        # need repeats.
-        n_reps = a.seeds if arm in STOCHASTIC_ARMS else 1
+        # With a fixed init, a deterministic arm is the same model every time,
+        # so repeating it measures nothing; the random-topology arms are the
+        # only ones that vary. Under --vary-init every arm varies, and every
+        # arm needs the repeats.
+        n_reps = a.seeds if (arm in STOCHASTIC_ARMS or a.vary_init) else 1
         runs = []
 
         for rep in range(n_reps):
             seed = base_seed + rep
-            # identical init seed across arms: the topology is what differs
-            torch.manual_seed(base_seed)
-            np.random.seed(base_seed)
+            # Identical init across arms: the topology is what differs. Under
+            # --vary-init the init moves with the rep instead -- still identical
+            # across arms at the same rep, so the comparison stays matched while
+            # each arm gets a spread of its own.
+            init_seed = seed if a.vary_init else base_seed
+            torch.manual_seed(init_seed)
+            np.random.seed(init_seed)
 
             model, kit = build_arm(arm, cfg, sg, n_styles, seed=seed)
             model = model.to(device)
@@ -358,10 +406,16 @@ def format_table(rows: list[dict]) -> str:
         f = f"{r['onset_f']:.4f}" + (f" +/-{sd:.4f}" if r.get("n_runs", 1) > 1 else "        ")
         lines.append(f"{r['arm']:<16}{r.get('n_runs', 1):>3}{r['params']:>12,}{f:>18}"
                      f"{r['groove_sim']:>9.3f}{r['beat_align_ms']:>10.1f}{r['mean_dev_ms']:>9.1f}")
+    varied_init = any(r.get("n_runs", 1) > 1 and r["arm"] not in STOCHASTIC_ARMS
+                      for r in rows)
+    spread = ("Every arm shows the spread over weight inits, and over random draws\n"
+              "where they apply -- a gap smaller than that spread is not a result."
+              if varied_init else
+              "rewired and sign_shuffled show the spread over random draws at one\n"
+              "fixed init -- a gap smaller than that spread is not a result.")
     lines.append("\nonset F is at each run's best peak-picking threshold, chosen on this "
-                 "split; a single\nfixed threshold scores output scale as much as timing. "
-                 "rewired and sign_shuffled\nshow the spread over random draws -- a gap "
-                 "smaller than that spread is not a result.")
+                 "split; a single\nfixed threshold scores output scale as much as timing.\n"
+                 + spread)
     return "\n".join(lines)
 
 
