@@ -120,9 +120,23 @@ went from 76 s to 1,415 s. Sequential, or set `OMP_NUM_THREADS`.
 
 ## Phase B′ — the full-corpus run
 
-One long run at all 897 training clips: **~29 min/epoch, ~6 hours for 12.**
+One long run at every training clip the corpus can actually supply, which is
+**846, not 897**: GMD indexes 897 train rows but ships 51 of them MIDI-only,
+with `audio_filename` blank. The loader drops those, so 846 is what a
+limit-free run trains on. (Checked rather than assumed — no *named* audio file
+is missing from disk, in any split, so the download is complete; the shortfall
+is the dataset's, not ours.)
+
+The ~29 min/epoch, ~6 hours for 12 recorded here needs re-deriving. Phase A′
+runs measure 300–343 s/epoch on 256 files, and only the training portion scales
+with the corpus (validation stays at 120 clips), so 846 files extrapolates to
+roughly 15–20 min/epoch and 3–4 hours for 12. That is an extrapolation from a
+different config, not a measurement; the first epoch of the real run settles it.
+
 This is the run that might move onset F off 0.30, and it produces the model
 worth shipping. It must come after A′ or it gets redone.
+`configs/v1_full_corpus.yaml` is ready for it — its `_base_` line is the Phase
+A′ decision and has to be pointed at whichever arm actually won.
 
 **Done when** onset F has either moved or provably stopped moving with the data
 limit lifted — which turns "undertrained" from an assumption into a finding

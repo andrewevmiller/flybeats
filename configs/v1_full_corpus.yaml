@@ -1,0 +1,37 @@
+# Phase B': the run that produces the model worth shipping.
+#
+# Everything in Phase A' ran on the first 256 GMD files, chosen so a
+# comparison could finish in an evening. The README records 25 epochs on 64
+# files ending with the loss still falling and onset F flat -- a model limited
+# by data -- and 256 did not move onset F off 0.30 either. This lifts the limit
+# entirely: 846 training clips, which is every one the corpus can supply. GMD
+# indexes 897 train rows but ships 51 of them MIDI-only, with audio_filename
+# blank, and the loader drops those. Nothing is missing from the download --
+# every *named* audio file is on disk in all three splits.
+#
+# That is ~3.3x the data. Only the training portion scales (validation stays at
+# 120 clips), so from the 300-343 s/epoch the A' runs measure, expect roughly
+# 15-20 min/epoch and 3-4 hours for 12 -- an extrapolation, not a measurement.
+#
+#   python src/train.py --config configs/v1_full_corpus.yaml
+#   python scripts/probe_velocity.py --checkpoint runs/v1_full_corpus/best.pt
+#
+# It answers one question and it is not about velocity: does onset F move when
+# the data limit comes off, or has it provably stopped moving? Either way
+# "undertrained" stops being an assumption.
+#
+# THE _base_ LINE BELOW IS THE PHASE A' DECISION. It is set to the config that
+# leads on the evidence available when this file was written -- velocity_w5_cpu
+# (A'1), the only run then clearing the gate, at head sd 0.105. Three runs were
+# still training. Before starting this, re-read the decision:
+#
+#   python scripts/compare_velocity_runs.py
+#
+# and point _base_ at whatever actually won. Running Phase B' on the wrong arm
+# costs the whole run, and a Phase B' model is what gets exported and shipped.
+_base_: velocity_w5_cpu.yaml
+name: v1_full_corpus
+data:
+  max_files: null        # falsy -> no limit; the loader takes every row
+train:
+  epochs: 12
