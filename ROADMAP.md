@@ -209,8 +209,17 @@ producing significantly-inverted classes, and widens what it produces, without
 a measurable detection cost — and nothing can yet be said about which drum it
 learns.**
 
-`velocity_probe_cpu_s2` (third baseline seed) is running and will tighten (1)
-and (2). A third A′1 seed would be worth more than either, and is not queued.
+`velocity_probe_cpu_s2` (third baseline seed) tightens (1) and (2). A third A′1
+seed would be worth more than either, and is not queued.
+
+**`velocity_peak_cpu` (A′3, peak-only) was dropped rather than run.** It was
+queued before the seed result, as a single run of a new arm. After that result
+a single run of a new arm cannot be interpreted: its per-class signs are one
+draw from a distribution wide enough to flip them, so the output would be a
+table that has to be caveated into saying nothing. Peak-only is still worth
+testing — at three seeds, alongside three more of A′1, under the averaged-gate
+method above. Running it once would have spent the compute and bought no
+evidence.
 
 ---
 
