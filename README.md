@@ -639,11 +639,13 @@ type mid-performance costs nothing extra to ship.
 
 - **Connectome** — MaleCNS v1.0, Google Research / HHMI Janelia, CC-BY, from
   `gs://flyem-male-cns/v1.0/connectome-data/flat-connectome/`.
-- **Drums** — Magenta **GMD** (`groove-v1.0.0`, 5.4 GB): 1,150 clips,
-  897/124/129 train/val/test, 18 styles. PLAN.md names E-GMD, whose audio
-  archive is 96 GB; GMD is the same Roland TD-11 recordings and style
-  vocabulary. `scripts/fetch_egmd.py --corpus egmd` fetches E-GMD if you have
-  the disk.
+- **Drums** — Magenta **GMD** (`groove-v1.0.0`, 5.4 GB): 1,150 indexed clips,
+  897/124/129 train/val/test, 18 styles — but **60 of those rows are MIDI-only**
+  (`audio_filename` blank), and this model needs the audio. What actually
+  trains is **846/120/124**. Nothing is missing from the download: every named
+  audio file is on disk. PLAN.md names E-GMD, whose audio archive is 96 GB; GMD
+  is the same Roland TD-11 recordings and style vocabulary.
+  `scripts/fetch_egmd.py --corpus egmd` fetches E-GMD if you have the disk.
 
 A synthetic click-track dataset ships alongside so the pipeline and tests run
 with no corpus at all, and so a model failure stays distinguishable from a
