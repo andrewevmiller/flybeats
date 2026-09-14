@@ -299,6 +299,11 @@ def main(argv=None) -> int:
             # identical init seed across arms: the topology is what differs
             torch.manual_seed(base_seed)
             np.random.seed(base_seed)
+            # The loaders are built once and reused, so without this reset arm
+            # two starts wherever arm one left the shuffle -- different batch
+            # order, different training windows, and the gap between the arms
+            # stops being about topology alone.
+            train_mod.reseed_loader(train_loader, base_seed)
 
             model, kit = build_arm(arm, cfg, sg, n_styles, seed=seed)
             model = model.to(device)

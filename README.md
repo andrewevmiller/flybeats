@@ -51,6 +51,11 @@ That works on a laptop with nothing else installed, Windows included: the
 kit ships in `kits/synth/`. Live input (`--sound-source samples` with no
 `--render`) additionally needs `sounddevice`.
 
+> **No bundle is published yet.** `flybeats-8piece.fb` is what the export step
+> below produces; until one is released, this path needs a model you trained.
+> Publishing one is [ROADMAP.md](ROADMAP.md) Phase C, and the cheapest thing on
+> that page that changes whether the project is usable.
+
 The checkpoint already carries the whole topology, so a bundle is ~10 MB and
 `scripts/export_bundle.py` verifies it reproduces the original model's output
 exactly before it writes the file. Everything below is for *building* a model.
@@ -461,6 +466,23 @@ trains, evaluates, prints a number, and is silently meaningless.
    symptom was a metric that would not move while everything upstream looked
    healthy.
 
+10. **The validation set moved between readings.** `GrooveDataset` cropped every
+    clip at a random offset drawn from numpy's global RNG — on the validation
+    split as well as the training one. So one checkpoint evaluated twice
+    disagreed with itself, and a gap between two ablation arms was part
+    topology and part two different random slices of the corpus. The probe
+    script had already been seeded for exactly this reason; the training path
+    had not. Validation windows are now fixed per clip, and training keeps its
+    augmentation while becoming replayable.
+
+11. **Every arm shuffled from wherever the last one stopped.** The loaders are
+    built once and reused across arms, and `shuffle=True` without a generator
+    draws from the global RNG, so reseeding before a model build did not put
+    the batch order back. Each arm saw different batches in a different order.
+    The loader now has its own generator, `reseed_loader` resets it per arm,
+    and the per-worker numpy seed is set explicitly — torch does not do that
+    one, so forked workers had been handing back correlated "random" choices.
+
 Two more, smaller: torch's CSR autograd returns a gradient sized to the
 *deduplicated* values when edges repeat, which the rewiring ablation can
 produce — so the backward is written out explicitly and checked against a dense
@@ -514,13 +536,21 @@ scripts/verify_types.py      Phase 0 gate
 scripts/diagnose.py          why a checkpoint is not learning, separated by layer
 scripts/propagation.py       what the subgraph carries, per hop, before training
 scripts/render_full_graph.py offline pass over all 162k neurons
-tests/                       95 tests: exact gradients, frozen signs and topology,
+scripts/make_test_fixture.py a small real subgraph to test against, from a big one
+tests/                       134 tests: exact gradients, frozen signs and topology,
                              ablation invariants, encoder window/full equivalence
                              (calibrated and not), the non-negativity constraint,
                              one-sided rate penalty, hop distances, checkpointing
                              transparency, streaming peak state, bundle round
-                             trips, choke groups and velocity layers
+                             trips, choke groups and velocity layers, fixed
+                             validation windows and replayable batch order
+tests/fixtures/              two real subgraphs (10k and 2k), so every test that
+                             needs a model runs without the 1.1 GB download
 ```
+
+`.github/workflows/tests.yml` runs the suite on every push, on 3.11 and 3.12.
+It needs neither the connectome nor the corpus: one test skips without GMD,
+and the rest run in about 15 seconds.
 
 No module hardcodes a cell-type string. Every population is read from
 `data/verified_types.json`.
@@ -669,8 +699,9 @@ data-path failure.
 
 ## Picking this up again
 
-Everything is committed and pushed on `claude/resume-previous-session-8r6f7g`;
-95 tests pass. The connectome cache, subgraph cache and GMD corpus are rebuilt by
+Everything is committed and pushed on `main`; 133 tests pass on a bare checkout
+(one more once the GMD corpus is present), and CI runs them on every push.
+The connectome cache, subgraph cache and GMD corpus are rebuilt by
 the `scripts/fetch_*.py` commands in [Quick start](#quick-start) — they are
 gitignored, and so is `runs/`, so **a trained model only survives as an exported
 bundle**. Export one before you lose the machine that trained it.
@@ -789,3 +820,20 @@ the loss still falling and onset F flat, which is a model limited by data.
 - E-GMD's audio archive is 96 GB. The default corpus is GMD (5.4 GB), same
   recordings and style vocabulary.
 - No GPU here, so every number in this repo is CPU-scale.
+
+---
+
+## License
+
+Code: **GNU AGPL-3.0** (see [LICENSE](LICENSE)). Copyright (C) 2026 Andrew
+Miller. It comes with no warranty; if you run a modified version as a network
+service, section 13 asks you to offer its source to the people using it.
+
+The data is not ours to license and is not redistributed here — both fetch
+scripts pull it from the original source, under its own terms:
+
+- **MaleCNS v1.0 connectome** — Google Research / HHMI Janelia, CC-BY.
+- **Groove MIDI Dataset** — Magenta / Google, CC-BY 4.0.
+
+Cite those two in anything that reports a number from this repo. A trained
+model is a derivative of both.

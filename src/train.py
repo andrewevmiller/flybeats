@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import random
 import time
 from pathlib import Path
 
@@ -121,20 +122,26 @@ def resolve_rate_ceiling(model, tb: dict, rates: torch.Tensor) -> float:
 def calibrate_encoder(model, dataset, cfg, device, n_clips: int = 16) -> dict:
     """Measure the encoder's feature standardisation on real training audio.
 
-    Deterministic on purpose -- the corpus loader crops clips at random, so the
-    numpy stream is seeded and restored around the sample. Every Phase 4 arm
-    then calibrates to exactly the same affine, and a re-run of a config gets
-    the same encoder it got last time.
+    Deterministic on purpose -- the corpus loader crops clips at random, so
+    both random streams it can draw from are seeded and restored around the
+    sample. Every Phase 4 arm then calibrates to exactly the same affine, and a
+    re-run of a config gets the same encoder it got last time. Torch is in that
+    list because the training split's window offsets come from torch's
+    generator now; seeding numpy alone would have left the calibration audio
+    drifting between arms while this docstring still claimed it did not.
     """
     if not getattr(model.encoder, "standardize", False):
         return {"calibrated": False}
-    state = np.random.get_state()
-    np.random.seed(int(cfg["train"].get("seed", 0)))
+    seed = int(cfg["train"].get("seed", 0))
+    np_state, torch_state = np.random.get_state(), torch.random.get_rng_state()
+    np.random.seed(seed)
+    torch.manual_seed(seed)
     try:
         wavs = [torch.as_tensor(dataset[i][0]).unsqueeze(0).to(device)
                 for i in range(min(n_clips, len(dataset)))]
     finally:
-        np.random.set_state(state)
+        np.random.set_state(np_state)
+        torch.random.set_rng_state(torch_state)
     return model.encoder.calibrate(wavs)
 
 
@@ -320,17 +327,51 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
     }
 
 
+def _seed_worker(worker_id: int) -> None:
+    """Give each DataLoader worker its own seeded numpy and random state.
+
+    Torch seeds its own per-worker generator; numpy's global RNG it does not
+    touch, so forked workers inherit one state and hand back correlated
+    "random" choices. Nothing in a loss curve would show that.
+    """
+    seed = torch.initial_seed() % 2**32
+    np.random.seed(seed)
+    random.seed(seed)
+
+
+def reseed_loader(loader, seed: int) -> None:
+    """Put a loader's shuffle stream back to the start of a known sequence.
+
+    A loader is built once and reused -- across ablation arms, or across two
+    passes of one comparison. Its generator keeps advancing, so the second user
+    starts wherever the first stopped and gets different batches in a different
+    order. That is invisible: both runs look fine, and the difference between
+    them gets attributed to whatever the comparison was actually about.
+    """
+    gen = getattr(loader, "generator", None)
+    if gen is not None:
+        gen.manual_seed(int(seed))
+
+
 def build_loaders(cfg, kit):
     dcfg = dict(cfg["data"])
     dcfg.setdefault("step_ms", cfg["audio"]["step_ms"])
     dcfg.setdefault("sample_rate", cfg["audio"]["sample_rate"])
+    dcfg.setdefault("window_seed", cfg["train"].get("seed", 0))
     tr = build_dataset(dcfg, kit.classes, "train")
     va = build_dataset(dcfg, kit.classes, cfg["data"].get("val_split", "validation"))
     bs = cfg["train"].get("batch_size", 4)
+    # Shuffle order and worker seeds both come off this generator, so two runs
+    # of one config see the batches in the same order and the same windows
+    # inside them. Without it the arms of an ablation differ by data order as
+    # well as by topology, and the difference is invisible.
+    gen = torch.Generator().manual_seed(int(cfg["train"].get("seed", 0)))
     train_loader = DataLoader(tr, batch_size=bs, shuffle=True,
-                              num_workers=cfg["train"].get("workers", 0), drop_last=True)
+                              num_workers=cfg["train"].get("workers", 0), drop_last=True,
+                              generator=gen, worker_init_fn=_seed_worker)
     val_loader = DataLoader(va, batch_size=bs, shuffle=False,
-                            num_workers=cfg["train"].get("workers", 0))
+                            num_workers=cfg["train"].get("workers", 0),
+                            worker_init_fn=_seed_worker)
     return train_loader, val_loader, int(getattr(tr, "n_styles", 1))
 
 

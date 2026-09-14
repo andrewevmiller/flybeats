@@ -287,19 +287,18 @@ are the `generated` date and a `neuprint_crosscheck` block. Discard it with
 pytest -q
 ```
 
-**11 seconds** on a warm cache. The first run after step 6 takes a minute or
-two longer, because two of the tests build small subgraphs of their own and
-cache them. Expected, with the connectome present and no drum corpus:
+**About 15 seconds**, and — unlike every other step on this page — it needs
+nothing downloaded. The subgraph fixtures in `tests/fixtures/` are real
+extractions committed to the repo, so the tests that need a model to exist run
+straight from a clean clone. Expected, before or after step 6:
 
 ```
-53 passed, 1 skipped
+133 passed, 1 skipped
 ```
 
-The skip is the GMD-dependent pipeline test; it runs once step 11 is done. If
-you run the tests before step 6, you get **43 passed, 11 skipped** — also
-correct. Both counts were verified.
-
-A failure here means something is wrong with the install, not with the project.
+The skip is the GMD-dependent pipeline test; it runs once step 11 is done, for
+**134 passed**. The same suite runs in CI on every push, so a failure here means
+something is wrong with your install rather than with the project.
 
 ---
 
@@ -369,7 +368,7 @@ The default corpus is Magenta **GMD** (`groove-v1.0.0`): 1,150 clips, 18 styles,
 audio plus sample-aligned MIDI. `--corpus egmd` fetches E-GMD instead, whose
 audio archive is 96 GB — the README explains why GMD is the default.
 
-With the corpus present, `pytest -q` becomes **54 passed**, and the real-corpus
+With the corpus present, `pytest -q` becomes **134 passed**, and the real-corpus
 CPU run becomes available:
 
 ```powershell
@@ -414,7 +413,7 @@ python src/realtime.py --config configs/v1_8piece.yaml --benchmark
 | 3 | `python -c "import torch; print(torch.__version__)"` | a 2.x version |
 | 4 | `dir data\raw` | 3 files, ~1.11 GB total |
 | 5 | `python scripts/verify_types.py` | every line `[OK ]` |
-| 6 | `pytest -q` | `53 passed, 1 skipped` |
+| 6 | `pytest -q` | `133 passed, 1 skipped` |
 | 7 | `python src/subgraph.py` | `SubGraph: 30,000 neurons, 2,942,102 edges` |
 | 8 | `python src/train.py --config configs/sanity_3piece_run.yaml` | `best val onset F: 0.67` |
 

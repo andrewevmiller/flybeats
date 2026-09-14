@@ -139,11 +139,9 @@ def test_velocity_rides_along_with_one_pass_of_the_model():
     """``with_velocity`` must not change what the other outputs are."""
     from build import build_model, get_subgraph, load_config
 
-    cache = ROOT / "data" / "cache" / "subgraph_test2k.npz"
-    cfg = load_config(ROOT / "configs" / "sanity_3piece.yaml")
-    cfg["subgraph"].update(max_nodes=2000, cache=str(cache))
-    if not cache.exists():
-        pytest.skip("no cached subgraph in this checkout")
+    from conftest import use_small_graph
+
+    cfg = use_small_graph(load_config(ROOT / "configs" / "sanity_3piece.yaml"))
 
     torch.manual_seed(0)
     model, _ = build_model(cfg, get_subgraph(cfg), n_styles=1)

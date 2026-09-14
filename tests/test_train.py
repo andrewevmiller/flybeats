@@ -21,30 +21,34 @@ import train as T  # noqa: E402
 from build import build_model, get_subgraph, load_config  # noqa: E402
 from decoder import DrumKit  # noqa: E402
 
-#: The checkpointing test needs a real subgraph, and building one falls back to
-#: the connectome download when no cache is on disk. On a fresh checkout that
-#: raised FileNotFoundError from deep inside pandas instead of skipping, which
-#: reads as a broken repo rather than as missing data.
-TEST_CACHE = ROOT / "data" / "cache" / "subgraph_test2k.npz"
-ANNOTATIONS = ROOT / "data" / "raw" / "body-annotations-male-cns-v1.0-minconf-0.5.feather"
+from conftest import SMALL_GRAPH, use_small_graph  # noqa: E402
+
+#: The checkpointing test needs a real subgraph. It used to want one the
+#: checkout might not have, and building it falls back to the connectome
+#: download -- which on a fresh checkout raised FileNotFoundError from deep
+#: inside pandas rather than skipping, reading as a broken repo. A real
+#: 2,000-neuron fixture is committed now (see tests/conftest.py), so this runs
+#: everywhere; the guard stays for a checkout whose fixture is missing.
 needs_graph = pytest.mark.skipif(
-    not TEST_CACHE.exists() and not ANNOTATIONS.exists(),
-    reason="no cached subgraph and no connectome download in this checkout",
+    not SMALL_GRAPH.exists(),
+    reason="no subgraph fixture in this checkout",
 )
 
 
 def _tiny_cfg():
-    cfg = load_config(ROOT / "configs" / "sanity_3piece.yaml")
+    cfg = use_small_graph(load_config(ROOT / "configs" / "sanity_3piece.yaml"))
     cfg["data"].update(synthetic=True, n_clips=4, seconds=0.5)
     cfg["train"].update(batch_size=2, tbptt_steps=25, workers=0)
-    cfg["subgraph"]["max_nodes"] = 2000
-    cfg["subgraph"]["cache"] = str(ROOT / "data" / "cache" / "subgraph_test2k.npz")
     return cfg
 
 
 def _grads(cfg, sg, loader, n_styles, **overrides):
     torch.manual_seed(0)
     np.random.seed(0)
+    # The loader has its own generator, so seeding the global RNG does not put
+    # its shuffle back to the start. Two passes over one loader are only
+    # comparable if both see the same batches in the same order.
+    T.reseed_loader(loader, 0)
     model, _ = build_model(cfg, sg, n_styles=max(n_styles, 1))
     c = copy.deepcopy(cfg)
     c["train"].update(overrides)

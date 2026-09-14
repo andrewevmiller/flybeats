@@ -6,3 +6,8 @@ runs/
 __pycache__/
 .venv/
 *.egg-info/
+
+# A cache written by running a script from inside src/ -- the real one
+# lives in data/cache/. One copy of it is committed as a test fixture
+# (tests/fixtures/), which is where a checked-in graph belongs.
+src/data/

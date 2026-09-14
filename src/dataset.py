@@ -214,13 +214,15 @@ class GrooveDataset(Dataset):
     """Magenta GMD / E-GMD: real drum audio with sample-aligned MIDI.
 
     Clips are cut to a fixed window so they batch; the window is chosen by
-    ``seconds`` and sampled at a random offset per epoch for augmentation.
+    ``seconds``. On the training split the offset is random, for augmentation.
+    On any other split it is **fixed per clip** -- see ``random_windows``.
     """
 
     def __init__(
         self, root: Path, classes: list[str], split: str = "train",
         seconds: float = 4.0, sample_rate: int = 22_050, step_ms: float = 5.0,
         sigma_ms: float = 20.0, max_files: int | None = None,
+        random_windows: bool = True, window_seed: int = 0,
     ):
         import soundfile  # noqa: F401  (fail early with a clear message)
 
@@ -228,6 +230,7 @@ class GrooveDataset(Dataset):
         self.seconds, self.sample_rate, self.step_ms = seconds, sample_rate, step_ms
         self.sigma_ms = sigma_ms
         self.n_steps = int(round(seconds * 1000.0 / step_ms))
+        self.random_windows, self.window_seed = random_windows, window_seed
 
         info = self.root / "info.csv"
         if not info.exists():
@@ -262,6 +265,29 @@ class GrooveDataset(Dataset):
     def n_styles(self) -> int:
         return len(self.styles)
 
+    def _window_start(self, i: int, span: int) -> int:
+        """Where in the clip the window begins.
+
+        Two jobs, and conflating them quietly costs a comparison. Training
+        wants a different window each epoch, as augmentation. Validation wants
+        the *same* window every epoch and in every ablation arm -- otherwise
+        onset F moves because the audio moved, and a gap between two arms is
+        partly a gap between two random slices of the corpus.
+
+        This was one unseeded ``np.random.randint`` for both splits. Random
+        windows now come from torch's per-worker generator, which the
+        DataLoader seeds deterministically from ``train.seed`` (see
+        ``train.build_loaders``) -- reproducible without being frozen, and
+        without numpy's global RNG, which is not reseeded per worker and so
+        handed every worker the same offsets. Fixed windows are derived from
+        the row index, so clip *i* always yields the same audio.
+        """
+        if span <= 1:
+            return 0
+        if self.random_windows:
+            return int(torch.randint(0, span, (1,)).item())
+        return int(np.random.default_rng((self.window_seed, i)).integers(0, span))
+
     def __getitem__(self, i: int):
         import soundfile as sf
         import pretty_midi
@@ -283,7 +309,7 @@ class GrooveDataset(Dataset):
             audio = np.pad(audio, (0, want - len(audio)))
             offset_s = 0.0
         else:
-            start = np.random.randint(0, len(audio) - want + 1)
+            start = self._window_start(i, len(audio) - want + 1)
             audio = audio[start: start + want]
             offset_s = start / self.sample_rate
 
@@ -354,4 +380,8 @@ def build_dataset(cfg: dict, classes: list[str], split: str = "train"):
         step_ms=cfg.get("step_ms", 5.0),
         sigma_ms=cfg.get("sigma_ms", 20.0),
         max_files=cfg.get("max_files"),
+        # Augment the training split; hold every other split still, so a
+        # metric read twice on one checkpoint reads the same both times.
+        random_windows=(split == "train"),
+        window_seed=int(cfg.get("window_seed", 0)),
     )

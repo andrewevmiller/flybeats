@@ -1,0 +1,43 @@
+# The suite needs no connectome download and no corpus: the subgraph fixtures
+# in tests/fixtures/ are real extractions small enough to commit, and the
+# click-track dataset stands in for audio. That is what makes this job ~1 minute
+# rather than a 1.1 GB fetch, and it is worth keeping true -- a test that needs
+# a download is a test that only runs on the machine that already did one.
+name: tests
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.12 is what SETUP.md recommends; 3.11 is the floor the wheels in
+        # requirements.txt still cover.
+        python-version: ["3.11", "3.12"]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          # CPU torch explicitly: the default wheel carries CUDA, which is ~2 GB
+          # of download this job has no use for. Installed first so the
+          # requirements file finds torch>=2.2 already satisfied.
+          pip install --index-url https://download.pytorch.org/whl/cpu torch
+          pip install -r requirements-dev.txt
+
+      - name: Run the suite
+        run: pytest -q

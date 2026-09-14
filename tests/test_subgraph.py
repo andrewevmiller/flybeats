@@ -17,16 +17,21 @@ sys.path.insert(0, str(ROOT / "src"))
 from connectome import NT_SIGN  # noqa: E402
 from subgraph import SubGraph, hops_from  # noqa: E402
 
-CACHE = ROOT / "data" / "cache" / "subgraph.npz"
-
+from conftest import real_graph  # noqa: E402
 
 @pytest.fixture(scope="module")
 def sg():
-    """The real cached subgraph. Tests that need it skip without it; tests that
-    can build their own graph should not be held hostage to a 1.1 GB download."""
-    if not CACHE.exists():
-        pytest.skip("no cached subgraph in this checkout")
-    return SubGraph.load(CACHE)
+    """The real cached subgraph.
+
+    A locally built cache if there is one -- that is the graph being trained on
+    -- and otherwise the committed 10k extraction, which is a real one too.
+    Either way these invariants are checked against real anatomy; a synthetic
+    fixture would not exercise Dale's law across a real transmitter table.
+    """
+    cache = real_graph()
+    if cache is None:
+        pytest.skip("no cached subgraph and no fixture in this checkout")
+    return SubGraph.load(cache)
 
 
 def test_edge_signs_obey_dales_law(sg):

@@ -19,13 +19,11 @@ sys.path.insert(0, str(ROOT / "src"))
 from build import build_model, get_subgraph, load_config  # noqa: E402
 from bundle import DERIVED_BUFFERS, build_bundle, load_bundle  # noqa: E402
 
+from conftest import use_small_graph  # noqa: E402
+
 
 def _tiny_model():
-    cfg = load_config(ROOT / "configs" / "sanity_3piece.yaml")
-    cfg["subgraph"]["max_nodes"] = 2000
-    cfg["subgraph"]["cache"] = str(ROOT / "data" / "cache" / "subgraph_test2k.npz")
-    if not Path(cfg["subgraph"]["cache"]).exists():
-        pytest.skip("no cached subgraph in this checkout")
+    cfg = use_small_graph(load_config(ROOT / "configs" / "sanity_3piece.yaml"))
     sg = get_subgraph(cfg)
     torch.manual_seed(0)
     model, _ = build_model(cfg, sg, n_styles=3)
