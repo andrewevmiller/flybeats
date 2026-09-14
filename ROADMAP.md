@@ -199,15 +199,35 @@ Three things follow, and only these three:
    (0.023). Whatever `velocity_weight` 5.0 costs detection, it is smaller than
    this design can see.
 
-3. **A′1's head spread beats the baseline's at both seeds**: 0.105 and 0.137
-   against 0.084 and 0.100, non-overlapping. Still 38–50% of the target's
-   0.272, so the head remains closer to the mean than to the drummer.
+3. ~~**A′1's head spread beats the baseline's at both seeds**: 0.105 and 0.137
+   against 0.084 and 0.100, non-overlapping.~~ **Withdrawn.** That was two
+   baseline seeds. The third is 0.122, above A′1's 0.105, and the ranges
+   overlap: baseline 0.084–0.122, A′1 0.105–0.137. No spread claim survives.
+   Every arm stays at 37–56% of the target's 0.272 — the head is still closer
+   to the mean than to the drummer, in all of them.
 
-That is the phase's result, and it is narrower than the three single-run
-sections above suggested: **turning the velocity weight up makes the head stop
-producing significantly-inverted classes, and widens what it produces, without
-a measurable detection cost — and nothing can yet be said about which drum it
-learns.**
+With the third baseline seed in, the full picture:
+
+```
+                onset F              head sd            gate
+baseline s0     0.3006               0.084              fail
+baseline s1     0.2981               0.100              fail
+baseline s2     0.3002               0.122              fail
+A′1 s0          0.2761               0.105              PASS
+A′1 s1          0.2992               0.137              PASS
+```
+
+**One thing replicated, and it is the whole result of the phase: raising
+`velocity_weight` to 5.0 stops the head producing significantly-inverted
+classes.** The baseline fails the gate at three seeds out of three, A′1 passes
+at two out of two. Nothing else here is distinguishable from noise.
+
+Note which way the variances fall, because it is not the way the phase assumed.
+The *baseline's* onset F is remarkably stable — 0.3006, 0.2981, 0.3002, a range
+of 0.0025 across three seeds. A′1's is not: 0.2761 and 0.2992, a range of
+0.0231 across two. A′1 s0 sits well below anything the baseline produced; A′1
+s1 sits inside it. So the detection cost is neither shown nor ruled out, and the
+arm that looked cheapest to measure is the one that needs more seeds.
 
 `velocity_probe_cpu_s2` (third baseline seed) tightens (1) and (2). A third A′1
 seed would be worth more than either, and is not queued.
