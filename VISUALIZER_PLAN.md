@@ -1,4 +1,4 @@
-# flybeats Visualizer — Execution Plan
+# FlyDrums Visualizer — Execution Plan
 
 Companion to `PLAN.md`. Covers two rendering surfaces driven by one event
 stream:
@@ -140,12 +140,29 @@ mapping is the point: it should read as biological control, not four unlabeled
 knobs.
 
 **Lesion toggles.** Per-cell-type mute switches wired to the shared
-`masking.py` primitive. Muting a type darkens its region on screen while the
-beat audibly degrades — the best demo this project produces, and the reason
-lesion mode and the brain view should ship in the same release.
+`masking.py` primitive. Muting a type changes its rendering on screen while
+the beat audibly degrades — the best demo this project produces, and the
+reason lesion mode and the brain view should ship in the same release.
+
+**Lesion is not an activity value — it gets its own channel.** Rendering a
+lesioned group by darkening it collides with the activity encoding: a silent
+group and a lesioned group both render dim. On a light stage the same
+collision runs in reverse, with both rendering pale. The states are not the
+same and the distinction matters most at exactly the moment the demo depends
+on it.
+
+Render lesioned groups as **hollow outlines** — filled means live, outline
+means masked. Outline carries no luminance meaning, so it survives both
+themes and any `activity_channel` setting unchanged. A lesioned population
+then reads as structurally absent rather than temporarily quiet, which is
+what it actually is. This is a correctness constraint under design rule 6,
+not a style choice, so it is fixed rather than exposed in the config surface.
 
 **Acceptance:** lesioning pIP10 produces near-silence (near-binary gate, per
-`PLAN.md`) and a visibly dark region, within one buffer tick of the toggle.
+`PLAN.md`) and a visibly outlined region, within one buffer tick of the
+toggle. Separately: silent, lesioned, and peak-activity groups are mutually
+distinguishable in both light and dark themes. Verify against a recorded
+fixture, in both themes, before the view ships.
 
 ---
 
@@ -162,6 +179,13 @@ jank; sprite batching will not.
 
 **Animation:** critically-damped spring tweens — rotation for limb segments,
 scale/opacity for pads. No physics engine.
+
+**Lesion treatment matches V3.** A limb segment whose driving MN population is
+masked renders as outline rather than fading out or going still — opacity
+reads as "not currently playing" and would be indistinguishable from a limb
+that simply has no note this bar. Pads whose population is masked take the
+same treatment. One visual vocabulary across both surfaces: filled is live,
+outline is masked.
 
 **Strike timing — the one non-obvious detail.** A naive "begin the swing at
 note-on" lands the contact frame tens of milliseconds *after* the sound, which
@@ -202,6 +226,29 @@ panel, mid-performance. Data and Layout changes require a manifest rebuild and
 a reconnect. Make this distinction visible in the UI — a knob that silently
 does nothing until restart is worse than no knob.
 
+### Activity polarity is derived from theme, not configured
+
+`activity_channel: brightness` encodes firing rate as luminance, which
+inverts between themes. On dark, brighter means more active. On light, a
+bright group is a white dot on a white field — peak activity becomes
+invisible and the channel silently reverses meaning. Under design rule 6
+that's instrumentation that lies.
+
+So polarity is derived from the resolved theme rather than exposed as a
+separate key: on light, activity drives darkness **and** saturation together,
+since pure luminance ramps have less usable range on white than on black.
+`both` is the safer default for light, because size carries the signal where
+the luminance range is compressed.
+
+The stage follows the theme by default rather than pinning dark in the DAW
+convention — a permanently dark canvas would mean light mode never touches
+anything but the chrome. `stage_follows_theme: false` restores the dark
+canvas for anyone who wants it.
+
+Open: whether `decay_ms` wants a higher default on light. Rapid dark-to-pale
+flicker across a bright field may read harsher at 50 Hz than the inverse does
+on dark. Check against a recorded fixture rather than guessing.
+
 ### Config surface (`configs/viz_*.yaml`)
 
 | Layer | Key | Options | Live? |
@@ -219,10 +266,17 @@ does nothing until restart is worse than no knob.
 | Avatar | `style_pack` | `schematic` (default) / user-supplied | no |
 | Avatar | `articulated_limbs` | derived from kit tier, overridable | no |
 | Theme | `palette`, `background`, `accent` | named packs or inline hex | yes |
+| Theme | `mode` | `system` (default) / `light` / `dark` | yes |
+| Theme | `stage_follows_theme` | default true; false pins the stage dark | yes |
 
 **Skin packs** are a directory of sprites plus a manifest. Because the frontend
 consumes recorded fixtures, a new skin can be authored and reviewed against a
 saved session with nothing else running.
+
+Every skin pack ships both theme variants, or declares in its manifest which
+it supports and fails loudly at load rather than rendering illegibly on the
+background it wasn't drawn for. The resolved theme is recorded in the session
+manifest, so a fixture replays looking the way it did when it was captured.
 
 ---
 
@@ -266,7 +320,7 @@ per-neuron detail is ever wanted, it belongs in the offline explorer.
 ## Repo additions
 
 ```
-flybeats/
+flydrums/
   viz/
     anatomy.py            # skeleton cache load, shared layout (V1 + V3)
     subgraph_explorer.py  # V1 static 3D render -> standalone html
