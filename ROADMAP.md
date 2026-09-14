@@ -118,6 +118,48 @@ went from 76 s to 1,415 s. Sequential, or set `OMP_NUM_THREADS`.
 
 ---
 
+### A′3 result: the composition is worse than either half of it
+
+Linear head *and* `velocity_weight` 5.0 — the obvious next experiment, on the
+reasoning that the two fixes addressed different faults. It does not combine
+them. It fails the gate harder than A′2 did:
+
+```
+class          A′1 weight 5.0        A′2 linear head        A′3 both
+kick           +0.028 spans 0        (not significant)      -0.129 [-.25,-.02]
+snare          +0.062 spans 0        -0.138 [-.22,-.06]     +0.138 [+.06,+.21]
+hat_open       -0.039 spans 0        +0.172 [+.02,+.29]     -0.162 [-.29,-.01]
+tom_low        +0.306 [+.13,+.45]    +0.433 [+.32,+.54]     +0.403 [+.29,+.52]
+tom_mid        +0.231 [+.09,+.37]    +0.283 [+.13,+.43]     +0.369 [+.23,+.49]
+crash          +0.349 [+.17,+.50]    +0.120 spans 0         -0.081 spans 0
+head sd        0.105                 0.154                  0.113
+onset F        0.2761                0.2831                 0.2690
+```
+
+**Two classes significantly backwards, where A′2 had one**, and the spread it
+was supposed to inherit from A′2 did not come with it: 0.113 against 0.154,
+barely above A′1's 0.105.
+
+What it did do is *move* which classes are backwards rather than reduce them.
+Snare, which A′2 got wrong, is now correctly positive — consistent with the
+weight change doing there what it did in A′1. Kick and hat_open went negative
+in exchange. The toms are the strongest of any arm. So the composition is not
+inert; it redistributes the error rather than removing it, which is what a head
+still fitting something other than hit strength would look like.
+
+**A′1 remains the only arm that clears the gate.** On the rule — a
+significantly positive class with none significantly negative, then widest head
+spread among those that pass — A′1 wins by being the only candidate, at 38% of
+the target's spread.
+
+Read that with the caveat the whole phase carries: these are single runs, and
+the intervals are bootstrap over rows *within* one run. They say nothing about
+run-to-run variation, which is exactly what the three seed runs still in the
+queue are for. A gap smaller than the across-seed spread is not a result, and
+that spread is still unmeasured.
+
+---
+
 ## Phase B′ — the full-corpus run
 
 One long run at every training clip the corpus can actually supply, which is
