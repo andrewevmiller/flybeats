@@ -69,7 +69,33 @@ probe() {
   fi
 }
 
-while pgrep -f "src/train.py" >/dev/null; do sleep 60; done
+# Is a *real* training job in flight?  Not "does any command line mention
+# src/train.py": pgrep -f matches whole command lines, and the shell that
+# launches this queue carries the pattern in its own (the startup check that
+# reports whether training came up). The naive guard therefore waited on its
+# own parent, and a batch of five runs sat in this loop overnight having
+# trained nothing. Only a live python interpreter counts as training.
+train_running() {
+  local p exe
+  for p in $(pgrep -f "src/train\.py" 2>/dev/null); do
+    [ "$p" = "$$" ] && continue
+    exe=$(readlink -f "/proc/$p/exe" 2>/dev/null) || continue
+    case "$exe" in */python*) return 0 ;; esac
+  done
+  return 1
+}
+
+# Bounded, because a guard that can block forever is how the above went
+# unnoticed: after three hours, say so loudly and run anyway.
+waited=0
+while train_running; do
+  sleep 60
+  waited=$((waited + 60))
+  if [ "$waited" -ge 10800 ]; then
+    say "WARNING: another training job still up after 3h -- starting anyway"
+    break
+  fi
+done
 say "starting batch: ${RUNS[*]}"
 
 for cfg in "${RUNS[@]}"; do
