@@ -1,0 +1,45 @@
+# Nothing ran this repository's tests automatically until now.
+#
+# That mattered more than it sounds: the Phase 4 ablation harness had two arms
+# that could not do a forward pass, because a signature changed in model.py and
+# the replacement cores in ablations.py did not. A test existed for neither, and
+# no run would have caught it before a GPU day. Several tests since then are
+# written to fail "in CI rather than mid-run", which was aspirational while
+# there was no CI.
+#
+# Checked before this file was written: on a clean checkout with no data/
+# directory, the suite is 139 passed, 18 skipped. The 18 need the connectome or
+# the drum corpus -- 1.1 GB and 5.4 GB respectively -- so they stay the
+# developer's job, and the guards that skip them are the same ones that keep a
+# fresh clone runnable at all.
+name: tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"    # SETUP.md's recommendation, for the
+          cache: pip                # python-rtmidi wheels
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Install, with CPU torch
+        # On Linux a plain `pip install torch` pulls the CUDA build: an ~800 MB
+        # wheel plus some 2 GB of nvidia packages, none of which a runner with
+        # no GPU can use. The CPU index is a few hundred MB. requirements-dev
+        # then finds torch already satisfied and leaves it alone.
+        run: |
+          python -m pip install --upgrade pip
+          pip install torch --index-url https://download.pytorch.org/whl/cpu
+          pip install -r requirements-dev.txt
+
+      - name: pytest
+        run: pytest -q
