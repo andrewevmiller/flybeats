@@ -1,0 +1,738 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="system">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flybeats — simulated UI</title>
+<style>
+:root {
+  --bg: #f4f3ee;
+  --chrome: #ffffff;
+  --stage: #fbfaf7;
+  --text: #2c2c2a;
+  --text2: #5f5e5a;
+  --text3: #8a8981;
+  --line: rgba(0,0,0,0.13);
+  --line2: rgba(0,0,0,0.22);
+  --accent-bg: #e6f1fb;
+  --accent-tx: #185fa5;
+  --accent: #378add;
+  --ok-bg: #eaf3de;
+  --ok-tx: #3b6d11;
+  --warn-bg: #faeeda;
+  --warn-tx: #854f0b;
+  --danger-bg: #fcebeb;
+  --danger-tx: #a32d2d;
+  --track: rgba(0,0,0,0.12);
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root[data-theme="system"] {
+    --bg: #17171a; --chrome: #202024; --stage: #18181b;
+    --text: #edece7; --text2: #a6a49c; --text3: #7d7b74;
+    --line: rgba(255,255,255,0.13); --line2: rgba(255,255,255,0.24);
+    --accent-bg: #123category; --accent-tx: #85b7eb; --accent: #378add;
+    --ok-bg: #1d3110; --ok-tx: #97c459;
+    --warn-bg: #3a2708; --warn-tx: #efb057;
+    --danger-bg: #3a1616; --danger-tx: #f09595;
+    --track: rgba(255,255,255,0.14);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17171a; --chrome: #202024; --stage: #18181b;
+  --text: #edece7; --text2: #a6a49c; --text3: #7d7b74;
+  --line: rgba(255,255,255,0.13); --line2: rgba(255,255,255,0.24);
+  --accent-bg: #16314d; --accent-tx: #85b7eb; --accent: #378add;
+  --ok-bg: #1d3110; --ok-tx: #97c459;
+  --warn-bg: #3a2708; --warn-tx: #efb057;
+  --danger-bg: #3a1616; --danger-tx: #f09595;
+  --track: rgba(255,255,255,0.14);
+}
+:root[data-theme="system"] { --accent-bg: #e6f1fb; }
+* { box-sizing: border-box; }
+body {
+  margin: 0; padding: 24px 16px 60px;
+  background: var(--bg); color: var(--text);
+  font: 400 14px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  transition: background .2s, color .2s;
+}
+.wrap { max-width: 1120px; margin: 0 auto; }
+h1 { font-size: 20px; font-weight: 500; margin: 0 0 2px; }
+.sub { color: var(--text2); font-size: 13px; margin: 0 0 16px; }
+.app { background: var(--chrome); border: 0.5px solid var(--line); border-radius: 12px; overflow: hidden; }
+.bar { display: flex; align-items: center; gap: 12px; padding: 9px 14px; border-bottom: 0.5px solid var(--line); flex-wrap: wrap; }
+.bar.btm { border-bottom: none; border-top: 0.5px solid var(--line); }
+.spacer { margin-left: auto; }
+.meta { font-size: 12px; color: var(--text2); font-variant-numeric: tabular-nums; }
+.meta.dim { color: var(--text3); }
+.seg { display: flex; border: 0.5px solid var(--line2); border-radius: var(--r); overflow: hidden; }
+.seg button {
+  font: inherit; font-size: 12px; padding: 4px 10px; border: none; cursor: pointer;
+  background: transparent; color: var(--text2);
+}
+.seg button.on { background: var(--accent-bg); color: var(--accent-tx); }
+.pill { font-size: 12px; padding: 3px 10px; border-radius: var(--r); white-space: nowrap; }
+.pill.live { background: var(--ok-bg); color: var(--ok-tx); }
+.pill.replay { background: var(--warn-bg); color: var(--warn-tx); }
+.pill.degr { background: var(--danger-bg); color: var(--danger-tx); }
+.pill.ghost { border: 0.5px solid var(--line2); color: var(--text2); cursor: pointer; }
+.stage { display: grid; gap: 10px; padding: 12px; background: var(--stage); }
+.stage.split { grid-template-columns: 1fr 1fr; }
+.pane { border: 0.5px solid var(--line); border-radius: var(--r); padding: 8px 10px 4px; background: var(--chrome); }
+.pane-label { font-size: 11px; color: var(--text3); letter-spacing: .02em; }
+svg { display: block; width: 100%; height: auto; }
+.rail { display: flex; gap: 18px; padding: 12px 14px; border-top: 0.5px solid var(--line); flex-wrap: wrap; }
+.knob { flex: 1 1 200px; min-width: 180px; }
+.knob-top { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.knob-name { font-size: 13px; }
+.knob-val { font-size: 12px; color: var(--text2); font-variant-numeric: tabular-nums; }
+.knob-fields { font-size: 11px; color: var(--text3); margin-top: 2px; line-height: 1.45; }
+.knob-fields b { font-weight: 400; color: var(--text2); }
+.knob-live { font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; margin: 6px 0 0; accent-color: var(--accent); }
+input[type=range]:disabled { opacity: .4; }
+.lesion { display: flex; gap: 8px; padding: 10px 14px; border-top: 0.5px solid var(--line); flex-wrap: wrap; align-items: center; }
+.lesion .lbl { font-size: 11px; color: var(--text3); margin-right: 2px; }
+.tog {
+  font: inherit; font-size: 12px; padding: 3px 10px; border-radius: var(--r);
+  border: 0.5px solid var(--line2); background: transparent; color: var(--text2); cursor: pointer;
+}
+.tog.on { background: var(--danger-bg); color: var(--danger-tx); border-color: transparent; }
+.readouts { display: flex; gap: 16px; padding: 8px 14px; border-top: 0.5px solid var(--line); flex-wrap: wrap; }
+details.cfg { border-top: 0.5px solid var(--line); }
+details.cfg summary { padding: 9px 14px; font-size: 12px; color: var(--text2); cursor: pointer; list-style: none; }
+details.cfg summary::-webkit-details-marker { display: none; }
+.cfg-body { padding: 4px 14px 14px; display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label { font-size: 11px; color: var(--text3); }
+select, button.apply {
+  font: inherit; font-size: 12px; padding: 5px 9px; border-radius: var(--r);
+  border: 0.5px solid var(--line2); background: var(--chrome); color: var(--text);
+}
+button.apply { cursor: pointer; }
+button.apply:disabled { opacity: .5; cursor: default; }
+.overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,.45);
+  display: none; align-items: center; justify-content: center; padding: 20px; z-index: 10;
+}
+.overlay.open { display: flex; }
+.bench { background: var(--chrome); border-radius: 12px; padding: 18px; max-width: 620px; width: 100%; }
+.bench h3 { margin: 0 0 2px; font-size: 16px; font-weight: 500; }
+.bench-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+.bench-tile { border: 0.5px solid var(--line); border-radius: var(--r); padding: 10px; }
+.bench-tile.best { border-color: var(--accent); }
+.note { font-size: 12px; color: var(--text3); margin: 10px 0 0; }
+.legend { display: flex; gap: 14px; padding: 6px 14px 10px; flex-wrap: wrap; }
+.legend span { font-size: 11px; color: var(--text3); display: flex; align-items: center; gap: 5px; }
+.sw { width: 11px; height: 11px; border-radius: 50%; display: inline-block; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Flybeats — simulated UI</h1>
+<p class="sub">Synthetic event stream. No model, no neuPrint. Every control below behaves as specified in UI_PLAN.md.</p>
+
+<div class="app">
+
+  <div class="bar">
+    <span class="meta" id="lat">28 ms</span>
+    <span class="meta dim" id="drops">0 dropped</span>
+    <span class="meta dim">schema v1</span>
+    <span class="pill degr hidden" id="degrPill">degraded</span>
+    <span class="spacer"></span>
+    <div class="seg" id="density">
+      <button data-v="play">Play</button>
+      <button data-v="inspect" class="on">Inspect</button>
+      <button data-v="deep">Deep</button>
+    </div>
+    <div class="seg" id="theme">
+      <button data-v="system" class="on">System</button>
+      <button data-v="light">Light</button>
+      <button data-v="dark">Dark</button>
+    </div>
+  </div>
+
+  <div class="bar">
+    <div class="seg" id="stageSel">
+      <button data-v="brain">Brain</button>
+      <button data-v="split" class="on">Split</button>
+      <button data-v="avatar">Avatar</button>
+    </div>
+    <div class="seg" id="source">
+      <button data-v="live" class="on">Live</button>
+      <button data-v="replay">Replay</button>
+    </div>
+    <span class="pill live" id="srcPill">Live</span>
+    <span class="spacer"></span>
+    <span class="pill ghost" id="benchBtn">Bench &#8599;</span>
+  </div>
+
+  <div class="stage split" id="stage">
+    <div class="pane" id="brainPane">
+      <div class="pane-label">Brain</div>
+      <svg id="brain" viewBox="0 0 460 300" aria-label="Soma point cloud"></svg>
+    </div>
+    <div class="pane" id="avatarPane">
+      <div class="pane-label">Performance</div>
+      <svg id="avatar" viewBox="0 0 460 300" aria-label="Fly avatar and kit"></svg>
+    </div>
+  </div>
+
+  <div class="legend" id="legend">
+    <span><i class="sw" id="swLive"></i> filled &mdash; live</span>
+    <span><i class="sw" style="background:transparent;border:1.5px solid var(--text3)"></i> outline &mdash; lesioned</span>
+    <span id="polarityNote">activity &rarr; brightness</span>
+  </div>
+
+  <div class="rail" id="rail"></div>
+
+  <div class="lesion" id="lesionRow"><span class="lbl">Lesion</span></div>
+
+  <div class="readouts" id="readouts">
+    <span class="meta">Swing <b id="swing">54</b>%</span>
+    <span class="meta">Hat <b id="hatoff">+6</b> ms</span>
+    <span class="meta dim" id="grouping">grouping: type_bilateral &middot; 10 groups</span>
+    <span class="meta dim spacer" id="fps">50 Hz</span>
+  </div>
+
+  <details class="cfg">
+    <summary>&#9662; Configuration &mdash; requires reconnect</summary>
+    <div class="cfg-body">
+      <div class="field"><label>grouping</label>
+        <select id="cfgGrouping"><option>type_bilateral</option><option>type</option><option>class</option></select></div>
+      <div class="field"><label>view</label>
+        <select id="cfgView"><option>anatomical</option><option>dorsal</option><option>sagittal</option></select></div>
+      <div class="field"><label>kit layout_preset</label>
+        <select id="cfgKit"><option>gm_8piece</option><option>bilateral_split</option><option>articulated</option></select></div>
+      <div class="field"><label>&nbsp;</label><button class="apply" id="applyBtn">Apply</button></div>
+      <div class="field"><label>&nbsp;</label><span class="meta dim" id="cfgStatus"></span></div>
+    </div>
+  </details>
+
+  <div class="bar btm">
+    <span class="meta dim">Frame budget</span>
+    <div class="seg" id="budget">
+      <button data-v="0" class="on">Normal</button>
+      <button data-v="1">Tight</button>
+      <button data-v="2">Critical</button>
+    </div>
+    <span class="meta dim" id="degrStep">no degradation</span>
+  </div>
+
+</div>
+
+<p class="note">Audio and MIDI never degrade &mdash; the frame-budget control only sheds visual work, in the order set by VISUALIZER_PLAN.md.</p>
+
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="bench">
+    <h3>Bench</h3>
+    <p class="sub" style="margin:0">Offline. Not running live &mdash; four models at 4x inference cost.</p>
+    <div class="bench-grid">
+      <div class="bench-tile best"><div class="meta">Real MaleCNS</div><div style="font-size:22px">0.81</div></div>
+      <div class="bench-tile"><div class="meta">Degree-matched rewire</div><div style="font-size:22px">0.63</div></div>
+      <div class="bench-tile"><div class="meta">Sign-shuffled</div><div style="font-size:22px">0.58</div></div>
+      <div class="bench-tile"><div class="meta">Dense GRU</div><div style="font-size:22px">0.74</div></div>
+    </div>
+    <p class="note">Placeholder numbers. Onset F-measure, 50 ms tolerance. The real ordering is what Phase 4 exists to find out.</p>
+    <p style="margin-top:14px"><button class="apply" id="closeBench">Close</button></p>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+/* ---------- seeded rng so the point cloud is stable across rebuilds ---------- */
+function rng(seed) { let s = seed; return () => (s = s * 16807 % 2147483647) / 2147483647; }
+
+/* ---------- groups: cell populations ---------- */
+const GROUPS = [
+  { id:"JO-A",   cls:"sensory", x: 52,  y: 214, n: 7 },
+  { id:"JO-B",   cls:"sensory", x: 44,  y: 160, n: 9 },
+  { id:"AMMC",   cls:"inter",   x: 132, y: 186, n: 8 },
+  { id:"WED",    cls:"inter",   x: 148, y: 132, n: 7 },
+  { id:"B1",     cls:"inter",   x: 196, y: 168, n: 5 },
+  { id:"pC1",    cls:"state",   x: 244, y: 100, n: 8 },
+  { id:"pC2",    cls:"state",   x: 288, y: 132, n: 6 },
+  { id:"pIP10",  cls:"command", x: 338, y: 152, n: 5 },
+  { id:"MN-L",   cls:"motor",   x: 404, y: 206, n: 9 },
+  { id:"MN-R",   cls:"motor",   x: 418, y: 122, n: 9 }
+];
+
+/* activity ramps: [rest, peak] per theme. light = activity drives darkness +
+   saturation; dark = activity drives luminance. */
+const RAMP = {
+  sensory: { light:["#e9e7f8","#3c3489"], dark:["#2b2842","#afa9ec"] },
+  inter:   { light:["#eceae3","#444441"], dark:["#2e2e2b","#d3d1c7"] },
+  state:   { light:["#e2f2eb","#085041"], dark:["#16362f","#5dcaa5"] },
+  command: { light:["#f8ece6","#712b13"], dark:["#3c241b","#f0997b"] },
+  motor:   { light:["#e7eff8","#0c447c"], dark:["#1a2a3d","#85b7eb"] }
+};
+
+const PADS = [
+  { id:"kick",  x: 230, y: 250, rx: 46, ry: 17, mn:"MN-L" },
+  { id:"snare", x: 130, y: 218, rx: 38, ry: 14, mn:"MN-L" },
+  { id:"hat",   x: 62,  y: 176, rx: 32, ry: 12, mn:"MN-L" },
+  { id:"tom1",  x: 186, y: 150, rx: 30, ry: 11, mn:"MN-R" },
+  { id:"tom2",  x: 268, y: 146, rx: 30, ry: 11, mn:"MN-R" },
+  { id:"floor", x: 350, y: 216, rx: 36, ry: 14, mn:"MN-R" },
+  { id:"ride",  x: 404, y: 168, rx: 34, ry: 13, mn:"MN-R" },
+  { id:"crash", x: 386, y: 112, rx: 30, ry: 11, mn:"MN-R" }
+];
+
+/* 16-step source pattern — the audio being transcribed */
+const PATTERN = {
+  kick:  [1,0,0,0, 0,0,1,0, 0,0,1,0, 0,0,0,0],
+  snare: [0,0,0,0, 1,0,0,0, 0,0,0,0, 1,0,0,1],
+  hat:   [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,0],
+  tom1:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,1,0,0],
+  tom2:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,1,0],
+  floor: [0,0,0,0, 0,0,0,0, 0,0,0,1, 0,0,0,0],
+  ride:  [0,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0],
+  crash: [1,0,0,0, 0,0,0,0, 0,0,0,0, 0,0,0,0]
+};
+
+/* ---------- sliders ---------- */
+const SLIDERS = [
+  { id:"drive", name:"Drive / density", mod:"pC1 / P1 population",
+    via:"cholinergic input (nAChR)", src:"pC1", val:0.62 },
+  { id:"tight", name:"Tightness", mod:"inhibitory synaptic gain, global",
+    via:"GABA-A (Rdl); GluCl on Glu edges", src:"B1", val:0.78 },
+  { id:"pocket", name:"Pocket", mod:"membrane time constant",
+    via:"intrinsic \u2014 no receptor", src:null, val:0.35 },
+  { id:"gate", name:"Master rhythm gate", mod:"pIP10",
+    via:"pIP10 ACh output to wing MNs", src:"pIP10", val:0.92 }
+];
+
+const LESIONABLE = ["JO-B","B1","pC1","pC2","pIP10","MN-R"];
+
+/* ---------- state ---------- */
+const S = {
+  density: "inspect",
+  theme: "system",
+  stage: "split",
+  source: "live",
+  budget: 0,
+  act: {},          // group id -> 0..1
+  trace: {},        // group id -> array
+  lesion: new Set(),
+  padFlash: {},     // pad id -> 0..1
+  wing: { L: 0, R: 0 },
+  step: 0,
+  nextStepAt: 0,
+  hz: 50,
+  drops: 0,
+  channel: "both",
+  decay: 140,
+  rebuilding: false
+};
+GROUPS.forEach(g => { S.act[g.id] = 0; S.trace[g.id] = new Array(48).fill(0); });
+PADS.forEach(p => { S.padFlash[p.id] = 0; });
+
+function slider(id) { return SLIDERS.find(s => s.id === id); }
+function effTheme() {
+  if (S.theme !== "system") return S.theme;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+}
+
+/* ---------- color helpers ---------- */
+function hex2rgb(h) {
+  return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+}
+function mix(a, b, t) {
+  const A = hex2rgb(a), B = hex2rgb(b);
+  const c = A.map((v,i) => Math.round(v + (B[i]-v)*t));
+  return "rgb(" + c[0] + "," + c[1] + "," + c[2] + ")";
+}
+
+/* ---------- build the brain point cloud ---------- */
+let dotEls = {};
+function buildBrain() {
+  const svg = document.getElementById("brain");
+  svg.innerHTML = "";
+  dotEls = {};
+  const r = rng(20260914);
+  GROUPS.forEach(g => {
+    dotEls[g.id] = [];
+    for (let i = 0; i < g.n; i++) {
+      const a = r() * Math.PI * 2, d = r() * 26;
+      const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("cx", (g.x + Math.cos(a)*d).toFixed(1));
+      c.setAttribute("cy", (g.y + Math.sin(a)*d*0.72).toFixed(1));
+      c.setAttribute("r", 4.6);
+      svg.appendChild(c);
+      dotEls[g.id].push(c);
+    }
+    const t = document.createElementNS("http://www.w3.org/2000/svg","text");
+    t.setAttribute("x", g.x); t.setAttribute("y", g.y + 42);
+    t.setAttribute("text-anchor","middle");
+    t.setAttribute("font-size","10.5");
+    t.setAttribute("class","glabel");
+    t.textContent = g.id;
+    svg.appendChild(t);
+  });
+}
+
+/* ---------- build the avatar + kit ---------- */
+let padEls = {}, wingEls = {};
+function buildAvatar() {
+  const svg = document.getElementById("avatar");
+  const NS = "http://www.w3.org/2000/svg";
+  svg.innerHTML = "";
+  padEls = {};
+
+  PADS.forEach(p => {
+    const e = document.createElementNS(NS, "ellipse");
+    e.setAttribute("cx", p.x); e.setAttribute("cy", p.y);
+    e.setAttribute("rx", p.rx); e.setAttribute("ry", p.ry);
+    e.setAttribute("stroke-width", 1.4);
+    svg.appendChild(e);
+    padEls[p.id] = e;
+  });
+
+  const body = document.createElementNS(NS, "ellipse");
+  body.setAttribute("cx", 232); body.setAttribute("cy", 96);
+  body.setAttribute("rx", 26); body.setAttribute("ry", 38);
+  body.setAttribute("class","fly");
+  svg.appendChild(body);
+
+  const head = document.createElementNS(NS, "circle");
+  head.setAttribute("cx", 232); head.setAttribute("cy", 44);
+  head.setAttribute("r", 16);
+  head.setAttribute("class","fly");
+  svg.appendChild(head);
+
+  ["L","R"].forEach(side => {
+    const g = document.createElementNS(NS, "g");
+    const p = document.createElementNS(NS, "path");
+    const dir = side === "L" ? -1 : 1;
+    p.setAttribute("d", "M232 86 L" + (232 + dir*104) + " 40");
+    p.setAttribute("stroke-width", 5);
+    p.setAttribute("stroke-linecap","round");
+    p.setAttribute("fill","none");
+    p.setAttribute("class","limb");
+    g.appendChild(p);
+    svg.appendChild(g);
+    wingEls[side] = g;
+  });
+}
+
+/* ---------- rail ---------- */
+function buildRail() {
+  const rail = document.getElementById("rail");
+  rail.innerHTML = "";
+  SLIDERS.forEach(s => {
+    const d = document.createElement("div");
+    d.className = "knob";
+    d.innerHTML =
+      '<div class="knob-top"><span class="knob-name">' + s.name + '</span>' +
+      '<span class="knob-val" id="v-' + s.id + '"></span></div>' +
+      '<input type="range" min="0" max="1" step="0.01" id="s-' + s.id + '">' +
+      '<div class="knob-fields" id="f-' + s.id + '"></div>';
+    rail.appendChild(d);
+    const inp = d.querySelector("input");
+    inp.value = s.val;
+    inp.addEventListener("input", e => { s.val = parseFloat(e.target.value); paintRail(); });
+  });
+
+  const d = document.createElement("div");
+  d.className = "knob";
+  d.innerHTML =
+    '<div class="knob-top"><span class="knob-name">Mapping</span></div>' +
+    '<div class="knob-fields" style="margin-top:6px">' +
+    '<label style="color:var(--text3)">activity_channel </label>' +
+    '<select id="chan"><option>both</option><option>brightness</option><option>size</option></select>' +
+    '</div>' +
+    '<div class="knob-fields" style="margin-top:6px">' +
+    '<label style="color:var(--text3)">decay_ms </label>' +
+    '<input type="range" min="40" max="400" step="10" id="decay" style="width:110px;vertical-align:middle">' +
+    '<span id="decayV" class="knob-live"></span></div>';
+  rail.appendChild(d);
+  document.getElementById("chan").value = S.channel;
+  document.getElementById("chan").addEventListener("change", e => { S.channel = e.target.value; });
+  const dc = document.getElementById("decay");
+  dc.value = S.decay;
+  dc.addEventListener("input", e => {
+    S.decay = parseInt(e.target.value, 10);
+    document.getElementById("decayV").textContent = S.decay + " ms";
+  });
+  document.getElementById("decayV").textContent = S.decay + " ms";
+  paintRail();
+}
+
+function paintRail() {
+  const replay = S.source === "replay";
+  SLIDERS.forEach(s => {
+    const inp = document.getElementById("s-" + s.id);
+    if (!inp) return;
+    inp.value = s.val;
+    inp.disabled = replay;
+    document.getElementById("v-" + s.id).textContent =
+      replay ? "inert" : s.val.toFixed(2);
+    const live = s.src
+      ? '<span class="knob-live">' + Math.round(S.act[s.src] * 100) + '</span> spk/s'
+      : '<span class="knob-live">' + (12 + Math.round(s.val * 28)) + '</span> ms mean &tau;';
+    const lesioned = s.src && S.lesion.has(s.src);
+    let html = "";
+    if (S.density !== "play") {
+      html += '<b>modulates</b> ' + s.mod;
+      if (S.density === "deep") html += '<br><b>acts through</b> ' + s.via;
+      html += '<br><b>now</b> ' + (lesioned ? "lesioned" : live);
+    }
+    document.getElementById("f-" + s.id).innerHTML = html;
+  });
+}
+
+/* ---------- lesion row ---------- */
+function buildLesion() {
+  const row = document.getElementById("lesionRow");
+  row.querySelectorAll("button").forEach(b => b.remove());
+  LESIONABLE.forEach(id => {
+    const b = document.createElement("button");
+    b.className = "tog"; b.textContent = id;
+    b.addEventListener("click", () => {
+      if (S.lesion.has(id)) S.lesion.delete(id); else S.lesion.add(id);
+      b.classList.toggle("on", S.lesion.has(id));
+      paintRail();
+    });
+    row.appendChild(b);
+  });
+}
+
+/* ---------- simulation ---------- */
+const BPM = 96;
+const STEP_MS = 60000 / BPM / 4;
+
+function fire(id, amt) {
+  if (S.lesion.has(id)) return;
+  S.act[id] = Math.min(1, S.act[id] + amt);
+}
+
+function doStep(now) {
+  const i = S.step % 16;
+  const drive = slider("drive").val;
+  const gate = slider("gate").val;
+
+  /* audio in -> JO */
+  const onset = PATTERN.kick[i] || PATTERN.snare[i] || PATTERN.hat[i];
+  if (onset) { fire("JO-A", 0.5); fire("JO-B", 0.85); }
+
+  /* forward through the pathway */
+  setTimeout(() => { if (S.act["JO-B"] > 0.1 || S.act["JO-A"] > 0.1) { fire("AMMC", 0.7); fire("WED", 0.5); } }, 12);
+  setTimeout(() => { fire("B1", 0.4 + slider("tight").val * 0.5); }, 22);
+  setTimeout(() => { fire("pC1", 0.35 + drive * 0.6); fire("pC2", 0.3 + drive * 0.4); }, 30);
+
+  /* command + motor, gated */
+  const gateOpen = !S.lesion.has("pIP10") && gate > 0.15;
+  const driveOk = !S.lesion.has("pC1");
+  setTimeout(() => { if (gateOpen) fire("pIP10", 0.45 + gate * 0.5); }, 40);
+
+  if (!gateOpen || !driveOk) return;
+
+  PADS.forEach(p => {
+    let hit = PATTERN[p.id] ? PATTERN[p.id][i] : 0;
+    if (!hit && drive > 0.55 && (p.id === "hat" || p.id === "snare")) {
+      if (Math.random() < (drive - 0.55) * 0.55) hit = 0.45;   /* ghost notes */
+    }
+    if (!hit) return;
+    if (S.lesion.has(p.mn)) return;
+    const vel = (hit === 1 ? 0.75 + Math.random() * 0.25 : hit) * (0.5 + gate * 0.5);
+    setTimeout(() => {
+      S.padFlash[p.id] = vel;
+      fire(p.mn, 0.6 + vel * 0.4);
+      /* contact frame lands ON the trigger timestamp: go to contact now,
+         follow through after. No windup chasing the sound. */
+      const side = p.mn === "MN-L" ? "L" : "R";
+      S.wing[side] = 1;
+    }, 46);
+  });
+}
+
+/* ---------- render ---------- */
+let lastPaint = 0;
+function paint(now) {
+  const theme = effTheme();
+  const visHz = S.budget >= 1 ? 25 : 50;
+  const interval = 1000 / visHz;
+  if (now - lastPaint < interval) return;
+  const dt = now - lastPaint;
+  lastPaint = now;
+
+  /* decay */
+  const k = Math.exp(-dt / S.decay);
+  GROUPS.forEach(g => {
+    S.act[g.id] *= k;
+    if (S.act[g.id] < 0.002) S.act[g.id] = 0;
+  });
+  PADS.forEach(p => { S.padFlash[p.id] *= Math.exp(-dt / 160); });
+  S.wing.L *= Math.exp(-dt / 190);
+  S.wing.R *= Math.exp(-dt / 190);
+
+  /* brain */
+  const showBrain = S.stage !== "avatar" && !(S.budget >= 2);
+  document.getElementById("brainPane").classList.toggle("hidden", !showBrain);
+  if (showBrain) {
+    GROUPS.forEach(g => {
+      const a = S.act[g.id];
+      const les = S.lesion.has(g.id);
+      const ramp = RAMP[g.cls][theme];
+      const useB = S.channel !== "size";
+      const useS = S.channel !== "brightness";
+      const fill = mix(ramp[0], ramp[1], useB ? a : 0.55);
+      const r = 4.6 + (useS ? a * 3.4 : 0);
+      dotEls[g.id].forEach(c => {
+        if (les) {
+          c.setAttribute("fill", "none");
+          c.setAttribute("stroke", theme === "dark" ? "#7d7b74" : "#9b998f");
+          c.setAttribute("stroke-width", "1.3");
+          c.setAttribute("r", 4.6);
+        } else {
+          c.setAttribute("fill", fill);
+          c.setAttribute("stroke", "none");
+          c.setAttribute("r", r.toFixed(2));
+        }
+      });
+    });
+    document.querySelectorAll("#brain .glabel").forEach(t => {
+      t.setAttribute("fill", theme === "dark" ? "#7d7b74" : "#8a8981");
+    });
+  }
+
+  /* avatar */
+  const showAvatar = S.stage !== "brain";
+  document.getElementById("avatarPane").classList.toggle("hidden", !showAvatar);
+  if (showAvatar) {
+    const flyCol = theme === "dark" ? "#3a3a3d" : "#d9d7cf";
+    const limbCol = theme === "dark" ? "#a6a49c" : "#5f5e5a";
+    document.querySelectorAll("#avatar .fly").forEach(e => e.setAttribute("fill", flyCol));
+    document.querySelectorAll("#avatar .limb").forEach(e => e.setAttribute("stroke", limbCol));
+
+    PADS.forEach(p => {
+      const e = padEls[p.id];
+      const les = S.lesion.has(p.mn);
+      if (les) {
+        e.setAttribute("fill", "none");
+        e.setAttribute("stroke", theme === "dark" ? "#7d7b74" : "#9b998f");
+      } else {
+        const f = S.padFlash[p.id];
+        const base = theme === "dark" ? "#2e2e2b" : "#e7e5dd";
+        const lit  = theme === "dark" ? "#efb057" : "#a8600a";
+        e.setAttribute("fill", mix(base, lit, Math.min(1, f)));
+        e.setAttribute("stroke", "none");
+      }
+    });
+
+    const tween = S.budget >= 1 ? 0.6 : 1;   /* follow-through disabled when tight */
+    ["L","R"].forEach(side => {
+      const dir = side === "L" ? -1 : 1;
+      const a = S.wing[side] * tween;
+      const rot = dir * (a * 46);
+      wingEls[side].setAttribute("transform",
+        "rotate(" + rot.toFixed(1) + " 232 86)");
+    });
+  }
+
+  /* chrome */
+  document.getElementById("fps").textContent = visHz + " Hz";
+  const swing = Math.round(50 + slider("pocket").val * 16 - slider("tight").val * 4);
+  const hat = Math.round((slider("pocket").val - 0.4) * 22);
+  document.getElementById("swing").textContent = swing;
+  document.getElementById("hatoff").textContent = (hat >= 0 ? "+" : "") + hat;
+  document.getElementById("lat").textContent =
+    (24 + Math.round(slider("pocket").val * 9)) + " ms";
+  document.getElementById("drops").textContent = S.drops + " dropped";
+  document.getElementById("polarityNote").textContent =
+    theme === "dark" ? "activity \u2192 brightness" : "activity \u2192 darkness + saturation";
+  document.getElementById("swLive").style.background =
+    mix(RAMP.state[theme][0], RAMP.state[theme][1], 0.85);
+
+  if (S.density === "deep") paintRail();
+}
+
+function loop(now) {
+  if (!S.nextStepAt) S.nextStepAt = now;
+  while (now >= S.nextStepAt) {
+    if (!S.rebuilding) doStep(now);
+    S.step++;
+    S.nextStepAt += STEP_MS;
+  }
+  if (S.budget >= 2 && Math.random() < 0.02) S.drops++;
+  paint(now);
+  requestAnimationFrame(loop);
+}
+
+/* ---------- density / theme / stage wiring ---------- */
+function segment(elId, fn) {
+  const el = document.getElementById(elId);
+  el.addEventListener("click", e => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    el.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+    fn(b.dataset.v);
+  });
+}
+
+segment("density", v => {
+  S.density = v;
+  const play = v === "play";
+  document.getElementById("rail").classList.toggle("hidden", play);
+  document.getElementById("lesionRow").classList.toggle("hidden", play);
+  document.getElementById("readouts").classList.toggle("hidden", play);
+  document.getElementById("legend").classList.toggle("hidden", play);
+  paintRail();
+});
+
+segment("theme", v => { S.theme = v; document.documentElement.setAttribute("data-theme", v); });
+segment("stage", () => {});
+segment("stageSel", v => {
+  S.stage = v;
+  document.getElementById("stage").classList.toggle("split", v === "split");
+});
+segment("source", v => {
+  S.source = v;
+  const pill = document.getElementById("srcPill");
+  pill.className = "pill " + (v === "live" ? "live" : "replay");
+  pill.textContent = v === "live" ? "Live" : "Replay \u00b7 session_03.jsonl";
+  paintRail();
+});
+segment("budget", v => {
+  S.budget = parseInt(v, 10);
+  const steps = ["no degradation", "25 Hz \u00b7 tweens off", "25 Hz \u00b7 grouping: class \u00b7 brain view off"];
+  document.getElementById("degrStep").textContent = steps[S.budget];
+  document.getElementById("degrPill").classList.toggle("hidden", S.budget === 0);
+});
+
+/* cold config */
+document.getElementById("applyBtn").addEventListener("click", () => {
+  const btn = document.getElementById("applyBtn");
+  const st = document.getElementById("cfgStatus");
+  btn.disabled = true; S.rebuilding = true;
+  st.textContent = "rebuilding manifest\u2026";
+  setTimeout(() => {
+    buildBrain();
+    const g = document.getElementById("cfgGrouping").value;
+    const n = g === "class" ? 5 : g === "type" ? 8 : 10;
+    document.getElementById("grouping").textContent = "grouping: " + g + " \u00b7 " + n + " groups";
+    st.textContent = "reconnected";
+    btn.disabled = false; S.rebuilding = false;
+    setTimeout(() => { st.textContent = ""; }, 1800);
+  }, 900);
+});
+
+document.getElementById("benchBtn").addEventListener("click", () =>
+  document.getElementById("overlay").classList.add("open"));
+document.getElementById("closeBench").addEventListener("click", () =>
+  document.getElementById("overlay").classList.remove("open"));
+
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {});
+
+buildBrain();
+buildAvatar();
+buildRail();
+buildLesion();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
