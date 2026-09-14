@@ -82,6 +82,10 @@ Installing on a Windows laptop — every step with its disk, RAM and wall time,
 which parts of the install survive the work still in flight, and a
 troubleshooting table — is in [SETUP.md](SETUP.md).
 
+Running the long work on your own machine, with a GPU — the CUDA smoke test
+that goes first, Phase B′, the Phase D campaign, and the thread setting that
+costs 13× if you get it wrong — is in [RUNBOOK.md](RUNBOOK.md).
+
 ---
 
 ## Phase 0: what the gate actually found
