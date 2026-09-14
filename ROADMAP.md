@@ -138,6 +138,30 @@ worth shipping. It must come after A′ or it gets redone.
 `configs/v1_full_corpus.yaml` is ready for it — its `_base_` line is the Phase
 A′ decision and has to be pointed at whichever arm actually won.
 
+**Before starting it, read this.** On 14 Sep this container restarted at least
+six times, with gaps of 23, 37, 43, and 70 minutes; a restart kills every
+process and leaves the disk intact. Training now checkpoints per epoch and
+resumes, so a restart costs one epoch — but only if an epoch *finishes*. A run
+whose epoch is longer than the gap between restarts never checkpoints and makes
+no progress at all, forever. That is not hypothetical: `velocity_lin_w5_cpu`
+completed no epoch between 08:23 and 12:24 for exactly this reason plus idle
+time, at an epoch of 5–8 minutes.
+
+Phase B′ extrapolates to **15–20 minutes an epoch**, against restart gaps
+observed as low as 23. That is too close to rely on. Options, cheapest first:
+
+- Run it somewhere that stays up. This is the honest answer, and Phase D wants
+  a GPU anyway.
+- Checkpoint inside the epoch (every N batches, saving the batch index with the
+  optimiser state) so progress survives a restart that lands mid-epoch. A
+  contained change to `src/train.py`, and the only option that makes *this* box
+  viable for long runs.
+- Shorten the epoch by splitting the corpus, which changes what an epoch means
+  and breaks comparability with everything in A′.
+
+Do not simply launch it and hope: the failure mode is silent, and looks
+identical to a run that is merely slow.
+
 **Done when** onset F has either moved or provably stopped moving with the data
 limit lifted — which turns "undertrained" from an assumption into a finding
 either way.
