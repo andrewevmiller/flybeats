@@ -118,6 +118,62 @@ went from 76 s to 1,415 s. Sequential, or set `OMP_NUM_THREADS`.
 
 ---
 
+### The seed result, which undermines every per-class claim above
+
+`velocity_probe_cpu_s1` is the baseline config at seed 1. Nothing else differs
+— same data, same hyperparameters, same 12 epochs. Against seed 0:
+
+```
+class          baseline seed 0         baseline seed 1
+snare          -0.098 [-.19,-.01]      -0.068 [-.14,+.01] spans 0
+tom_low        -0.284 [-.41,-.14]      +0.315 [+.17,+.44]
+tom_mid        -0.140 [-.29,+.02]      +0.359 [+.22,+.48]
+hat_closed     (not significant)       +0.158 [+.06,+.26]
+crash          +0.473 [+.33,+.60]      -0.228 [-.38,-.05]
+head sd        0.084                   0.100
+onset F        0.3006                  0.2981
+```
+
+**tom_low moves from significantly negative to significantly positive, and
+crash from significantly positive to significantly negative, on a seed change
+alone — with non-overlapping intervals in both cases.**
+
+The bootstrap intervals are therefore not what they were being read as. They
+resample *rows within one trained model*, so they answer "given this
+checkpoint, how precisely is its correlation estimated" — and they answer it
+correctly. They say nothing about how reliably the *configuration* produces
+that correlation, and that is the quantity every comparison in this phase
+actually needs.
+
+So the gate — at least one class significantly positive, none significantly
+negative — cannot be decided from a single run. A′1 "passing" it and A′2 and
+A′3 "failing" it are one draw each from a distribution wide enough to change
+the sign of individual classes. **Read the three result sections above with
+that caveat: their per-class claims are not established.** Specifically, "the
+velocity head was outvoted, not blind" does not survive a swing of this size.
+
+Two things that did survive, and one that got sharper:
+
+- **onset F is stable across seeds**: 0.3006 and 0.2981, a difference of
+  0.0025. Against that, A′1's 0.2761 is a gap of 0.0245 — about ten times the
+  seed-to-seed difference. On one pair of seeds that is weak evidence, but it
+  points the opposite way from the standing caveat: the detection cost of
+  `velocity_weight` 5.0 looks real rather than noise. `velocity_probe_cpu_s2`
+  gives a third point.
+- **The head is still predicting close to the mean.** Every arm sits at
+  0.08–0.15 head sd against a target sd of 0.272. That number is not sign-
+  sensitive and it has not moved much in any condition.
+- **`velocity_w5_cpu_s1` is now the most valuable run in the queue.** It is A′1
+  at seed 1, and it answers directly whether A′1's gate pass replicates or was
+  a draw.
+
+The methodological fix, when this is picked up: the gate has to be evaluated on
+a per-class correlation averaged over seeds, with the spread taken *across*
+seeds rather than across rows. That is three runs per arm rather than one, and
+it is the difference between a result and an anecdote.
+
+---
+
 ### A′3 result: the composition is worse than either half of it
 
 Linear head *and* `velocity_weight` 5.0 — the obvious next experiment, on the
