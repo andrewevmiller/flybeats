@@ -33,10 +33,18 @@ See [PLAN.md](PLAN.md) for the design this implements.
 ## Quick start
 
 **Just want to run a trained model?** A bundle is self-contained — no
-connectome, no corpus, no `data/` directory, and no sampler or DAW:
+connectome, no corpus, no `data/` directory, and no sampler or DAW. **There is
+no published bundle to download yet**, so it has to come from a checkpoint:
+either one you trained (below) or one somebody sends you. Everything after that
+step needs nothing but this repo.
 
 ```bash
 pip install -r requirements.txt
+
+# checkpoint -> bundle. Without --out it lands next to the checkpoint, and the
+# commands below would not find it.
+python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt \
+    --out flybeats-8piece.fb
 
 # audio in -> drums out, as a wav you can play immediately
 python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
