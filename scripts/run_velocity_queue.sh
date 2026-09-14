@@ -50,16 +50,26 @@ Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>" >/dev/null 2>&1
 }
 
 probe() {
-  if [ -f "runs/$1/best.pt" ]; then
-    mkdir -p results
-    $PY scripts/probe_velocity.py --checkpoint "runs/$1/best.pt" --seed 0 \
-      > "$OUT/probe_$1.txt" 2>&1
-    cp "$OUT/probe_$1.txt" "results/probe_$1.txt"
-    say "probed $1"
-    commit_result "$1"
-  else
+  if [ ! -f "runs/$1/best.pt" ]; then
     say "no checkpoint for $1; skipping probe"
+    return 0
   fi
+  mkdir -p results
+  $PY scripts/probe_velocity.py --checkpoint "runs/$1/best.pt" --seed 0 \
+    > "$OUT/probe_$1.txt" 2>&1
+
+  # A probe that died leaves a file -- torch's two sparse warnings and nothing
+  # else -- and copying that into results/ records the run as landed. The
+  # resume script then skips it forever and the comparator cannot parse it.
+  # Exactly that happened once: a run three epochs into twelve was filed as a
+  # finished comparison arm.
+  if ! grep -q "peak (y > 0.95)" "$OUT/probe_$1.txt"; then
+    say "probe of $1 produced no table; NOT recording it (see $OUT/probe_$1.txt)"
+    return 0
+  fi
+  cp "$OUT/probe_$1.txt" "results/probe_$1.txt"
+  say "probed $1"
+  commit_result "$1"
 }
 
 # Is a *real* training job in flight?  Not "does any command line mention
@@ -102,6 +112,15 @@ main() {
   for cfg in "${RUNS[@]}"; do
     say "training $cfg"
     $PY -u src/train.py --config "configs/$cfg.yaml" > "$OUT/$cfg.log" 2>&1
+    rc=$?
+    # An interrupted run still leaves the best.pt of whatever epoch it reached.
+    # Probing that and committing the result files a partial run as a finished
+    # arm, which is worse than losing it: the numbers look ordinary.
+    if [ "$rc" -ne 0 ]; then
+      say "$cfg FAILED or was interrupted (exit $rc) -- not probing. Re-running it"
+      say "  will resume from runs/$cfg/last.pt; see $OUT/$cfg.log"
+      continue
+    fi
     say "$cfg -> $(grep -o 'best val onset F: [0-9.]*' "$OUT/$cfg.log" | tail -1)"
     probe "$cfg"
   done
