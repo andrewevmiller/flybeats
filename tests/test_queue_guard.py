@@ -237,23 +237,20 @@ def _run_probe(tmp_path, probe_output):
     out = tmp_path / "out"
     out.mkdir()
     script = tmp_path / "scripts" / QUEUE.name
-    # Three things this invocation has to get right, each of which produced a
-    # test that passed for the wrong reason on the way here:
+    # Two ways this invocation has lied on the way here:
     #
     #  - export, not `VAR=x source f`: that form scopes VAR to the source
     #    itself, so probe() runs with OUT unset and dies under `set -u`,
-    #    writing no result and "passing" the negative test.
-    #  - run from scripts/, because the script opens with
-    #    `cd "$(dirname "$0")/.."` and $0 in a sourced file is the sourcing
-    #    shell ("bash"), so the cd is ./.. -- which lands in the temp tree only
-    #    if the shell starts one level down.
-    #  - do NOT set $0 to the script path to fix that. It makes
+    #    writing no result and "passing" the negative test for the wrong
+    #    reason. The positive test below is what exposed it.
+    #  - do NOT set $0 to the script path to steer where it cds. That makes
     #    BASH_SOURCE[0] == $0, the __main__ guard fires, and sourcing the file
-    #    starts a real five-run batch.
+    #    from a test starts a real five-run batch. The script cds by
+    #    BASH_SOURCE instead, which is why plain `source` works here.
     r = subprocess.run(
         ["bash", "-c",
-         f'export OUT="{out}" PY="{stub}"; source ./{QUEUE.name}; probe arm'],
-        capture_output=True, text=True, timeout=120, cwd=tmp_path / "scripts",
+         f'export OUT="{out}" PY="{stub}"; source "{script}"; probe arm'],
+        capture_output=True, text=True, timeout=120, cwd=tmp_path,
     )
     assert "unbound variable" not in r.stderr, r.stderr
     return tmp_path / "results" / "probe_arm.txt"

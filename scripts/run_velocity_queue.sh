@@ -13,7 +13,10 @@
 # probe_<run>.txt per run, SUMMARY.txt at the end. Nothing here is in version
 # control, so commit anything worth keeping.
 set -u
-cd "$(dirname "$0")/.."
+# BASH_SOURCE, not $0: when this file is sourced (tests/test_queue_guard.py
+# does, to reach one function without running a batch) $0 is the sourcing
+# shell, and the cd lands somewhere unrelated.
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
 OUT=${OUT:-runs/queue}
 PY=${PY:-.venv/bin/python}
@@ -111,7 +114,13 @@ main() {
 
   for cfg in "${RUNS[@]}"; do
     say "training $cfg"
-    $PY -u src/train.py --config "configs/$cfg.yaml" > "$OUT/$cfg.log" 2>&1
+    # Append. A run is restarted as often as this box restarts, and truncating
+    # threw away the previous attempt's log every time -- which is exactly what
+    # made a four-hour stall hard to reconstruct. The log is now the whole
+    # history of attempts; runs/<name>/history.json is still the record of
+    # which epochs actually completed.
+    echo "=== attempt starting $(date -u +%FT%TZ) ===" >> "$OUT/$cfg.log"
+    $PY -u src/train.py --config "configs/$cfg.yaml" >> "$OUT/$cfg.log" 2>&1
     rc=$?
     # An interrupted run still leaves the best.pt of whatever epoch it reached.
     # Probing that and committing the result files a partial run as a finished
