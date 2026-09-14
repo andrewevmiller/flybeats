@@ -17,13 +17,6 @@ cd "$(dirname "$0")/.."
 export OMP_NUM_THREADS=${OMP_NUM_THREADS:-4}
 OUT=${OUT:-runs/queue}
 PY=${PY:-.venv/bin/python}
-mkdir -p "$OUT"
-
-RUNS=("$@")
-if [ ${#RUNS[@]} -eq 0 ]; then
-  RUNS=(velocity_w5_cpu velocity_lin_cpu velocity_peak_cpu)
-fi
-
 say() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$OUT/queue.log"; }
 
 # Results are committed as each run lands, not held until the batch ends.
@@ -85,31 +78,46 @@ train_running() {
   return 1
 }
 
-# Bounded, because a guard that can block forever is how the above went
-# unnoticed: after three hours, say so loudly and run anyway.
-waited=0
-while train_running; do
-  sleep 60
-  waited=$((waited + 60))
-  if [ "$waited" -ge 10800 ]; then
-    say "WARNING: another training job still up after 3h -- starting anyway"
-    break
+main() {
+  mkdir -p "$OUT"
+
+  local RUNS=("$@")
+  if [ ${#RUNS[@]} -eq 0 ]; then
+    RUNS=(velocity_w5_cpu velocity_lin_cpu velocity_peak_cpu)
   fi
-done
-say "starting batch: ${RUNS[*]}"
 
-for cfg in "${RUNS[@]}"; do
-  say "training $cfg"
-  $PY -u src/train.py --config "configs/$cfg.yaml" > "$OUT/$cfg.log" 2>&1
-  say "$cfg -> $(grep -o 'best val onset F: [0-9.]*' "$OUT/$cfg.log" | tail -1)"
-  probe "$cfg"
-done
-
-{
-  echo "=== queue summary: ${RUNS[*]} ==="
-  for r in "${RUNS[@]}"; do
-    echo; echo "--- $r  ($(grep -o 'best val onset F: [0-9.]*' "$OUT/$r.log" 2>/dev/null | tail -1)) ---"
-    sed -n '/peak (y > 0.95)/,$p' "$OUT/probe_$r.txt" 2>/dev/null || echo "(no probe)"
+  # Bounded, because a guard that can block forever is how the above went
+  # unnoticed: after three hours, say so loudly and run anyway.
+  waited=0
+  while train_running; do
+    sleep 60
+    waited=$((waited + 60))
+    if [ "$waited" -ge 10800 ]; then
+      say "WARNING: another training job still up after 3h -- starting anyway"
+      break
+    fi
   done
-} > "$OUT/SUMMARY.txt" 2>&1
-say "batch done -> $OUT/SUMMARY.txt"
+  say "starting batch: ${RUNS[*]}"
+
+  for cfg in "${RUNS[@]}"; do
+    say "training $cfg"
+    $PY -u src/train.py --config "configs/$cfg.yaml" > "$OUT/$cfg.log" 2>&1
+    say "$cfg -> $(grep -o 'best val onset F: [0-9.]*' "$OUT/$cfg.log" | tail -1)"
+    probe "$cfg"
+  done
+
+  {
+    echo "=== queue summary: ${RUNS[*]} ==="
+    for r in "${RUNS[@]}"; do
+      echo; echo "--- $r  ($(grep -o 'best val onset F: [0-9.]*' "$OUT/$r.log" 2>/dev/null | tail -1)) ---"
+      sed -n '/peak (y > 0.95)/,$p' "$OUT/probe_$r.txt" 2>/dev/null || echo "(no probe)"
+    done
+  } > "$OUT/SUMMARY.txt" 2>&1
+  say "batch done -> $OUT/SUMMARY.txt"
+}
+
+# Sourced (by tests/test_queue_guard.py) this defines the functions and stops.
+# Executed, it runs the batch.
+if [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"
+fi
