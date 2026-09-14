@@ -548,9 +548,9 @@ tests/fixtures/              two real subgraphs (10k and 2k), so every test that
                              needs a model runs without the 1.1 GB download
 ```
 
-`.github/workflows/tests.yml` runs the suite on every push, on 3.11 and 3.12.
-It needs neither the connectome nor the corpus: one test skips without GMD,
-and the rest run in about 15 seconds.
+`.github/workflows/tests.yml` runs the suite on every push, on 3.12. It needs
+neither the connectome nor the corpus: one test skips without GMD, and the rest
+run in about 15 seconds.
 
 No module hardcodes a cell-type string. Every population is read from
 `data/verified_types.json`.
