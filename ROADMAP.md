@@ -154,12 +154,12 @@ velocity head was outvoted, not blind" does not survive a swing of this size.
 
 Two things that did survive, and one that got sharper:
 
-- **onset F is stable across seeds**: 0.3006 and 0.2981, a difference of
-  0.0025. Against that, A′1's 0.2761 is a gap of 0.0245 — about ten times the
-  seed-to-seed difference. On one pair of seeds that is weak evidence, but it
-  points the opposite way from the standing caveat: the detection cost of
-  `velocity_weight` 5.0 looks real rather than noise. `velocity_probe_cpu_s2`
-  gives a third point.
+- ~~**onset F is stable across seeds**: 0.3006 and 0.2981 … the detection cost
+  of `velocity_weight` 5.0 looks real rather than noise.~~ **Withdrawn — see
+  below.** That was written with two baseline seeds and one A′1 seed, and the
+  baseline's tight pair was itself a draw. A′1's own two seeds are 0.2761 and
+  0.2992, a range of 0.0231. Two points do not measure a spread, and this is
+  what it costs to forget that.
 - **The head is still predicting close to the mean.** Every arm sits at
   0.08–0.15 head sd against a target sd of 0.272. That number is not sign-
   sensitive and it has not moved much in any condition.
@@ -171,6 +171,46 @@ The methodological fix, when this is picked up: the gate has to be evaluated on
 a per-class correlation averaged over seeds, with the spread taken *across*
 seeds rather than across rows. That is three runs per arm rather than one, and
 it is the difference between a result and an anecdote.
+
+### What replicates: A′1 clears the gate at both seeds, at no detection cost
+
+With two seeds on each of the baseline and A′1:
+
+```
+                onset F              head sd            gate
+baseline s0     0.3006               0.084              fail (snare, tom_low neg)
+baseline s1     0.2981               0.100              fail (crash neg)
+A′1 s0          0.2761               0.105              PASS
+A′1 s1          0.2992               0.137              PASS
+```
+
+Three things follow, and only these three:
+
+1. **The gate verdict replicates even though its per-class content does not.**
+   A′1 passes twice, the baseline fails twice. *Which* classes are positive
+   changes completely between A′1's seeds — tom_low, tom_mid and crash at seed
+   0; only tom_low at seed 1 — but "no class significantly backwards" held
+   both times, and "some class backwards" held both times for the baseline.
+   The property is stable; the identities are not.
+
+2. **No detection cost is observed, and the standing caveat resolves that way.**
+   A′1's two onset F values, 0.2761 and 0.2992, straddle both baseline values.
+   The difference of means (~0.012) is half A′1's own seed-to-seed range
+   (0.023). Whatever `velocity_weight` 5.0 costs detection, it is smaller than
+   this design can see.
+
+3. **A′1's head spread beats the baseline's at both seeds**: 0.105 and 0.137
+   against 0.084 and 0.100, non-overlapping. Still 38–50% of the target's
+   0.272, so the head remains closer to the mean than to the drummer.
+
+That is the phase's result, and it is narrower than the three single-run
+sections above suggested: **turning the velocity weight up makes the head stop
+producing significantly-inverted classes, and widens what it produces, without
+a measurable detection cost — and nothing can yet be said about which drum it
+learns.**
+
+`velocity_probe_cpu_s2` (third baseline seed) is running and will tighten (1)
+and (2). A third A′1 seed would be worth more than either, and is not queued.
 
 ---
 
