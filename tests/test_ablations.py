@@ -152,3 +152,83 @@ def test_a_control_core_refuses_a_nonsense_schedule(kind):
         core(drive, substeps=0)
     with pytest.raises(ValueError):
         core(drive, substeps=[1, 2])          # four frames, two entries
+
+
+# --- the lesion sweep ------------------------------------------------------
+#
+# lesion_sweep silences one population at a time and reports each one's delta
+# against the intact model. The failure that would not look like a failure is
+# lesions accumulating: every row after the first would carry the previous
+# ones, deltas would grow monotonically down the table, and it would read as a
+# dose-response curve. Nothing else in the file would object.
+
+from ablations import lesion, lesion_sweep  # noqa: E402
+
+
+class _Core:
+    """Just enough core to be gated."""
+
+    def __init__(self, n):
+        self.gate = np.ones(n)
+
+    def set_gate(self, idx, value):
+        self.gate[np.asarray(idx)] = value
+
+    def reset_gates(self):
+        self.gate[:] = 1.0
+
+
+class _Model:
+    def __init__(self, n):
+        self.rnn = _Core(n)
+
+
+def _score_by_how_much_is_silenced(model, loader, cfg, device):
+    """onset F falls by 0.01 for each neuron currently muted, so the score says
+    exactly which neurons were off when it was measured."""
+    silenced = int((model.rnn.gate == 0).sum())
+    return {"onset_f": 0.5 - 0.01 * silenced, "groove_sim": 0.0,
+            "beat_align_ms": 0.0, "mean_dev_ms": 0.0}
+
+
+ROLES = {"two": np.array([0, 1]), "one": np.array([5]),
+         "none": np.array([], dtype=np.int64)}
+
+
+def _sweep():
+    return lesion_sweep(_Model(10), None, None, None, ROLES,
+                        ["two", "one", "none"], _score_by_how_much_is_silenced)
+
+
+def test_each_lesion_is_measured_against_the_intact_model_alone():
+    rows = {r["population"]: r for r in _sweep()}
+    assert rows["intact"]["onset_f"] == pytest.approx(0.50)
+    # 'one' must score with one neuron muted, not with three
+    assert rows["one"]["onset_f"] == pytest.approx(0.49), "lesions accumulated"
+    assert rows["two"]["onset_f"] == pytest.approx(0.48)
+
+
+def test_deltas_are_against_intact():
+    rows = {r["population"]: r for r in _sweep()}
+    assert rows["two"]["delta_onset_f"] == pytest.approx(-0.02)
+    assert rows["one"]["delta_onset_f"] == pytest.approx(-0.01)
+    assert "delta_onset_f" not in rows["intact"]
+
+
+def test_a_population_the_subgraph_does_not_have_is_skipped_not_reported_as_null():
+    """Reporting it with a zero delta would say the population was silenced and
+    nothing happened, which is the opposite of what happened."""
+    assert "none" not in {r["population"] for r in _sweep()}
+
+
+def test_the_model_is_left_intact_afterwards():
+    model = _Model(10)
+    lesion_sweep(model, None, None, None, ROLES, ["two", "one"],
+                 _score_by_how_much_is_silenced)
+    assert (model.rnn.gate == 1.0).all(), "the sweep left neurons muted"
+
+
+def test_lesioning_a_population_that_is_not_there_says_which_ones_are():
+    with pytest.raises(KeyError) as e:
+        lesion(_Model(10), ROLES, "pC9")
+    assert "two" in str(e.value) and "none" not in str(e.value)

@@ -186,6 +186,11 @@ not have yet — and the Phase A′ seed runs are measuring exactly it. If onset
 moves more across inits than the arms differ by, the matched design cannot
 carry the claim by itself.
 
+Both halves of the command have now been run end to end on a smoke config —
+the two arms that had never executed at all, and the `--lesion` sweep, which
+produces its table. That says the machinery works, and nothing about the
+biology: one epoch of synthetic audio is not a model to interpret.
+
 ---
 
 ## Parked, with the reason
@@ -205,4 +210,13 @@ carry the claim by itself.
   real methodological weakness, but replacing the criterion invalidates the
   subgraph cache and every model trained on it, so it belongs between
   experiment campaigns rather than mid-flight.
+
+  One measurement to add to it: after the trim, **49 of the 405 sensory
+  neurons have no path to the motor pool at all** in the 10k subgraph, and 41
+  of 405 in the 30k. They receive, and they cannot reach the readout, so they
+  can be lesioned with no possible effect — a null for those neurons means the
+  trim cut their path, not that the biology does not use them. Every other
+  confirmed population reaches the motor pool in full, which is why the
+  exact-zero `aPN1` and `vPN1` rows in a smoke lesion sweep are a symptom of an
+  untrained model rather than of a disconnected one.
 - **The 162k render tier** and **the spiking model** — neither blocks anything.
