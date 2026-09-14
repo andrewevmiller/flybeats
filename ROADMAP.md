@@ -138,20 +138,32 @@ worth shipping. It must come after A′ or it gets redone.
 `configs/v1_full_corpus.yaml` is ready for it — its `_base_` line is the Phase
 A′ decision and has to be pointed at whichever arm actually won.
 
-**Before starting it, read this.** On 14 Sep this container restarted at least
-six times, with gaps of 23, 37, 43, and 70 minutes; a restart kills every
-process and leaves the disk intact. Training now checkpoints per epoch and
-resumes, so a restart costs one epoch — but only if an epoch *finishes*. A run
-whose epoch is longer than the gap between restarts never checkpoints and makes
-no progress at all, forever. That is not hypothetical: `velocity_lin_w5_cpu`
-completed no epoch between 08:23 and 12:24 for exactly this reason plus idle
-time, at an epoch of 5–8 minutes.
+**Before starting it, read this — it is the binding constraint on this box.**
 
-Phase B′ extrapolates to **15–20 minutes an epoch**, against restart gaps
-observed as low as 23. That is too close to rely on. Options, cheapest first:
+*This container runs only while the session is active.* It starts when
+something wakes the session and stops shortly after the turn ends. Measured on
+14 Sep: training attempts began at 12:40:51, 12:51:31 and 13:14:15, each within
+seconds of a wake, and `uptime` read 0 min at every check. An epoch takes ~7
+minutes, so a turn that starts training and returns gives it about one minute.
+Epochs 3 and 4 of `velocity_lin_w5_cpu` completed only because a turn happened
+to be holding a wait loop open; between 08:23 and 12:24 — four hours, with the
+queue "running" the whole time — not one epoch finished.
 
-- Run it somewhere that stays up. This is the honest answer, and Phase D wants
-  a GPU anyway.
+There is no unattended training here. A background job is not background; it is
+a foreground job that dies with the turn. Anything that takes longer than a
+turn has to be held open deliberately, an epoch at a time.
+
+Per-epoch resume is what makes that survivable: a run picks up from its last
+completed epoch, so a batch can be advanced across many short sessions. What it
+cannot do is rescue a run whose *epoch* outlasts the session, because nothing is
+ever checkpointed.
+
+Phase B′ extrapolates to **15–20 minutes an epoch**. That needs a held session
+of at least that long per epoch, 12 times over, and any interruption inside an
+epoch loses it entirely. Options, cheapest first:
+
+- Run it somewhere that stays up — a machine whose processes outlive a chat
+  turn. This is the honest answer, and Phase D wants a GPU anyway.
 - Checkpoint inside the epoch (every N batches, saving the batch index with the
   optimiser state) so progress survives a restart that lands mid-epoch. A
   contained change to `src/train.py`, and the only option that makes *this* box
