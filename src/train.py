@@ -17,7 +17,9 @@ are comparing.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
+import os
 import time
 from pathlib import Path
 
@@ -334,6 +336,31 @@ def build_loaders(cfg, kit):
     return train_loader, val_loader, int(getattr(tr, "n_styles", 1))
 
 
+def _fingerprint(cfg: dict) -> str:
+    """Identify the run a checkpoint belongs to, so resume cannot cross runs."""
+    return hashlib.sha256(
+        json.dumps(cfg, sort_keys=True, default=str).encode()).hexdigest()[:16]
+
+
+def _atomic_save(obj, path: Path) -> None:
+    """Write, then rename.
+
+    A container restart during a plain torch.save leaves a truncated file, and
+    the next run would resume from it or crash on it. Rename is atomic, so the
+    checkpoint at `path` is always a complete one -- the previous epoch's, if
+    the box went down mid-write.
+    """
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    torch.save(obj, tmp)
+    os.replace(tmp, path)
+
+
+def _atomic_write_text(text: str, path: Path) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(text)
+    os.replace(tmp, path)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", type=Path, default=ROOT / "configs" / "v1_8piece.yaml")
@@ -341,6 +368,11 @@ def main(argv=None) -> int:
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--rebuild-subgraph", action="store_true")
     ap.add_argument("--smoke", action="store_true", help="tiny run to prove the pipeline")
+    ap.add_argument("--fresh", action="store_true",
+                    help="ignore runs/<name>/last.pt and start from epoch 0. Without "
+                         "it a run whose last.pt matches this config resumes, because "
+                         "an unattended batch that loses a 70-minute run to a container "
+                         "restart never finishes one")
     a = ap.parse_args(argv)
 
     cfg = load_config(a.config)
@@ -379,8 +411,37 @@ def main(argv=None) -> int:
     out = a.out or ROOT / "runs" / a.config.stem
     out.mkdir(parents=True, exist_ok=True)
 
-    history, best = [], -1.0
-    for ep in range(cfg["train"].get("epochs", 10)):
+    total_epochs = cfg["train"].get("epochs", 10)
+    history, best, start_ep, resumes = [], -1.0, 0, 0
+    fp = _fingerprint(cfg)
+    last = out / "last.pt"
+
+    # Resuming is not free of consequences and the log says so: the data order
+    # is drawn from the global numpy stream, and restoring that stream puts the
+    # run back where it was, but the epoch that died had already consumed part
+    # of it. A resumed run is therefore close to, not identical to, the
+    # uninterrupted one. `resumes` rides along in the checkpoint so any result
+    # can be traced back to whether this happened.
+    if last.exists() and not a.fresh:
+        ck = torch.load(last, map_location=device, weights_only=False)
+        if ck.get("fingerprint") != fp:
+            print(f"{last} belongs to a different config; starting fresh")
+        elif ck["epoch"] + 1 >= total_epochs:
+            print(f"{last} is already complete at epoch {ck['epoch']}; starting fresh")
+        else:
+            model.load_state_dict(ck["model"])
+            opt.load_state_dict(ck["opt"])
+            start_ep = ck["epoch"] + 1
+            best, history = ck["best"], ck["history"]
+            resumes = ck.get("resumes", 0) + 1
+            torch.set_rng_state(ck["torch_rng"])
+            np.random.set_state(ck["numpy_rng"])
+            print(f"RESUMED from {last} at epoch {start_ep}/{total_epochs} "
+                  f"(best so far {best:.4f}, resume #{resumes}). The data order was "
+                  f"restored but the interrupted epoch had already drawn from it, so "
+                  f"this run is not bit-identical to an uninterrupted one.")
+
+    for ep in range(start_ep, total_epochs):
         t0 = time.time()
         tr = run_epoch(model, train_loader, opt, cfg, device, train=True)
         ev = evaluate(model, val_loader, cfg, device)
@@ -404,13 +465,29 @@ def main(argv=None) -> int:
             # The sweep already found where this model's outputs sit. Dropping
             # that and letting playback re-guess at a fixed 0.3 is how a
             # checkpoint that scores 0.31 renders a wall of notes.
-            torch.save({"model": model.state_dict(), "config": cfg,
-                        "kit": kit.classes, "n_styles": n_styles,
-                        "best_threshold": float(ev["best_threshold"]),
-                        "rate_ceiling": getattr(model, "rate_ceiling", None)}, out / "best.pt")
-        (out / "history.json").write_text(json.dumps(history, indent=2))
+            _atomic_save({"model": model.state_dict(), "config": cfg,
+                          "kit": kit.classes, "n_styles": n_styles,
+                          "best_threshold": float(ev["best_threshold"]),
+                          "resumes": resumes,
+                          "rate_ceiling": getattr(model, "rate_ceiling", None)},
+                         out / "best.pt")
+        _atomic_write_text(json.dumps(history, indent=2), out / "history.json")
 
-    print(f"best val onset F: {best:.4f} -> {out}")
+        # Everything needed to carry on from here, rewritten every epoch. This
+        # is what makes a restart cost one epoch instead of the whole run.
+        _atomic_save({"model": model.state_dict(), "opt": opt.state_dict(),
+                      "epoch": ep, "best": best, "history": history,
+                      "config": cfg, "fingerprint": fp, "kit": kit.classes,
+                      "n_styles": n_styles, "resumes": resumes,
+                      "rate_ceiling": getattr(model, "rate_ceiling", None),
+                      "torch_rng": torch.get_rng_state(),
+                      "numpy_rng": np.random.get_state()}, last)
+
+    # The run finished, so the crash-recovery checkpoint is just ~100 MB of
+    # disk. best.pt is the artefact; last.pt was only ever insurance.
+    last.unlink(missing_ok=True)
+    note = f" (resumed {resumes}x)" if resumes else ""
+    print(f"best val onset F: {best:.4f}{note} -> {out}")
     return 0
 
 
