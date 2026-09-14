@@ -1,0 +1,39 @@
+/home/user/flybeats/src/model.py:203: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/Context.cpp:848.)
+  a = torch.sparse_csr_tensor(self.crow, self.edge_col, vals,
+/home/user/flybeats/src/model.py:203: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
+  a = torch.sparse_csr_tensor(self.crow, self.edge_col, vals,
+clips 120  steps 400  drive ch 405  motor units 66  classes 8
+
+== support (y > 0.5) ==
+class         n steps  target sd   drive r   motor r   head r     head 95% CI
+-----------------------------------------------------------------------------
+kick             2499      0.214     0.023    -0.008    0.066  [-0.00, +0.13]  (spans 0)
+snare            5224      0.299     0.217     0.182   -0.097  [-0.14, -0.05]
+hat_closed       2681      0.227     0.143     0.066   -0.040  [-0.12, +0.03]  (spans 0)
+hat_open          673      0.267     0.465     0.276    0.179  [+0.09, +0.26]
+tom_low          1704      0.221     0.086     0.159    0.386  [+0.32, +0.45]
+tom_mid          1508      0.200     0.212     0.259    0.254  [+0.16, +0.34]
+tom_high          114      0.167     0.423     0.209    0.529  [+0.33, +0.72]
+crash             921      0.193     0.172     0.146    0.062  [-0.05, +0.18]  (spans 0)
+
+head output at hits: mean 0.542 sd 0.1536
+target at hits:      mean 0.584 sd 0.2720
+
+A head sd far below the target sd is a head predicting the mean.
+
+== peak (y > 0.95) ==
+class         n steps  target sd   drive r   motor r   head r     head 95% CI
+-----------------------------------------------------------------------------
+kick              837      0.214    -0.142     0.036    0.063  [-0.05, +0.17]  (spans 0)
+snare            1785      0.300     0.138     0.146   -0.138  [-0.22, -0.06]
+hat_closed        905      0.227     0.112    -0.023   -0.041  [-0.17, +0.08]  (spans 0)
+hat_open          225      0.266     0.461     0.209    0.172  [+0.02, +0.29]
+tom_low           570      0.221     0.056     0.103    0.433  [+0.32, +0.54]
+tom_mid           505      0.200     0.114     0.111    0.283  [+0.13, +0.43]
+tom_high           39   too few steps
+crash             312      0.194     0.152     0.048    0.120  [-0.10, +0.32]  (spans 0)
+
+head output at hits: mean 0.542 sd 0.1536
+target at hits:      mean 0.584 sd 0.2720
+
+A head sd far below the target sd is a head predicting the mean.

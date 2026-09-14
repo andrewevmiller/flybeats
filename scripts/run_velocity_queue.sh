@@ -26,11 +26,44 @@ fi
 
 say() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$OUT/queue.log"; }
 
+# Results are committed as each run lands, not held until the batch ends.
+# A container restart took out a run that was two hours in and would have taken
+# the finished results with it if they had only existed in $OUT -- runs/ and
+# the scratchpad are both outside version control and both die with the box.
+# Losing one run's compute is the cost of a restart; losing a result is not.
+commit_result() {
+  local run=$1
+  [ -f "results/probe_$run.txt" ] || return 0
+  git add "results/probe_$run.txt" >/dev/null 2>&1 || return 0
+  git diff --cached --quiet && return 0
+  git -c user.name="Andrew Miller" -c user.email="andrewmiller857@gmail.com" \
+      commit -q -m "Queue result: $run
+
+$(grep -o 'best val onset F: [0-9.]*' "$OUT/$run.log" 2>/dev/null | tail -1)
+
+Raw probe output, committed by scripts/run_velocity_queue.sh as the run landed.
+Interpretation goes in ROADMAP.md; this is the evidence it rests on.
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>" >/dev/null 2>&1
+  for i in 1 2 3; do
+    git pull --rebase -q origin "$(git rev-parse --abbrev-ref HEAD)" >/dev/null 2>&1
+    if git push -q origin HEAD >/dev/null 2>&1; then
+      say "committed results/probe_$run.txt"
+      return 0
+    fi
+    sleep $((i * 5))
+  done
+  say "WARNING: could not push results/probe_$run.txt"
+}
+
 probe() {
   if [ -f "runs/$1/best.pt" ]; then
+    mkdir -p results
     $PY scripts/probe_velocity.py --checkpoint "runs/$1/best.pt" --seed 0 \
       > "$OUT/probe_$1.txt" 2>&1
+    cp "$OUT/probe_$1.txt" "results/probe_$1.txt"
     say "probed $1"
+    commit_result "$1"
   else
     say "no checkpoint for $1; skipping probe"
   fi
