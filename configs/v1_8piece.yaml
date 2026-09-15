@@ -61,7 +61,13 @@ data:
 train:
   device: auto
   epochs: 20
-  batch_size: 4
+  batch_size: 16        # not 4: the recurrence is kernel-launch bound, not
+                        # FLOP bound, so a wider batch is close to free. Measured
+                        # at the 30k tier on a 6 GB card: peak 885 MB at B=4, and
+                        # B=4 costs 21.7 s/batch -> 65-80 min/epoch -> ~24 h per
+                        # 20-epoch run. B=16 cuts the epoch by close to 4x with
+                        # memory still far inside the card. NOTE: 4x fewer
+                        # optimiser steps per epoch -- see the lr note below.
   lr: 0.003
   weight_decay: 0.0
   tbptt_steps: 150
