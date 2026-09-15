@@ -175,6 +175,40 @@ anything below. Point it at the tier you actually intend to train:
 python scripts/cuda_smoke.py --config configs/v1_8piece.yaml
 ```
 
+The default run is 2,000 neurons, four synthetic one-second clips, batch 2,
+`tbptt_steps` 50. That sizing exists to check correctness quickly, so its peak
+VRAM says nothing about the tier you would train. `--config` is how you ask the
+capacity question, and it needs the subgraph cache and the corpus on disk.
+
+### Check `bf16` against your compute capability before trusting it
+
+`v1_8piece.yaml` sets `train.bf16: true`, and whether that helps is a property
+of the card, not of the config. **bfloat16 has no hardware support below CUDA
+compute capability 8.0 (Ampere).** Turing is 7.5 — every Turing GeForce part,
+whichever die (TU102/TU104/TU106) and whatever the board is called, including
+laptop and Max-Q variants, which are the same silicon at lower clocks and power.
+Turing has fp16 tensor cores; it does not have bf16 ones.
+
+The trap is that `torch.cuda.is_bf16_supported()` can still return `True` there.
+Recent PyTorch falls back to asking whether a bf16 tensor can be created and
+operated on, which succeeds by emulation. So a `bf16 yes` in the bootstrap
+report means torch will *execute* it, not that the card *accelerates* it.
+
+Your compute capability is in the report as `torch.capability`; that is the
+authoritative answer for your machine, not any table. Below 8.0, time one epoch
+each way:
+
+```bash
+python scripts/cuda_smoke.py --config configs/v1_8piece.yaml   # bf16: true
+# then set train.bf16 false in the config and repeat
+```
+
+If bf16 is not faster, set it `false` and keep fp32. There is no fp16 option
+today — `train.bf16` is a bool, and `run_epoch` reads it as bfloat16 or nothing
+— so capturing the fp16 tensor cores on a pre-Ampere card would need a real
+`precision:` setting and a `GradScaler`. Worth doing only if the measurement
+says the throughput is there to win.
+
 ### Measure your thread count; do not copy anyone else's
 
 The same 10k model and the same 20 ms block, benchmarked on one cloud container

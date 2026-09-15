@@ -79,7 +79,11 @@ train:
   rate_ceiling: auto
   rate_headroom: 4.0
   grad_clip: 1.0
-  bf16: true            # honoured on CUDA; ignored on CPU
+  bf16: true            # honoured on CUDA; ignored on CPU. No hardware
+                        # bf16 below compute capability 8.0 (Ampere) --
+                        # Turing is 7.5 and has fp16 tensor cores only.
+                        # torch may still report it supported, via
+                        # emulation. Time an epoch both ways; see RUNBOOK.
   grad_checkpoint: false  # ~30% more compute to halve per-chunk activation
                           # memory; turn on to fit a longer chunk on a GPU
   workers: 2
