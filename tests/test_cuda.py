@@ -124,8 +124,17 @@ def test_sparse_backward_matches_dense_with_duplicate_edges(device):
         f"input gradient differs by {(r_ours.grad - g_r_ref).abs().max():.3e}"
 
 
+# The bare is_bf16_supported() is the correct guard here, deliberately. Its
+# default including_emulation=True answers "can this machine execute bf16 at
+# all", which -- now that SparseSpMM pins its own operands to fp32 -- is
+# precisely what this test needs to know.
+#
+# Do NOT "tighten" this to including_emulation=False. That asks the different
+# question "does this card have bf16 in hardware", and would skip this test on
+# every pre-Ampere card, silently dropping the coverage on the only machine in
+# this project that has ever executed the bf16 path at all.
 @pytest.mark.skipif(not torch.cuda.is_available() or not torch.cuda.is_bf16_supported(),
-                    reason="card does not support bfloat16")
+                    reason="this machine cannot execute bfloat16 at all")
 def test_bf16_autocast_gradients_are_finite_and_track_fp32(trained_bits, device):
     """bf16 has ~3 decimal digits, so this is a sanity band, not an equality.
 

@@ -145,11 +145,37 @@ def calibrate_encoder(model, dataset, cfg, device, n_clips: int = 16) -> dict:
     return model.encoder.calibrate(wavs)
 
 
+def resolve_bf16(setting, device) -> bool:
+    """Resolve ``train.bf16`` -- ``true``, ``false``, or ``auto`` -- for a device.
+
+    ``auto`` means bf16 only where the silicon actually has it: compute
+    capability 8.0 (Ampere) and up. Below that torch will still *run* bf16, by
+    emulation, and on a Turing card (7.5) that measured 1.4x SLOWER than fp32
+    -- 6.49 ms vs 4.63 ms on a 2048^3 GEMM. So ``auto`` is not the cautious
+    choice, it is the fast one, and it is why this is not simply ``false``:
+    on an Ampere box the same config should still get bf16.
+
+    An explicit ``true`` is honoured on any card. ``SparseSpMM`` pins its own
+    operands to fp32, so the bf16 path runs below 8.0 rather than raising --
+    it just has nothing to win. Keeping ``true`` meaningful everywhere is what
+    lets the bf16 tests run on this machine instead of skipping.
+    """
+    if device.type != "cuda":
+        return False
+    if isinstance(setting, str):
+        if setting.strip().lower() != "auto":
+            raise SystemExit(
+                f"train.bf16 must be true, false, or 'auto' -- got {setting!r}"
+            )
+        return torch.cuda.get_device_capability(device)[0] >= 8
+    return bool(setting)
+
+
 def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bool = True):
     model.train(train)
     tb = cfg["train"]
     chunk = int(tb.get("tbptt_steps", 150))
-    amp = bool(tb.get("bf16", False)) and device.type == "cuda"
+    amp = resolve_bf16(tb.get("bf16", False), device)
     ckpt = bool(tb.get("grad_checkpoint", False)) and train
     totals = {"loss": 0.0, "bce": 0.0, "rate": 0.0, "vel": 0.0, "n": 0}
     if "target_rate_hz" in tb:

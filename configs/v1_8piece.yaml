@@ -79,11 +79,13 @@ train:
   rate_ceiling: auto
   rate_headroom: 4.0
   grad_clip: 1.0
-  bf16: true            # honoured on CUDA; ignored on CPU. No hardware
-                        # bf16 below compute capability 8.0 (Ampere) --
-                        # Turing is 7.5 and has fp16 tensor cores only.
-                        # torch may still report it supported, via
-                        # emulation. Time an epoch both ways; see RUNBOOK.
+  bf16: auto            # auto = bf16 only at compute capability 8.0 (Ampere)
+                        # and up, where the silicon actually has it. Measured
+                        # on a Turing 7.5 card, emulated bf16 is 1.4x SLOWER
+                        # than fp32, so auto is the fast default and not the
+                        # timid one -- and an Ampere box still gets bf16 from
+                        # this same config. true/false force it either way.
+                        # Ignored on CPU. See results/local/.
   grad_checkpoint: false  # ~30% more compute to halve per-chunk activation
                           # memory; turn on to fit a longer chunk on a GPU
   workers: 2

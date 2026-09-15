@@ -48,7 +48,14 @@ class SparseSpMM(torch.autograd.Function):
     tensor every timestep, which matters a lot inside a 1,600-step BPTT loop.
     """
 
+    # autocast has no concept of sparsity: torch.sparse.mm forwards to
+    # aten::addmm, which IS on the lower_precision_fp cast list, so an enclosing
+    # bf16 region casts the CSR values on the way in and the kernel then hits a
+    # hard "compute capability < 8.0" gate. Pin this island to fp32 and let the
+    # dense half of the model autocast as it likes. A no-op outside autocast:
+    # the operands are fp32 there already.
     @staticmethod
+    @torch.amp.custom_fwd(device_type="cuda", cast_inputs=torch.float32)
     def forward(ctx, values, r, crow, col, crow_t, col_t, perm_t, row, n):
         out = torch.sparse.mm(
             torch.sparse_csr_tensor(crow, col, values, size=(n, n)), r.t()
@@ -58,6 +65,7 @@ class SparseSpMM(torch.autograd.Function):
         return out
 
     @staticmethod
+    @torch.amp.custom_bwd(device_type="cuda")
     def backward(ctx, grad_out):
         values, r, crow_t, col_t, perm_t, row, col = ctx.saved_tensors
         grad_out = grad_out.contiguous()
