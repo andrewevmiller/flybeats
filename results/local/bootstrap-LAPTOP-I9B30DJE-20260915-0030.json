@@ -1,0 +1,107 @@
+{
+  "steps": [
+    {
+      "name": "git state",
+      "status": "ok",
+      "detail": "main at ac351b1, 0 behind / 0 ahead of origin/main, uncommitted changes present"
+    },
+    {
+      "name": "venv",
+      "status": "ok",
+      "detail": "reusing C:\\Users\\ricos\\Documents\\AI Databases\\flybeats\\git\\.venv"
+    },
+    {
+      "name": "install torch",
+      "status": "ok",
+      "detail": "from https://download.pytorch.org/whl/cu126 (forced), 245s"
+    },
+    {
+      "name": "install requirements-dev.txt",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "name": "torch sees the GPU",
+      "status": "ok",
+      "detail": "2.14.0+cu126 (CUDA 12.6) -> NVIDIA GeForce RTX 2060 with Max-Q Design, 6.4 GB, bf16 yes"
+    },
+    {
+      "name": "pytest",
+      "status": "FAILED",
+      "detail": "134 passed, 1 skipped, 3 warnings, 3 errors in 79.51s (0:01:19) in 82s"
+    },
+    {
+      "name": "cuda_smoke.py",
+      "status": "FAILED",
+      "detail": "see the checks above"
+    },
+    {
+      "name": "thread timing",
+      "status": "ok",
+      "detail": "1 thread: 14.8 ms (1.35x realtime), 8 threads: 17.2 ms (1.16x realtime), 16 threads: 12.4 ms (1.61x realtime)"
+    }
+  ],
+  "machine": {
+    "when": "2026-09-15T00:24:34+00:00",
+    "os": "Windows 11",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "cpu_count": 16,
+    "python": "3.12.10",
+    "python_exe": "C:\\Users\\ricos\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "ram_gb": 42.3
+  },
+  "gpu": {
+    "present": true,
+    "raw": "NVIDIA GeForce RTX 2060 with Max-Q Design, 616.56, 6144 MiB",
+    "name": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+    "driver": "616.56",
+    "memory": "6144 MiB"
+  },
+  "git": {
+    "branch": "main",
+    "head": "ac351b1",
+    "dirty": true,
+    "behind_main": "0",
+    "ahead_main": "0"
+  },
+  "torch": {
+    "version": "2.14.0+cu126",
+    "cuda_build": "12.6",
+    "cuda_available": true,
+    "threads": 8,
+    "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+    "capability": "7.5",
+    "vram_gb": 6.4,
+    "bf16": true
+  },
+  "pytest": {
+    "summary": "134 passed, 1 skipped, 3 warnings, 3 errors in 79.51s (0:01:19)",
+    "seconds": 81.9,
+    "returncode": 1
+  },
+  "cuda_smoke": {
+    "returncode": 1,
+    "cuda": true,
+    "checks": []
+  },
+  "threads": {
+    "1": {
+      "ms": 14.765795003040694,
+      "x": 1.3544817597617627
+    },
+    "8": {
+      "ms": 17.23668000777252,
+      "x": 1.1603162552754602
+    },
+    "16": {
+      "ms": 12.444310000864789,
+      "x": 1.6071602201014075
+    }
+  },
+  "threads_best": {
+    "count": 16,
+    "ms": 12.444310000864789
+  },
+  "exit_code": 1
+}
