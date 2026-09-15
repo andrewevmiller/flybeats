@@ -83,7 +83,13 @@ def shuffle_signs(sg: SubGraph, seed: int = 0) -> SubGraph:
     src, _ = sg.edge_index
     per_node = np.zeros(sg.n_nodes, dtype=np.float32)
     per_node[src] = sg.edge_sign
-    rng.shuffle(per_node)
+    # Permute only among neurons that actually emit edges. Shuffling the whole
+    # length-n_nodes array moves the zeros held by non-emitting neurons onto
+    # real presynaptic ones, giving those edges sign 0 -- deleting them. That
+    # was ~0.2% of edges at the 30k tier, and invisible to a test comparing
+    # edge_index and weight, because this touches neither.
+    emit = np.unique(src)
+    per_node[emit] = rng.permutation(per_node[emit])
     return replace(
         sg, edge_sign=per_node[src],
         meta={**sg.meta, "ablation": "sign_shuffled", "seed": seed},
@@ -311,8 +317,16 @@ def main(argv=None) -> int:
             # fixed DSP and the audio, and it is deterministic, so the arms
             # differ in the recurrent core and nothing else.
             train_mod.calibrate_encoder(model, train_loader.dataset, cfg, device)
+            # weight_decay explicitly, because AdamW's default is 0.01 and
+            # train.py passes 0.0: without this the arms trained with decoupled
+            # decay on log_gain while the headline run did not, breaking the
+            # "same optimiser" invariant this function is built around. Decay
+            # pulls every edge toward exp(0) = 1 synapse, which flattens the
+            # synapse-count ratios the connectome prior is made of -- 863x
+            # compresses to 190x over 40 epochs.
             opt = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad],
-                                    lr=cfg["train"].get("lr", 3e-3))
+                                    lr=cfg["train"].get("lr", 3e-3),
+                                    weight_decay=cfg["train"].get("weight_decay", 0.0))
             n_par = sum(p.numel() for p in model.parameters() if p.requires_grad)
             tag = f"{arm}" + (f" (seed {seed})" if n_reps > 1 else "")
             print(f"\n=== {tag} === params {n_par:,} | core {type(model.rnn).__name__}")

@@ -68,6 +68,17 @@ def test_sign_shuffle_keeps_topology_identical():
     assert np.array_equal(ss.edge_index, sg.edge_index)
     assert np.array_equal(ss.weight, sg.weight)
     assert sorted(ss.edge_sign.tolist()) != [] and not np.array_equal(ss.edge_sign, sg.edge_sign)
+    # A zero sign is a deleted edge that edge_index cannot show, so the two
+    # assertions above passed straight through a shuffle that was dropping
+    # edges. This is the one that catches it.
+    assert (ss.edge_sign != 0).all(), "sign shuffle silently deleted edges"
+    # Per-neuron signs are reassigned, not invented: the excitatory/inhibitory
+    # balance over neurons must survive. Edge-level counts will not, because
+    # neurons differ in out-degree.
+    emit = np.unique(sg.edge_index[0])
+    before = np.zeros(sg.n_nodes, dtype=np.float32); before[sg.edge_index[0]] = sg.edge_sign
+    after = np.zeros(sg.n_nodes, dtype=np.float32); after[ss.edge_index[0]] = ss.edge_sign
+    assert sorted(before[emit].tolist()) == sorted(after[emit].tolist())
     # and Dale's law still holds
     for node in np.unique(ss.edge_index[0]):
         assert len(np.unique(ss.edge_sign[ss.edge_index[0] == node])) == 1
