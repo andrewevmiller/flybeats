@@ -235,9 +235,13 @@ class AudioToJO(nn.Module):
         """
         if not self.standardize:
             return {"calibrated": False}
-        n = torch.zeros(())
-        s1 = torch.zeros(2 * self.n_bands)
-        s2 = torch.zeros(2 * self.n_bands)
+        # On the buffers' device, not the default one: `raw_features` below
+        # returns whatever device the encoder was moved to, and accumulating a
+        # CUDA tensor into a CPU one is an error. Silent on CPU, fatal on GPU.
+        dev = self.feat_mean.device
+        n = torch.zeros((), device=dev)
+        s1 = torch.zeros(2 * self.n_bands, device=dev)
+        s2 = torch.zeros(2 * self.n_bands, device=dev)
         for wav in wavs:
             f = self.raw_features(wav.to(self.feat_mean.device)).float().reshape(-1, 2 * self.n_bands)
             n += f.shape[0]
