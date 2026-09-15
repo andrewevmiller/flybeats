@@ -1,0 +1,3 @@
+# Reports are generated on Windows and committed from there; without this
+# the CRLF copy conflicts with an LF one for no reason. Content only.
+results/local/*.json text eol=lf
