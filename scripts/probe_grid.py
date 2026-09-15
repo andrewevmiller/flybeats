@@ -227,6 +227,12 @@ def main(argv=None) -> int:
     # which is fine for a smoke test and wrong for a probe that is meant to
     # bound what the architecture can carry on this dataset.
     pick = np.linspace(0, len(ds) - 1, n_clips).astype(int)
+    # Seed the crop before drawing: the train split takes a random window per
+    # __getitem__ off torch's global generator (dataset.py:287), which is only
+    # seeded for DataLoader workers -- not for the direct indexing below. Left
+    # unseeded, every run of this grid scores a different slice of the corpus.
+    torch.manual_seed(int(cfg["train"].get("seed", 0)))
+    np.random.seed(int(cfg["train"].get("seed", 0)))
     wavs = torch.stack([torch.as_tensor(ds[i][0]) for i in pick])
     ys = np.stack([np.asarray(ds[i][1]) for i in pick])
 

@@ -153,6 +153,16 @@ def main(argv=None) -> int:
                     help="a neuron counts as 'pinned' if it sits at the clip more than "
                          "this fraction of the settled window")
     ap.add_argument("--context", type=int, default=2, help="+/- frames into the probe")
+    ap.add_argument("--clip-seed", type=int, default=None,
+                    help="seed for the corpus loader's random crop offsets "
+                         "(default: train.seed). Vary it to draw a genuinely "
+                         "independent sample of audio from the same clips -- that is "
+                         "how this tool's noise floor must be measured, and it "
+                         "dominates --seed by an order of magnitude.")
+    ap.add_argument("--seed", type=int, default=None,
+                    help="override train.seed for model init. Re-running a cell under a "
+                         "different seed is how this tool's own noise floor is measured; "
+                         "the between-arm differences it reports are of the same order.")
     ap.add_argument("--out", type=Path, default=ROOT / "results" / "local" / "propagation_grid.json")
     a = ap.parse_args(argv)
 
@@ -162,6 +172,8 @@ def main(argv=None) -> int:
 
     cfg = load_config(a.config)
     device = device_of(cfg)
+    seed = a.seed if a.seed is not None else int(cfg["train"].get("seed", 0))
+    clip_seed = a.clip_seed if a.clip_seed is not None else seed
     step_ms = float(cfg["audio"]["step_ms"])
     need_s = a.steps * step_ms / 1000.0 * 1.05
     have_s = float(cfg.get("data", {}).get("seconds", 4.0))
@@ -181,6 +193,14 @@ def main(argv=None) -> int:
     if n_clips < 4:
         raise SystemExit(f"need >=4 clips to fit and score a probe, have {n_clips}")
     pick = np.linspace(0, len(ds) - 1, n_clips).astype(int)
+    # The train split crops a random window per __getitem__ off torch's GLOBAL
+    # generator (dataset.py:287). The DataLoader seeds that per worker; indexing
+    # loader.dataset directly, as this script does, is not covered by it -- so
+    # without this seed every invocation scores the probe on different audio,
+    # with the targets moving too. That, not model init, was the "noise floor"
+    # of ~0.014 reported on 15 Sep: the same cell re-run four times spans 0.069.
+    torch.manual_seed(clip_seed)
+    np.random.seed(clip_seed)
     wavs = torch.stack([torch.as_tensor(ds[i][0]) for i in pick])
     ys = np.stack([np.asarray(ds[i][1]) for i in pick])
 
@@ -191,7 +211,7 @@ def main(argv=None) -> int:
     pinned_level = np.log1p(np.exp(clip_at - 1.0))
 
     print(f"{sg.summary().splitlines()[0]}   |   {n_clips} clips, {a.steps} steps, "
-          f"window {a.window}")
+          f"window {a.window}, seed {seed}, clip_seed {clip_seed}")
 
     all_rows = []
     for arm_name, arm_sg in build_arms(sg, a.arms):
@@ -204,8 +224,8 @@ def main(argv=None) -> int:
         print(f"\n=== arm {arm_name} ===")
         arm_rows = []
         for rho in a.radii:
-            torch.manual_seed(cfg["train"].get("seed", 0))
-            np.random.seed(cfg["train"].get("seed", 0))
+            torch.manual_seed(seed)
+            np.random.seed(seed)
             c = {**cfg, "model": {**cfg["model"], "spectral_radius": rho, "gain_scale": "auto"}}
             model, _ = build_model(c, arm_sg, n_styles=n_styles)
             model = model.to(device).eval()
@@ -263,7 +283,8 @@ def main(argv=None) -> int:
                   f"{'ok' if ok else 'GUARD'}")
 
             arm_rows.append({
-                "arm": arm_name, "rho": rho, "t_settle": t_settle,
+                "arm": arm_name, "rho": rho, "seed": seed,
+                "clip_seed": clip_seed, "t_settle": t_settle,
                 "window_stat": stat.tolist(), "motor_settled": motor_settled,
                 "pinned_frac": frac_stuck, "motor_pinned": motor_stuck,
                 "motor_pr": pr, "probe_f": f, "passes_guards": bool(ok),
