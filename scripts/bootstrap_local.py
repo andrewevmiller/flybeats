@@ -254,14 +254,18 @@ def run_smoke(py: Path, cuda: bool) -> bool:
         args += ["--device", "cpu"]
     out = run(args, cwd=ROOT)
     lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip().startswith("[")]
-    report["cuda_smoke"] = {"returncode": out.returncode, "checks": lines}
+    report["cuda_smoke"] = {"returncode": out.returncode, "cuda": cuda, "checks": lines}
     for ln in lines:
         say(f"    {ln}")
-    return step("cuda_smoke.py", out.returncode == 0,
-                "" if out.returncode == 0 else "see the checks above")
+    if out.returncode != 0:
+        return step("cuda_smoke.py", False, "see the checks above")
+    # Passing on CPU says nothing about the CUDA path; the bf16 check does not
+    # even run. Say so in the step, or the report reads as a GPU clean bill.
+    return step("cuda_smoke.py", True,
+                "" if cuda else "ran on CPU -- the CUDA path is still unverified")
 
 
-def thread_timing(py: Path) -> None:
+def thread_timing(py: Path, default_threads: int | None = None) -> None:
     """The 13x finding, re-measured here -- it is machine-specific."""
     probe = (
         "import sys, json, torch, numpy as np;"
@@ -277,8 +281,12 @@ def thread_timing(py: Path) -> None:
         "s = benchmark(m, kit, cfg, block_ms=20.0, n_blocks=20);"
         "print(json.dumps({'ms': s['inference_ms_mean'], 'x': s['realtime_factor']}))"
     )
+    # Measure torch's own default too. It picks physical cores, so on an SMT
+    # machine it is neither 1 nor cpu_count -- and it is what you get if you
+    # set nothing, which makes it the one number a reader actually needs.
+    counts = sorted({1, int(default_threads or 0), os.cpu_count() or 4} - {0})
     timings = {}
-    for n in (1, os.cpu_count() or 4):
+    for n in counts:
         out = run([py, "-c", probe, str(n)], cwd=ROOT)
         if out.returncode == 0 and out.stdout.strip():
             try:
@@ -293,11 +301,18 @@ def thread_timing(py: Path) -> None:
                        f"({v['x']:.2f}x realtime)" for n, v in sorted(timings.items(),
                                                                      key=lambda kv: int(kv[0])))
     step("thread timing", True, detail)
-    if len(timings) == 2:
-        one, many = timings["1"]["ms"], [v["ms"] for k, v in timings.items() if k != "1"][0]
-        if many > one * 2:
-            say(f"\n  Threads cost you {many / one:.1f}x here. Set OMP_NUM_THREADS=1\n"
-                f"  for the live path (PowerShell: $env:OMP_NUM_THREADS=1).\n")
+
+    best = min(timings, key=lambda k: timings[k]["ms"])
+    report["threads_best"] = {"count": int(best), "ms": timings[best]["ms"]}
+    one = timings.get("1", {}).get("ms")
+    if one and timings[best]["ms"] > one * 2:
+        say(f"\n  Threads cost you {timings[best]['ms'] / one:.1f}x here. Set "
+            f"OMP_NUM_THREADS=1\n  for the live path (PowerShell: "
+            f"$env:OMP_NUM_THREADS=1).\n")
+    elif default_threads and int(best) != int(default_threads):
+        say(f"\n  Fastest at {best} threads; torch defaults to {default_threads} here.\n"
+            f"  For the live path: OMP_NUM_THREADS={best} (PowerShell: "
+            f"$env:OMP_NUM_THREADS={best}).\n")
 
 
 # ------------------------------------------------------------------- driver --
@@ -350,7 +365,7 @@ def main(argv=None) -> int:
 
     if not a.no_timing:
         say("\nThreads")
-        thread_timing(py)
+        thread_timing(py, facts.get("threads"))
 
     say("\nWhat this machine can now do")
     say(f"  the suite, including the {'GPU tests' if cuda else 'CPU tests (no GPU tests)'}")
@@ -360,7 +375,12 @@ def main(argv=None) -> int:
         say("  everything except GPU training. Fix the torch install first:")
         say("  the CUDA wheel index is in RUNBOOK.md.")
 
-    return finish(a, 0 if (suite_ok and smoke_ok) else 1)
+    # A card that torch cannot see is a failure, and has to reach the exit
+    # code: a CPU wheel on a GPU machine is the silent failure this script
+    # exists to catch, and returning 0 for it reproduces that failure here.
+    # No card at all is not a failure -- CPU-only is a supported way to run.
+    gpu_unusable = bool(gpu.get("present")) and not cuda
+    return finish(a, 0 if (suite_ok and smoke_ok and not gpu_unusable) else 1)
 
 
 def finish(a, code: int) -> int:
