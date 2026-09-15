@@ -70,6 +70,17 @@ def velocity_loss(pred: torch.Tensor, target: torch.Tensor,
     return ((pred - target).pow(2) * w).sum() / denom
 
 
+def velocity_mass(onsets: torch.Tensor, peak_only: float = 0.0) -> torch.Tensor:
+    """The denominator ``velocity_loss`` uses, computed over any span.
+
+    ``run_epoch`` needs the whole clip's mass to weight each TBPTT chunk's
+    contribution, and it has to be exactly the quantity velocity_loss puts in
+    its own denominator. Kept next to it so the two cannot drift apart.
+    """
+    w = onsets if peak_only <= 0.0 else onsets * (onsets >= peak_only)
+    return w.sum()
+
+
 def rate_penalty(rates: torch.Tensor, ceiling: float) -> torch.Tensor:
     """Penalise mean activity *above* ``ceiling``. Nothing below it is penalised.
 
@@ -195,10 +206,22 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
         n_chunks = 0
         if train:
             opt.zero_grad(set_to_none=True)
-        n_total = max(1, (steps + chunk - 1) // chunk)
+        # Clip-level velocity mass. velocity_loss divides by the onset mass
+        # inside its own chunk, so under a flat 1/n_total a chunk holding one
+        # hit gave that hit ~30x the gradient of a hit in a chunk holding
+        # thirty -- and where the boundary falls is an artefact of clip length,
+        # not of the music. Normalising by the clip total makes every hit carry
+        # the same weight wherever it lands.
+        vel_mass = float(velocity_mass(y[:, :steps], tb.get("velocity_peak_only", 0.0)))
 
         for a in range(0, steps, chunk):
             b = min(a + chunk, steps)
+            # This chunk's share of the clip, not 1/n_chunks. Each chunk's loss
+            # is already a mean over its own elements, and the last chunk is a
+            # remainder -- 800 steps at 150 leaves 50 -- so a flat 1/n_total
+            # handed those 50 steps 3x the per-step gradient of the other 750,
+            # on every clip, deterministically.
+            frac = (b - a) / steps
             # Truncated BPTT: carry the state forward but cut the graph, so
             # memory stays flat in sequence length. The encoder and the genre
             # bias are rebuilt per chunk for the same reason -- a single shared
@@ -223,14 +246,23 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
                 reg = rate_penalty(rates.float(), resolve_rate_ceiling(model, tb, rates))
                 loss = bce + tb.get("rate_weight", 0.1) * reg
                 vloss = torch.zeros((), device=loss.device, dtype=loss.dtype)
+                vshare = 0.0
                 if model.decoder.has_velocity:
+                    peak_only = tb.get("velocity_peak_only", 0.0)
                     vloss = velocity_loss(model.decoder.velocity(motor).float(),
                                           vel_y[:, a:b], y[:, a:b],
-                                          peak_only=tb.get("velocity_peak_only", 0.0))
+                                          peak_only=peak_only)
+                    if vel_mass > 0.0:
+                        vshare = float(velocity_mass(y[:, a:b], peak_only)) / vel_mass
                     loss = loss + tb.get("velocity_weight", 1.0) * vloss
+                # loss is what gets reported; grad_loss is what gets
+                # differentiated. They differ only in the chunk weighting, so
+                # the printed numbers stay comparable with earlier histories.
+                grad_loss = (frac * (bce + tb.get("rate_weight", 0.1) * reg)
+                             + tb.get("velocity_weight", 1.0) * vloss * vshare)
 
             if train:
-                (loss / n_total).backward()
+                grad_loss.backward()
             totals["loss"] += float(loss.detach())
             totals["bce"] += float(bce.detach())
             totals["rate"] += float(reg.detach())
