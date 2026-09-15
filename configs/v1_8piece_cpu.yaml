@@ -6,6 +6,13 @@ name: v1_8piece_cpu
 subgraph:
   cache: data/cache/subgraph_10k.npz
   max_nodes: 10000
+  # NOTE: spectral_radius / spectral_radius_by_arm are inherited from
+  # v1_8piece.yaml and were measured at the 30k tier. Operating points do not
+  # transfer across tiers -- at one radius the motor pool's input gain differs
+  # 13.8x between the 2k and 30k tiers -- and this config runs at 10k. The 10k
+  # tier's own clean points have never been measured. Re-run
+  # scripts/propagation.py against this config before treating the inherited
+  # radii here as anything but a placeholder.
   min_weight: 5
 data:
   synthetic: false

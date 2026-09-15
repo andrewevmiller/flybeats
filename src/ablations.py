@@ -234,9 +234,43 @@ def lesion_sweep(model, loader, cfg, device, roles: dict, populations, evaluate_
 STOCHASTIC_ARMS = ("rewired", "sign_shuffled")
 
 
+def arm_config(arm: str, cfg: dict) -> dict:
+    """``cfg`` with this arm's own target spectral radius substituted in.
+
+    The arms are *not* normalised to a common radius. A shared rho looks like
+    the fair choice -- equal operator scale, so only topology differs -- but
+    measurement says otherwise: the radius that leaves every arm's motor pool
+    unpinned is each null arm's own best point and below the real arm's, so the
+    one arm the hypothesis is about pays for the convention and the nulls do
+    not. Section 4 of ``results/local/2026-09-15-probe-reproducibility.md``
+    has the response surface the per-arm points were read off.
+
+    ``model.spectral_radius_by_arm`` maps arm name -> radius; anything absent
+    from it falls back to the scalar ``model.spectral_radius``, which is also
+    what ``src/train.py`` uses (it builds one model and knows nothing about
+    arms, so it trains the real arm -- keep the two in step). ``gru`` and
+    ``shortcut`` throw the recurrent core away entirely, so neither reaches
+    them and neither is listed.
+
+    Returns ``cfg`` itself when there is nothing to override, and otherwise a
+    shallow copy: the caller's dict is never mutated, because one ``cfg`` is
+    shared across every arm of a run.
+    """
+    by_arm = (cfg.get("model") or {}).get("spectral_radius_by_arm") or {}
+    if arm not in by_arm:
+        return cfg
+    return {**cfg, "model": {**cfg["model"], "spectral_radius": float(by_arm[arm])}}
+
+
 def build_arm(arm: str, cfg: dict, sg: SubGraph, n_styles: int, seed: int = 0):
-    """Build one ablation arm. Encoder and decoder are identical across arms."""
+    """Build one ablation arm. Encoder and decoder are identical across arms.
+
+    The recurrent core is what differs -- its topology, and with it the
+    operating point that topology is clean at (see ``arm_config``).
+    """
     from build import build_model
+
+    cfg = arm_config(arm, cfg)
 
     if arm == "real":
         return build_model(cfg, sg, n_styles=n_styles)
@@ -259,6 +293,7 @@ def main(argv=None) -> int:
     import train as train_mod
     from build import device_of, get_subgraph, load_config, role_index
     from decoder import DrumKit
+    from model import ConnectomeRNN
 
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--config", type=Path, default=ROOT / "configs" / "v1_8piece.yaml")
@@ -311,6 +346,10 @@ def main(argv=None) -> int:
             # stops being about topology alone.
             train_mod.reseed_loader(train_loader, base_seed)
 
+            # Resolved here as well as inside build_arm, so what gets printed
+            # and written into the checkpoint is the radius the model was
+            # actually built at rather than the shared scalar.
+            arm_cfg = arm_config(arm, cfg)
             model, kit = build_arm(arm, cfg, sg, n_styles, seed=seed)
             model = model.to(device)
             # Same encoder calibration for every arm -- it depends only on the
@@ -329,7 +368,12 @@ def main(argv=None) -> int:
                                     weight_decay=cfg["train"].get("weight_decay", 0.0))
             n_par = sum(p.numel() for p in model.parameters() if p.requires_grad)
             tag = f"{arm}" + (f" (seed {seed})" if n_reps > 1 else "")
-            print(f"\n=== {tag} === params {n_par:,} | core {type(model.rnn).__name__}")
+            # rho only means anything for the connectome core; gru/shortcut
+            # replaced it, so quoting a radius for them would be a fiction.
+            rho = (f" | rho {arm_cfg['model'].get('spectral_radius')}"
+                   if isinstance(model.rnn, ConnectomeRNN) else "")
+            print(f"\n=== {tag} === params {n_par:,} | "
+                  f"core {type(model.rnn).__name__}{rho}")
 
             for ep in range(cfg["train"].get("epochs", 10)):
                 tr = train_mod.run_epoch(model, train_loader, opt, cfg, device, train=True)
@@ -340,7 +384,7 @@ def main(argv=None) -> int:
             ev = train_mod.evaluate(model, val_loader, cfg, device)
             runs.append(ev)
             suffix = f"_seed{seed}" if n_reps > 1 else ""
-            torch.save({"model": model.state_dict(), "arm": arm, "config": cfg,
+            torch.save({"model": model.state_dict(), "arm": arm, "config": arm_cfg,
                         "seed": seed, "n_styles": n_styles, "kit": kit.classes,
                         "rate_ceiling": getattr(model, "rate_ceiling", None)},
                        out / f"{arm}{suffix}.pt")

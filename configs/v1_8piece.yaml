@@ -34,14 +34,37 @@ kit:
 
 model:
   tau_ms_init: 20.0
-  gain_scale: auto        # normalise each arm to a common spectral radius
-  # so Phase 4 compares topology, not operator scale. 10, not the 0.9 a linear
-  # recurrence would want: rho here is carried by a small hub subnetwork, and at
-  # 0.9 the typical neuron's synaptic input sits far below its own resting
-  # activation -- the drive lost 28x at the first synapse and the motor pool
-  # never moved. Chosen by scripts/propagation.py, which measures what reaches
-  # the wings before any training; re-run it for a different subgraph tier.
-  spectral_radius: 10.0
+  gain_scale: auto        # rescale the built operator to hit the target radius
+                          # below, so the number is the core's realised rho
+  # NOT a common radius. The previous value (10.0) and the propagation.py
+  # reasoning that justified it are WITHDRAWN: it was read off a cold-start
+  # transient, on the real arm alone, at the 10k tier, and then carried into
+  # this 30k config. At rho=10 both rewires run with 49 of 66 wing motor
+  # neurons pinned at state_clip -- that arm is not being handicapped, it is
+  # not running.
+  #
+  # These come from sections 3 and 4 of
+  # results/local/2026-09-15-probe-reproducibility.md, which sweeps 5 arms x
+  # 6 radii at this tier and takes each arm's best *clean* cell -- clean meaning
+  # zero wing motor neurons pinned at state_clip for more than half the settled
+  # window. A radius that leaves every arm clean does exist (0.5), but it sits
+  # at every null arm's own optimum and 0.024 below the real arm's -- a
+  # handicap applied to exactly the one arm the hypothesis is about. So each
+  # arm runs at its own point and the whole response surface gets published
+  # alongside. Note the cleanliness guard is the draw-invariant half of that
+  # probe; the probe_F scores in the same tables do not separate the arms and
+  # were not used to choose these.
+  spectral_radius_by_arm:
+    real: 5.0
+    sign_shuffled: 2.0
+    rewired: 0.5
+  # Fallback for any arm not listed above, and the value src/train.py uses --
+  # it builds one model through build_model and knows nothing about arms, so it
+  # trains the real arm. Keep this equal to real's entry above or `train.py`
+  # and `ablations.py --arms real` silently train different models.
+  spectral_radius: 5.0
+  # gru and shortcut replace the recurrent core outright (GRUCore / ShortcutCore
+  # in src/ablations.py), so neither the map nor the scalar reaches them.
   input_scale: 1.0
   state_clip: 20.0
   spiking: false        # rate relaxation first; see PLAN.md open question 3
@@ -61,13 +84,25 @@ data:
 train:
   device: auto
   epochs: 20
-  batch_size: 16        # not 4: the recurrence is kernel-launch bound, not
-                        # FLOP bound, so a wider batch is close to free. Measured
-                        # at the 30k tier on a 6 GB card: peak 885 MB at B=4, and
-                        # B=4 costs 21.7 s/batch -> 65-80 min/epoch -> ~24 h per
-                        # 20-epoch run. B=16 cuts the epoch by close to 4x with
-                        # memory still far inside the card. NOTE: 4x fewer
-                        # optimiser steps per epoch -- see the lr note below.
+  batch_size: 16        # UNDER REVIEW -- the measurement that justified 16 does
+                        # not reproduce. See results/local/2026-09-15-throughput.md.
+                        # The claim here was "a wider batch is close to free:
+                        # 21.7 s/batch at B=4, and B=16 cuts the epoch ~4x".
+                        # Re-measured through train.run_epoch on this card:
+                        #   B=4   5.01 s/batch   920 MB peak   17.6 min/epoch
+                        #   B=8   7.41 s/batch  1571 MB peak   13.0 min/epoch
+                        #   B=16 12.11 s/batch  2869 MB peak   10.5 min/epoch
+                        # Cost is near-linear in B -- t(B) = 2.66 + 0.592*B --
+                        # so only 53% of a batch is batch-independent and the
+                        # recurrence is NOT as launch-bound as assumed. B=16
+                        # buys 1.68x, not 4x, and an infinitely wide batch
+                        # bottoms out at 2.1x. It still costs 4x fewer
+                        # optimiser steps per epoch (52 vs 211), which is the
+                        # trade the lr note below warns about -- and that trade
+                        # was accepted when the saving looked like 4x.
+                        # Settle this in the pilot before the campaign: it is
+                        # now a question about optimisation per wall-clock
+                        # hour, not about free throughput.
   lr: 0.003
   weight_decay: 0.0
   tbptt_steps: 150

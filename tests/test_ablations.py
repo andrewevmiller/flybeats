@@ -9,9 +9,11 @@ from pathlib import Path
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT / "src"))
 
-from ablations import _gru_hidden_for, degree_matched_rewire, shuffle_signs  # noqa: E402
+from ablations import (ARMS, _gru_hidden_for, arm_config,  # noqa: E402
+                       degree_matched_rewire, shuffle_signs)
 from subgraph import SubGraph  # noqa: E402
 
 
@@ -100,3 +102,90 @@ def test_gru_hidden_matches_parameter_budget():
         nxt = 3 * ((h + 1) * 405 + (h + 1) ** 2 + 2 * (h + 1)) + (h + 1) * 66 + 66
         assert got <= target, f"GRU exceeds budget at target={target}"
         assert nxt > target, f"GRU is not the largest fit at target={target}"
+
+
+# ----------------------------------------------------- per-arm operating point --
+def test_shipped_config_carries_the_measured_per_arm_radii():
+    """The Phase 4 arms do not share a radius, and these are the measured ones.
+
+    From sections 3 and 4 of
+    results/local/2026-09-15-probe-reproducibility.md: each arm's best cell
+    with no wing motor neuron pinned at state_clip for more than half the
+    settled window. Pinned here so a casual edit to the config has to argue
+    with a test rather than quietly move the campaign's operating point.
+    """
+    from build import load_config
+
+    cfg = load_config(ROOT / "configs" / "v1_8piece.yaml")
+    by_arm = cfg["model"]["spectral_radius_by_arm"]
+    assert by_arm["real"] == 5.0
+    assert by_arm["sign_shuffled"] == 2.0
+    assert by_arm["rewired"] == 0.5
+    # A key that is not an arm name is silently ignored by build_arm, which is
+    # the failure mode this catches: the arm would run at the fallback scalar
+    # and nothing would say so.
+    assert set(by_arm) <= set(ARMS), f"not arm names: {set(by_arm) - set(ARMS)}"
+
+    # train.py builds a single model through build_model and knows nothing
+    # about arms, so it trains the real arm off the scalar. If the scalar and
+    # real's entry disagree, `train.py` and `ablations.py --arms real` train
+    # two different models and the headline run is not the real arm.
+    assert cfg["model"]["spectral_radius"] == by_arm["real"]
+
+
+def test_arm_config_overrides_per_arm_and_falls_back_otherwise():
+    cfg = {"model": {"gain_scale": "auto", "spectral_radius": 3.0,
+                     "spectral_radius_by_arm": {"real": 7.0, "rewired": 0.25}},
+           "train": {"seed": 0}}
+
+    assert arm_config("real", cfg)["model"]["spectral_radius"] == 7.0
+    assert arm_config("rewired", cfg)["model"]["spectral_radius"] == 0.25
+    # gru and shortcut throw the recurrent core away, so rho never reaches
+    # them; anything unlisted keeps the scalar.
+    for arm in ("gru", "shortcut", "sign_shuffled"):
+        assert arm_config(arm, cfg)["model"]["spectral_radius"] == 3.0
+    # one cfg is shared across every arm of a run, so overriding for one arm
+    # must not leak into the next
+    assert cfg["model"]["spectral_radius"] == 3.0
+    assert cfg["model"]["spectral_radius_by_arm"] == {"real": 7.0, "rewired": 0.25}
+
+    # no mapping at all is the old behaviour, unchanged
+    plain = {"model": {"spectral_radius": 3.0}}
+    assert arm_config("real", plain) is plain
+
+
+def test_build_arm_realises_each_arms_own_spectral_radius():
+    """The override has to reach the built operator, not just the config dict.
+
+    gain_scale="auto" rescales the core to hit the target, so the assertion is
+    on the radius the model will actually run at: rho of the unscaled operator
+    times the gain_scale buffer that multiplies it.
+    """
+    import torch
+
+    from ablations import build_arm
+    from build import get_subgraph, load_config
+    from conftest import use_small_graph
+
+    cfg = use_small_graph(load_config(ROOT / "configs" / "sanity_3piece.yaml"))
+    sg = get_subgraph(cfg)
+    # Sentinels, deliberately not the shipped values: a mapping that was being
+    # ignored would still give the right answer if the test asked for the
+    # number the fallback scalar already holds.
+    cfg["model"]["gain_scale"] = "auto"
+    cfg["model"]["spectral_radius"] = 3.0
+    cfg["model"]["spectral_radius_by_arm"] = {
+        "real": 7.0, "rewired": 0.25, "sign_shuffled": 1.5}
+
+    for arm, want in (("real", 7.0), ("rewired", 0.25), ("sign_shuffled", 1.5)):
+        torch.manual_seed(0)
+        model, _ = build_arm(arm, cfg, sg, n_styles=1, seed=0)
+        assert model.rnn.cfg.spectral_radius == want, f"{arm} got the wrong target"
+        realised = model.rnn._spectral_radius() * float(model.rnn.gain_scale)
+        assert abs(realised - want) < 0.01 * want, f"{arm} realised rho {realised}"
+
+    # And an arm with no entry is built at the fallback, not at whatever the
+    # previous arm left behind.
+    torch.manual_seed(0)
+    model, _ = build_arm("gru", cfg, sg, n_styles=1, seed=0)
+    assert model.rnn.cfg.spectral_radius == 3.0
