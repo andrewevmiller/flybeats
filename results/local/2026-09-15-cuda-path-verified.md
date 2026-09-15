@@ -270,11 +270,18 @@ warns about.
 
 ## 7. Still open
 
-1. **Peak VRAM at the 30k tier against 6 GB.** Unblocked — `bf16: auto` resolves
-   to fp32 here, so the run no longer crashes. The cache and corpus are on disk
-   (`data/cache/subgraph.npz`, 4.8 GB of eGMD). Not yet run. Order if it does
-   not fit is unchanged: `grad_checkpoint: true` -> lower `tbptt_steps` ->
-   `v1_8piece_cpu.yaml` at 10k.
+1. **Peak VRAM at the 30k tier against 6 GB.** `bf16: auto` resolves to fp32
+   here, so the run no longer crashes on precision — but it is still blocked,
+   on data. **Correction to an earlier reading of this line:** the subgraph
+   cache is on disk (`data/cache/subgraph.npz`), the corpus is *not*.
+   `data/egmd/groove/` holds 136 KB — seven MIDI files, no `info.csv`, no
+   audio — and the 4.8 GB is `groove-v1.0.0.zip`, unextracted. `build_dataset`
+   raises without `info.csv`. Extract it before anything here is runnable.
+   Order if it does not fit is unchanged: `grad_checkpoint: true` -> lower
+   `tbptt_steps` -> `v1_8piece_cpu.yaml` at 10k.
+
+   Separately, VRAM is very unlikely to be the constraint: peak measured at the
+   30k tier is 885 MB of 6 GB at B=4. Wall clock is (see §8 of the plan).
 2. **Live-tier latency at 30k.** Blocked on the streaming device bug in §6 for
    the GPU figure. The CPU figures above still stand.
 3. **Whether an fp16 `precision:` path earns its build.** The hardware answer is
