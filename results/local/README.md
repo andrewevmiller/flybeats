@@ -10,6 +10,10 @@ a measurement nobody can find again is not a measurement.
 
 ## What is here
 
+`2026-09-14-gpu-bringup.md` is the narrative for the first run: what the
+machine turned out to be, what its card can and cannot do, what the report
+below actually says, and what is still unverified.
+
 ### `bootstrap-LAPTOP-I9B30DJE-20260914-2359.json`
 
 The first run on real hardware. Ryzen mobile, 16 logical cores, 42.3 GB RAM,
