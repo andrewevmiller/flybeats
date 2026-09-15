@@ -115,8 +115,17 @@ def test_topology_is_frozen_under_training():
         out.sum().backward()
         opt.step()
     assert torch.equal(idx_before, rnn.edge_index)
-    # softplus is strictly positive, so no magnitude can reach exactly zero
-    assert (torch.nn.functional.softplus(rnn.log_gain) > 0).all()
+    # edge_weight() switched from softplus to exp and this guard did not
+    # follow, so it asserted a property of a function the model no longer
+    # calls -- and softplus is positive for every value log_gain can hold, so
+    # it could not have failed even with every edge driven to the floor.
+    assert (rnn.edge_weight() != 0).all()
+    # Honest about the limit of that: exp is strictly positive and edge_index
+    # is immutable, so nothing is destroyed in the arithmetic sense. But
+    # log_gain_clamp's floor puts an edge at exp(-15) of gain_scale -- ~1e-8
+    # relative to a median weight -- which is a functional prune. "No
+    # connection can be destroyed" is a claim about the index arrays, not
+    # about what training can do to a magnitude.
 
 
 def test_gain_initialised_at_synapse_counts():
