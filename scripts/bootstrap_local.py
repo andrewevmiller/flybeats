@@ -176,8 +176,13 @@ def install(py: Path, gpu: dict, index_url: str | None, check_only: bool) -> boo
 
     args = [py, "-m", "pip", "install", "--quiet", "torch"]
     if index_url:
-        args += ["--index-url", index_url]
-        note = f"from {index_url}"
+        # --force-reinstall, not just --index-url: the CUDA wheel is version
+        # 2.x.y+cuNNN and the CPU one is plain 2.x.y, so pip reads the bare
+        # `torch` requirement as already satisfied and changes nothing. Asking
+        # for an index and being handed back the CPU wheel you were trying to
+        # replace is the whole failure this script exists to catch.
+        args += ["--index-url", index_url, "--force-reinstall", "--no-cache-dir"]
+        note = f"from {index_url} (forced)"
     elif gpu.get("present"):
         # No --index-url given. On Linux the default wheel is already CUDA; on
         # Windows it is CPU-only, and a CPU wheel on a machine with a card is

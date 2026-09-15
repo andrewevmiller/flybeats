@@ -51,8 +51,18 @@ cloud cores. There is no record of what real hardware does with any of it, and
 that is the first gap this machine closes.
 
 If the bootstrap reports `cuda_available=False` while `nvidia-smi` sees the
-card, it is the wheel — see the CUDA index below — and nothing after that point
-is worth reading until it is fixed.
+card, it is the wheel, and nothing after that point is worth reading until it
+is fixed. Re-run it with the index for a CUDA build your driver supports
+(pytorch.org's selector names the current one):
+
+```powershell
+py -3.12 scripts\bootstrap_local.py --index-url https://download.pytorch.org/whl/cu124
+```
+
+Given `--index-url`, the script forces the reinstall. It has to: the CUDA wheel
+is version `2.x.y+cuNNN` and the CPU one is plain `2.x.y`, so a bare `torch`
+requirement reads as already satisfied and a plain re-run would leave the CPU
+wheel exactly where it was.
 
 ---
 
@@ -113,7 +123,7 @@ just `False`:
 nvidia-smi                      # driver version and the CUDA it supports
 # The index URL has to match a CUDA build your driver supports -- pytorch.org's
 # selector gives the current one. cu124 is an example, not a recommendation:
-pip install torch --index-url https://download.pytorch.org/whl/cu124
+pip install torch --index-url https://download.pytorch.org/whl/cu124 --force-reinstall
 pip install -r requirements-dev.txt
 ```
 
