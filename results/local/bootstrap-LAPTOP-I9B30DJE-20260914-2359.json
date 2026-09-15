@@ -1,0 +1,101 @@
+{
+  "steps": [
+    {
+      "name": "git state",
+      "status": "ok",
+      "detail": "claude/quirky-turing-e735dk at 1a7888c, 0 behind / 0 ahead of origin/main, uncommitted changes present"
+    },
+    {
+      "name": "venv",
+      "status": "ok",
+      "detail": "reusing C:\\Users\\ricos\\Documents\\AI Databases\\flybeats\\git\\.venv"
+    },
+    {
+      "name": "install torch",
+      "status": "ok",
+      "detail": "default index, 112s"
+    },
+    {
+      "name": "install requirements-dev.txt",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "name": "torch sees the GPU",
+      "status": "FAILED",
+      "detail": "2.14.0+cpu reports cuda_available=False -- a CPU-only wheel, or a driver problem"
+    },
+    {
+      "name": "pytest",
+      "status": "ok",
+      "detail": "133 passed, 1 skipped, 4 deselected, 3 warnings in 74.55s (0:01:14) in 77s"
+    },
+    {
+      "name": "cuda_smoke.py",
+      "status": "ok",
+      "detail": ""
+    },
+    {
+      "name": "thread timing",
+      "status": "ok",
+      "detail": "1 thread: 17.5 ms (1.15x realtime), 16 threads: 11.5 ms (1.74x realtime)"
+    }
+  ],
+  "machine": {
+    "when": "2026-09-14T23:54:28+00:00",
+    "os": "Windows 11",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "cpu_count": 16,
+    "python": "3.12.10",
+    "python_exe": "C:\\Users\\ricos\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "ram_gb": 42.3
+  },
+  "gpu": {
+    "present": true,
+    "raw": "NVIDIA GeForce RTX 2060 with Max-Q Design, 616.56, 6144 MiB",
+    "name": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+    "driver": "616.56",
+    "memory": "6144 MiB"
+  },
+  "git": {
+    "branch": "claude/quirky-turing-e735dk",
+    "head": "1a7888c",
+    "dirty": true,
+    "behind_main": "0",
+    "ahead_main": "0"
+  },
+  "torch": {
+    "version": "2.14.0+cpu",
+    "cuda_build": null,
+    "cuda_available": false,
+    "threads": 8
+  },
+  "pytest": {
+    "summary": "133 passed, 1 skipped, 4 deselected, 3 warnings in 74.55s (0:01:14)",
+    "seconds": 76.7,
+    "returncode": 0
+  },
+  "cuda_smoke": {
+    "returncode": 0,
+    "checks": [
+      "[PASS] sparse spmm + custom backward vs dense (duplicate edges) -- forward 1.55e-15, grad_values 0.00e+00, grad_r 0.00e+00",
+      "[SKIP] bf16 autocast step -- CUDA only",
+      "[rate] ceiling = 10.4625 activation (4.0x this model's initial mean)",
+      "[PASS] gradient checkpointing is transparent -- 13 tensors, worst difference 0.00e+00 (decoder.readout.bias)",
+      "[PASS] one training epoch end to end -- loss 1.7484, 0.8s for 4 clips",
+      "[PASS] streaming inference benchmark -- 4.4 ms mean / 5.5 ms p95 per 20 ms block (4.6x realtime) on 8 threads"
+    ]
+  },
+  "threads": {
+    "1": {
+      "ms": 17.451330009498633,
+      "x": 1.146044455586717
+    },
+    "16": {
+      "ms": 11.488059995463118,
+      "x": 1.7409379832537808
+    }
+  },
+  "exit_code": 0
+}
