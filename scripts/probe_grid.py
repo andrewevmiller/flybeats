@@ -255,7 +255,12 @@ def main(argv=None) -> int:
             # so both are visible on one axis: total |incoming gain| per neuron.
             with torch.no_grad():
                 w = model.rnn.edge_weight().abs()
-                dst = model.rnn.edge_index[1].long()
+                # edge_index is stored [post, pre] (the matrix convention, see
+                # model.py) -- NOT [pre, post] like the constructor argument.
+                # Index [0] for incoming. Getting this backwards measures how
+                # much each neuron SENDS and calls it input, which makes a
+                # terminal readout pool look starved when it is well fed.
+                dst = model.rnn.edge_index[0].long()
                 gain = torch.zeros(model.rnn.n_nodes, device=w.device)
                 gain.scatter_add_(0, dst, w)
                 med_gain = float(gain.median())
