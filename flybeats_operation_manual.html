@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>flybeats Training — Operation Manual</title>
+<meta name="description" content="Operation manual for locally training flybeats, a connectome-constrained drum performance model. Launch order, monitoring, and fail states, phase by phase.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600;700&family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  /* ---------- tokens ---------- */
+  :root{
+    --bg: #F2F1EE;
+    --bg-rgb: 242,241,238;
+    --bg-soft: #E9E8E2;
+    --panel: #E1E0D9;
+    --line: #CBC9C1;
+    --ink: #1C1C1A;
+    --muted: #5C5B54;
+    --accent: #C13B2E;
+    --shadow: rgba(28,28,26,0.10);
+
+    --font-display: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+    --font-body: 'Geist', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #171716;
+      --bg-rgb: 23,23,22;
+      --bg-soft: #1E1E1C;
+      --panel: #242422;
+      --line: #3A3A35;
+      --ink: #ECEBE5;
+      --muted: #A3A29A;
+      --accent: #F2624C;
+      --shadow: rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #171716;
+    --bg-rgb: 23,23,22;
+    --bg-soft: #1E1E1C;
+    --panel: #242422;
+    --line: #3A3A35;
+    --ink: #ECEBE5;
+    --muted: #A3A29A;
+    --accent: #F2624C;
+    --shadow: rgba(0,0,0,0.5);
+  }
+
+  /* ---------- reset ---------- */
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin: 0;
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--line) 1px, transparent 1.7px);
+    background-size: 26px 26px;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  img, svg{ display:block; max-width:100%; }
+  a{ color: inherit; }
+  h1,h2,h3{ font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; line-height: 1.14; margin: 0; }
+  p{ margin: 0; }
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap{ max-width: 1140px; margin: 0 auto; padding: 0 clamp(22px, 5vw, 64px); }
+  .measure{ max-width: 680px; }
+
+  section{ padding: clamp(56px, 9vw, 96px) 0; }
+  .rule{ border-top: 1px solid var(--line); }
+
+  ul.plain, ol.plain{ margin: 0; padding: 0; list-style: none; }
+
+  /* ---------- quick nav ---------- */
+  .quicknav{
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(var(--bg-rgb), 0.86);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .quicknav-inner{
+    display:flex; gap: 22px; overflow-x:auto;
+    padding: 14px clamp(22px,5vw,64px);
+    font-family: var(--font-mono); font-size: 0.78rem;
+  }
+  .quicknav a{
+    color: var(--muted); text-decoration:none; white-space:nowrap;
+    padding-bottom:2px; border-bottom:1px solid transparent;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .quicknav a:hover{ color: var(--ink); border-color: var(--accent); }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position: relative;
+    overflow: hidden;
+    padding: clamp(80px, 14vw, 140px) 0 clamp(60px, 9vw, 96px);
+    background: var(--bg);
+  }
+  .hero-field{ position: absolute; inset: 0; pointer-events: none; }
+  .hero-field canvas{ width: 100%; height: 100%; display:block; }
+  .hero-glass{
+    position: absolute; inset: 0;
+    background: rgba(var(--bg-rgb), 0.62);
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    pointer-events: none;
+  }
+  .hero-inner{ position: relative; z-index: 1; }
+  .hero-kicker{ font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; }
+  .hero h1{ font-size: clamp(2.5rem, 6.6vw, 4.6rem); }
+  .hero-role{ margin-top: 14px; font-size: clamp(1.05rem, 2vw, 1.3rem); color: var(--muted); max-width: 36ch; }
+  .hero-lede{ margin-top: 26px; font-size: clamp(1.02rem, 1.6vw, 1.18rem); max-width: 52ch; }
+  .hero-anim{ opacity: 0; transform: translateY(10px); animation: heroIn 0.9s ease-out 0.05s forwards; }
+  @keyframes heroIn{ to{ opacity:1; transform: translateY(0); } }
+
+  .scrollcue{
+    margin-top: 52px; width: 22px; height: 34px;
+    border: 1.5px solid var(--muted); border-radius: 12px; position: relative;
+  }
+  .scrollcue::after{
+    content: ""; position: absolute; top: 6px; left: 50%;
+    width: 3px; height: 7px; margin-left: -1.5px;
+    background: var(--muted); border-radius: 2px;
+    animation: cueDrop 1.8s ease-in-out infinite;
+  }
+  @keyframes cueDrop{ 0%{ transform: translateY(0); opacity: 1;} 70%{ opacity: 0.2;} 100%{ transform: translateY(10px); opacity: 0;} }
+
+  @media (prefers-reduced-motion: reduce){
+    .hero-anim, .scrollcue::after{ animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
+
+  /* ---------- section headings ---------- */
+  section > .wrap > h2{ font-size: clamp(1.5rem, 2.8vw, 2.05rem); margin-bottom: 20px; }
+  .section-lede{ color: var(--muted); font-size: 1.02rem; max-width: 62ch; margin-bottom: 10px; }
+
+  /* ---------- mental model ---------- */
+  .model-grid{ display:grid; grid-template-columns: 160px 1fr; gap: 44px; align-items: start; }
+  .model-icon{
+    aspect-ratio: 1 / 1; max-width: 160px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background-color: var(--bg-soft);
+    background-image: radial-gradient(var(--line) 1px, transparent 1.7px);
+    background-size: 16px 16px;
+    display:flex; align-items:center; justify-content:center; color: var(--muted);
+  }
+  .steps{ list-style:none; margin: 26px 0 0; padding: 0; counter-reset: stepnum; }
+  .steps li{ display:grid; grid-template-columns: 32px 1fr; gap: 16px; padding: 9px 0; counter-increment: stepnum; }
+  .steps li::before{
+    content: counter(stepnum);
+    font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent);
+    border: 1px solid var(--line); width: 30px; height: 30px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .twonums{ display:flex; gap: 28px; margin-top: 30px; flex-wrap: wrap; }
+  .twonums > div{ flex: 1 1 220px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .twonums h4{ font-family: var(--font-mono); font-weight: 500; font-size: 0.8rem; color: var(--muted); margin: 0 0 6px; }
+  @media (max-width: 700px){ .model-grid{ grid-template-columns: 1fr; } .model-icon{ max-width: 120px; } }
+
+  /* ---------- phase map ---------- */
+  .phase-entry{ display:grid; grid-template-columns: 96px 40px 1fr; gap: 4px 22px; padding-bottom: 48px; }
+  .phase-entry:not(:last-child){ border-bottom: 1px solid var(--line); margin-bottom: 48px; }
+  .phase-label{ font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); padding-top: 4px; }
+  .phase-glyph{ color: var(--muted); }
+  .phase-entry h3{ font-size: 1.35rem; font-weight: 600; }
+  .phase-ok{ display:flex; gap: 9px; align-items:flex-start; font-size: 0.98rem; margin-top: 14px; }
+  .phase-ok svg{ flex-shrink:0; margin-top: 3px; color: var(--accent); }
+  .phase-body{ margin-top: 14px; max-width: 74ch; font-size: 1rem; }
+  .phase-body p + p{ margin-top: 12px; }
+  .chips{ display:flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip{ font-size: 0.84rem; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-soft); font-family: var(--font-mono); color: var(--muted); }
+  @media (max-width: 640px){
+    .phase-entry{ grid-template-columns: 34px 1fr; }
+    .phase-label{ grid-column: 1 / -1; padding-top: 0; }
+    .phase-glyph{ grid-row: 2; }
+  }
+
+  /* ---------- tables ---------- */
+  .tbl-wrap{ overflow-x: auto; margin: 18px 0 4px; border: 1px solid var(--line); border-radius: 8px; }
+  table{ width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 580px; }
+  th{ text-align:left; font-family: var(--font-mono); font-weight: 500; font-size: 0.74rem; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg-soft); }
+  td{ padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.55; }
+  tr:last-child td{ border-bottom: none; }
+  td code, p code, li code, .callout code{ font-family: var(--font-mono); font-size: 0.87em; background: var(--bg-soft); padding: 2px 6px; border-radius: 4px; }
+
+  /* ---------- callouts ---------- */
+  .callout{ border-left: 3px solid var(--line); padding: 13px 18px; margin: 16px 0; background: var(--bg-soft); border-radius: 0 8px 8px 0; font-size: 0.96rem; }
+  .callout strong{ display:block; font-family: var(--font-mono); font-weight: 500; font-size: 0.76rem; color: var(--muted); margin-bottom: 5px; text-transform: none; }
+  .callout--accent{ border-left-color: var(--accent); }
+
+  /* ---------- code blocks ---------- */
+  .code{ font-family: var(--font-mono); font-size: 0.85rem; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; overflow-x: auto; line-height: 1.6; margin: 14px 0; white-space: pre; }
+
+  /* ---------- launch section (panel treatment) ---------- */
+  .launch-section{ background: var(--panel); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .launch-block{ margin-top: 40px; }
+  .launch-block:first-of-type{ margin-top: 30px; }
+  .launch-block h3{ font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
+  .launch-block p{ font-size: 1rem; max-width: 74ch; }
+  .launch-block p + p{ margin-top: 12px; }
+  .launch-block ul{ margin: 14px 0 0; padding: 0; list-style: none; max-width: 74ch; }
+  .launch-block ul li{ position: relative; padding-left: 20px; margin-top: 10px; font-size: 0.98rem; }
+  .launch-block ul li::before{ content: "—"; position:absolute; left:0; color: var(--muted); }
+  .launch-block ol{ margin: 16px 0 0; padding: 0; list-style: none; counter-reset: launchnum; max-width: 74ch; }
+  .launch-block ol > li{ counter-increment: launchnum; padding-left: 30px; position: relative; margin-top: 16px; font-size: 0.98rem; }
+  .launch-block ol > li::before{ content: counter(launchnum); font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); position:absolute; left:0; top:1px; border:1px solid var(--line); width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+
+  .flow-panel{ background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-top: 22px; }
+  .flow-panel pre.mermaid{ margin: 0; background: transparent; font-family: var(--font-mono); }
+  .flow-caption{ margin-top: 14px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+
+  /* ---------- monitor / tiers ---------- */
+  .tier-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap: 32px; margin-top: 10px; }
+  .tier-item svg{ color: var(--muted); margin-bottom: 12px; }
+  .tier-item h4{ font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; margin-bottom: 8px; }
+  .tier-item p{ color: var(--muted); font-size: 0.94rem; }
+  .tier-item p + p{ margin-top: 8px; }
+  @media (max-width: 860px){ .tier-grid{ grid-template-columns: 1fr; gap: 28px; } }
+
+  /* ---------- kill switch ---------- */
+  .kill-hed{ font-size: clamp(1.7rem, 4vw, 2.5rem); max-width: 22ch; }
+  .killgrid{ display:grid; gap: 16px; margin-top: 34px; }
+  .killblock{ border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 0 8px 8px 0; padding: 16px 20px; background: var(--bg-soft); max-width: 76ch; }
+  .killblock h4{ font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; color: var(--muted); margin: 0 0 6px; }
+  .killblock p{ font-size: 0.98rem; }
+  .killblock.accent{ border-left-color: var(--accent); }
+  .killblock.note{ background: transparent; border: none; border-left: 4px solid var(--line); font-style: italic; padding-left: 18px; }
+
+  footer{ padding: 30px 0 44px; }
+  footer .wrap{ display:flex; justify-content: space-between; flex-wrap:wrap; gap:10px; font-size: 0.82rem; color: var(--muted); font-family: var(--font-mono); }
+
+</style>
+</head>
+<body>
+
+  <nav class="quicknav" aria-label="Section navigation">
+    <div class="quicknav-inner">
+      <a href="#mental-model">mental model</a>
+      <a href="#phase-map">phase map</a>
+      <a href="#launch">launching a run</a>
+      <a href="#monitor">watching progress</a>
+      <a href="#reference">quick reference</a>
+      <a href="#killswitch">kill or keep going</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-field" aria-hidden="true"><canvas id="connectome"></canvas></div>
+    <div class="hero-glass" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <div class="hero-kicker hero-anim">companion to PLAN.md</div>
+      <h1 class="hero-anim">flybeats Training</h1>
+      <p class="hero-role hero-anim">The operation manual — local compute, phase by phase</p>
+      <p class="hero-lede hero-anim">There's no drum sound and no fly on screen while this runs. Just a step counter, a loss number, and a few files on disk growing on a schedule. Here's what those are supposed to do, and what it looks like when they don't.</p>
+      <div class="scrollcue hero-anim" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section id="mental-model" class="rule">
+    <div class="wrap">
+      <div class="model-grid">
+        <div>
+          <div class="model-icon" aria-hidden="true">
+            <svg width="52" height="52" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M8 14a12 12 0 0 1 20-6"/><path d="M32 26a12 12 0 0 1-20 6"/>
+              <path d="M28 8l0 -0.5 4 0.5 -1 4"/><path d="M12 32l0 0.5 -4 -0.5 1 -4"/>
+            </svg>
+          </div>
+        </div>
+        <div class="measure">
+          <h2>What "training" physically is</h2>
+          <p>Forget neurons and synapses for a second. On your machine, training is one loop, repeated thousands of times.</p>
+
+          <ol class="steps">
+            <li>Grab a small chunk of audio and its matching drum MIDI.</li>
+            <li>Run it forward through the network — get a guess.</li>
+            <li>Compare the guess to the real MIDI to get a single number, the <strong>loss</strong>. Lower is better.</li>
+            <li>Work out which direction to nudge every trainable number (edge gains, time constants, thresholds) to make that loss slightly smaller.</li>
+            <li>Nudge them a tiny bit. Go back to step one.</li>
+          </ol>
+
+          <p style="margin-top:22px">That's it. There is no drum sound, no picture, no fly avatar during training — that's what <code>realtime.py</code> is for later. "Watching training" means watching numbers scroll in a terminal, plus one or two files on disk growing on a schedule. If nothing is printing and nothing is growing, something is wrong even without an error message.</p>
+
+          <div class="twonums">
+            <div>
+              <h4>loss</h4>
+              <p>Is the model getting better at the task?</p>
+            </div>
+            <div>
+              <h4>still running</h4>
+              <p>Is the process alive, or did it silently die or hang?</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="phase-map" class="rule">
+    <div class="wrap">
+      <h2>Where things break, in order</h2>
+      <p class="section-lede" style="margin-bottom:44px">Problems surface in the order the pipeline runs. You won't hit a Phase 3 problem until Phases 0 and 1 are clean — use that to narrow down what broke.</p>
+
+      <!-- Phase 0 -->
+      <div class="phase-entry">
+        <div class="phase-label">Phase 0<br>gate</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="7" width="26" height="26" rx="3"/><path d="M13 20l5 5 10-11"/></svg>
+        </div>
+        <div>
+          <h3>Data and verification gate</h3>
+          <div class="phase-ok">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-12"/></svg>
+            <span><code>verify_types.py</code> finishes and <code>data/verified_types.json</code> has a non-empty, non-zero count for every type on the checklist.</span>
+          </div>
+          <div class="chips" aria-label="Confirmed type checklist">
+            <span class="chip">JO-A/B/E</span><span class="chip">AMMC / WED</span><span class="chip">B1</span><span class="chip">aPN1 / vPN1</span><span class="chip">pC1 / pC2</span><span class="chip">pIP10</span><span class="chip">wing MNs</span><span class="chip">DLM / DVM</span><span class="chip">OA-VPM / VUM</span>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <tr><th>Symptom</th><th>Likely cause</th><th>What to do</th></tr>
+              <tr><td>Auth error / 401</td><td>Bad or expired <code>NEUPRINT_TOKEN</code></td><td>Re-generate the token, re-export the env var</td></tr>
+              <tr><td>A confirmed-list type returns 0 matches</td><td>Type name drifted between dataset versions — this is exactly what the gate exists to catch</td><td>Search neuPrint's type table directly for near-matches before assuming the type doesn't exist</td></tr>
+              <tr><td>You skip the gate and hardcode a type name</td><td>No error — the whole downstream pipeline runs against nothing, or the wrong neurons</td><td>The dangerous one: it fails silently, hours later, as an empty or nonsensical subgraph. Never bypass this step.</td></tr>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 1 -->
+      <div class="phase-entry">
+        <div class="phase-label">Phase 1<br>subgraph</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="12" r="3"/><circle cx="9" cy="28" r="3"/><circle cx="24" cy="20" r="3"/><circle cx="34" cy="9" r="2.4"/><circle cx="34" cy="31" r="2.4"/><path d="M12 13l9 6M12 27l9-6M27 18l5-6M27 22l5 6"/></svg>
+        </div>
+        <div>
+          <h3>Subgraph extraction</h3>
+          <div class="phase-ok">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-12"/></svg>
+            <span>A reported node count in the 10k–30k target — and every motor neuron type you care about is still <em>reachable</em> from JO afferents inside that subgraph.</span>
+          </div>
+          <div class="tbl-wrap">
+            <table>
+              <tr><th>Symptom</th><th>Likely cause</th><th>What to do</th></tr>
+              <tr><td>Subgraph is way over 30k</td><td>k-hop radius set too large</td><td>Reduce hop count before touching anything downstream</td></tr>
+              <tr><td>Subgraph is tiny / motor neurons missing</td><td>Filtering too aggressive, or the intersection with the motor ancestor set came back empty</td><td>Check the ancestor-set intersection step directly — an empty intersection means no path exists, and training will run but can never produce output no matter how long you wait</td></tr>
+              <tr><td>Node count looks fine but training never learns (later, in Phase 3)</td><td>Subgraph is topologically disconnected in a way the node count doesn't reveal</td><td>Run a reachability check — can I walk from every JO node to every target motor node — before ever starting a training run</td></tr>
+            </table>
+          </div>
+          <div class="callout callout--accent">
+            <strong>the one to double-check</strong>
+            A disconnected subgraph produces no error at all — it just quietly guarantees Phase 3 can't succeed.
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 2 -->
+      <div class="phase-entry">
+        <div class="phase-label">Phase 2<br>enc / dec</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h13M12 14l6 6-6 6"/><path d="M23 20h13M28 14l6 6-6 6"/></svg>
+        </div>
+        <div>
+          <h3>Encoder and decoder</h3>
+          <p class="phase-body">Low risk by design — both are thin linear layers on top of fixed DSP. The only fail state here is a shape mismatch: a dimension-mismatch error at the very first forward pass, immediately, loudly, at step 0. Get past step 0 and this phase is fine.</p>
+        </div>
+      </div>
+
+      <!-- Phase 3 -->
+      <div class="phase-entry">
+        <div class="phase-label">Phase 3<br>training</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h5l3-9 5 18 4-13 3 9h5l3-7 3 7h3"/></svg>
+        </div>
+        <div>
+          <h3>The training loop</h3>
+          <p class="phase-body">Where most of your attention goes. A healthy run: a step counter incrementing at a roughly steady speed, loss trending down over the first few hundred–thousand steps (noisy, not flat, not a wall of <code>nan</code>), mean firing rate sitting in a healthy middle range, and a checkpoint file that actually updates on schedule.</p>
+          <div class="tbl-wrap">
+            <table>
+              <tr><th>Symptom</th><th>Likely cause</th><th>What to check</th></tr>
+              <tr><td>Crash within the first few steps, dimension/device error</td><td>Shape mismatch, or a tensor left on CPU while the model is on GPU</td><td>Read the traceback — it names the exact tensor and shape; fix and rerun</td></tr>
+              <tr><td><code>CUDA out of memory</code>, usually early</td><td>Batch size × sequence length too big for VRAM, even with checkpointing/bf16 on</td><td>Lower batch size first, then the truncated-BPTT window length, before assuming the subgraph is too big</td></tr>
+              <tr><td>Loss becomes <code>nan</code> or <code>inf</code> after some steps</td><td>Learning rate too high, or per-edge log-gain initialization blew up</td><td>Add/check gradient clipping; the step right before the first <code>nan</code> is the one to inspect</td></tr>
+              <tr><td>Loss decreasing, but firing-rate stats pin at 0 or ceiling</td><td>The firing-rate regularizer isn't strong enough — the network is "solving" the loss by going silent or saturating</td><td>Watch mean firing rate as its own metric, not just loss. If it's pinned, increase the regularizer weight</td></tr>
+              <tr><td>Loss flatlines immediately, no crash</td><td>Gradients aren't flowing — usually edge <em>magnitudes</em> got frozen along with the signs</td><td>Confirm which tensors have <code>requires_grad = True</code>; log the gradient norm — zero means nothing is updating</td></tr>
+              <tr><td>Loss looks great, output sounds like near-silence or noise</td><td>Class imbalance — most timesteps have no drum hit, so "always predict nothing" gets a deceptively low loss</td><td>Look at per-class precision/recall, not just aggregate loss — a known pattern in sparse-onset tasks, not a bug</td></tr>
+              <tr><td>Steps/sec slowly worsens, no crash yet</td><td>Memory/graph leak — usually a recurrent hidden state that never got detached between truncated-BPTT windows</td><td>If steps/sec is dropping and memory use is climbing, this is almost always the cause</td></tr>
+              <tr><td>Process stops updating, no crash, no error</td><td>Hung on a blocking I/O call, or genuinely deadlocked</td><td>Check whether it's still burning CPU/GPU before deciding it's dead</td></tr>
+            </table>
+          </div>
+          <div class="callout">
+            <strong>checkpointing, specifically</strong>
+            "Training is running" and "checkpoints are being written" are two different facts — verify both. A run that trains fine but never successfully writes a checkpoint (permissions, disk full, wrong path) wastes all its progress the moment it stops.
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 4 -->
+      <div class="phase-entry">
+        <div class="phase-label">Phase 4<br>ablations</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="13" height="13" rx="2"/><rect x="22" y="5" width="13" height="13" rx="2"/><rect x="5" y="22" width="13" height="13" rx="2"/><rect x="22" y="22" width="13" height="13" rx="2"/><path d="M23 23l12 12M35 23l-12 12"/></svg>
+        </div>
+        <div>
+          <h3>Ablation controls</h3>
+          <p class="phase-body">Same training loop, run four times with the topology or signs changed. The fail state here is subtler than a crash.</p>
+          <div class="callout callout--accent">
+            <strong>topology isn't actually constraining anything</strong>
+            The random-rewire ablation scores almost identically to the real connectome. Suspicious — suggests a dense fallback path got used by accident somewhere in the code, since the whole point of this experiment is that topology should matter.
+          </div>
+          <div class="callout callout--accent">
+            <strong>a fake result, self-inflicted</strong>
+            One ablation "fails to converge" while the others train fine. Before concluding anything about the connectome, check that all four runs used identical hyperparameters — a silently different learning rate or batch size is the most common way to manufacture this.
+          </div>
+        </div>
+      </div>
+
+      <!-- Phase 5 -->
+      <div class="phase-entry">
+        <div class="phase-label">Phase 5<br>realtime</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="20" r="4"/><path d="M18 12a11 11 0 0 1 0 16"/><path d="M24 6a19 19 0 0 1 0 28"/><path d="M30 1a26 26 0 0 1 0 38" opacity="0.5"/></svg>
+        </div>
+        <div>
+          <h3>Realtime playback</h3>
+          <p class="phase-body">A different failure family entirely — audio and timing issues, not training issues.</p>
+          <ul style="margin-top:14px; padding:0; list-style:none; max-width:70ch;">
+            <li style="margin-top:8px;">Buffer underrun/overrun → audible glitches, a dropped-frame counter climbing</li>
+            <li style="margin-top:8px;">Inference taking longer than the latency budget → drift between audio and drum output that worsens over time, not a one-off delay</li>
+            <li style="margin-top:8px;">MIDI never fires → check the gate threshold logic; the master rhythm gate is near-binary, so a small threshold or lesion bug can silently zero it out</li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="launch" class="launch-section">
+    <div class="wrap">
+      <h2>How to actually launch a run</h2>
+      <p class="section-lede">The full sequence, in the order it needs to happen — plus the two habits that make an hours-long run survivable.</p>
+
+      <div class="launch-block">
+        <h3>3a. One-time environment setup</h3>
+        <p><strong>What a virtual environment is, and why it matters here:</strong> it's an isolated folder holding its own private copy of Python plus whatever packages you install into it. Without one, <code>pip install</code> writes into your system-wide Python, where it can silently collide with unrelated projects or conflict with versions something else on your machine needs. flybeats's dependencies should live in their own bubble, separate from everything else.</p>
+
+        <p style="margin-top:18px"><strong>Creating one</strong> (run once, from the <code>flybeats/</code> project folder):</p>
+        <div class="code">python3 -m venv .venv</div>
+        <p>This creates a <code>.venv</code> folder next to your code. Using conda instead: <code>conda create -n flybeats python=3.11</code>.</p>
+
+        <p style="margin-top:18px"><strong>Activating it</strong> — this is the step that actually "turns it on" for your current terminal session, and it's platform-specific:</p>
+        <div class="code">macOS / Linux:        source .venv/bin/activate
+Windows PowerShell:    .venv\Scripts\Activate.ps1
+Windows Command Prompt: .venv\Scripts\activate.bat
+conda instead of venv: conda activate flybeats</div>
+
+        <p><strong>How to confirm it worked:</strong> your prompt should grow a <code>(.venv)</code> prefix. As a second check, <code>which python</code> (macOS/Linux) or <code>where python</code> (Windows) should point <em>inside</em> the <code>.venv</code> folder — not a system Python path. If it points anywhere else, activation didn't take, and every install you run next goes to the wrong place.</p>
+
+        <p style="margin-top:18px"><strong>Install into the activated environment:</strong></p>
+        <div class="code">pip install neuprint-python connectorch
+pip install sounddevice mido python-rtmidi   # only needed once you reach Phase 5</div>
+
+        <div class="callout callout--accent">
+          <strong>two traps that look like unrelated bugs later</strong>
+          Every new terminal window or tab starts deactivated — a sudden <code>ModuleNotFoundError</code> tomorrow is almost always a forgotten activation, not a broken install. A new <code>tmux</code> session doesn't inherit activation either; activate again inside it before launching anything.
+        </div>
+
+        <p>To leave the environment when you're done: <code>deactivate</code> (or <code>conda deactivate</code>).</p>
+
+        <p style="margin-top:18px">Check what hardware you actually have before launching anything: <code>nvidia-smi</code>. No GPU, or the command errors out? You're on CPU — much slower, not broken. Then set your token, in the same terminal session that will run the scripts: <code>export NEUPRINT_TOKEN=...</code></p>
+      </div>
+
+      <div class="launch-block">
+        <h3>3b. Launch order — don't skip ahead</h3>
+        <ol>
+          <li><strong>Gate:</strong> <code>python scripts/verify_types.py</code> → confirm <code>data/verified_types.json</code> is populated.</li>
+          <li><strong>Subgraph:</strong> <code>python src/subgraph.py --config configs/v1_8piece.yaml</code> → check the reported node count and reachability.</li>
+          <li><strong>Smoke test</strong> — do this before any real run, on the smallest config:
+            <div class="code">python src/train.py --config configs/v1_3piece_sanity.yaml --max-steps 200</div>
+            The goal isn't good results — it's confirming the loop runs start to finish in minutes, not hours.
+          </li>
+          <li><strong>Real launch</strong>, once the smoke test passes clean:
+            <div class="code">python src/train.py --config configs/v1_8piece.yaml</div>
+          </li>
+        </ol>
+        <div class="callout">
+          <strong>a flag not to reach for by accident</strong>
+          <code>--full-graph</code> is the offline, single-batch render mode on the complete 164k-node graph — comparison/demo only. Regular training always runs on the extracted 10k–30k subgraph.
+        </div>
+      </div>
+
+      <div class="launch-block">
+        <h3>3c. What happens in the seconds after you hit enter</h3>
+        <p>In order: config loads → subgraph loads into memory → model builds (edge signs freeze, gains initialize to <code>log(synapse_count)</code>) → first batch is pulled → forward pass → backward pass → the first loss number prints. Anything that crashes <em>before</em> that first loss number is an environment, shape, or device problem — not a training-dynamics problem.</p>
+      </div>
+
+      <div class="launch-block">
+        <h3>3d. Running it somewhere that survives you closing the laptop</h3>
+        <p>Real runs take hours to days. A plain terminal command dies the moment you close that terminal. Two easy ways around it:</p>
+        <div class="code">nohup python src/train.py --config configs/v1_8piece.yaml &gt; run.log 2&gt;&amp;1 &amp;
+disown</div>
+        <div class="code">tmux new -s flybeats
+# run the command inside, then detach:
+Ctrl-b d
+# reattach any time later:
+tmux attach -t flybeats</div>
+        <p>Either way, don't just trust that it's alive — <code>ps aux | grep train.py</code>, or a glance at <code>nvidia-smi</code> for GPU utilization, confirms it's actually working and not a zombie process.</p>
+      </div>
+
+      <div class="launch-block">
+        <h3>3e. Resuming vs. starting fresh</h3>
+        <p><strong>Fresh start:</strong> no resume flag at all. <strong>Resume:</strong></p>
+        <div class="code">python src/train.py --config configs/v1_8piece.yaml --resume checkpoints/latest.pt</div>
+        <p>This restores weights, optimizer state, and step count. A small loss bump right after resuming is normal — only worry if it looks like the NaN or plateau patterns above.</p>
+      </div>
+
+      <div class="launch-block">
+        <h3>3f. Launching the four Phase 4 ablation runs</h3>
+        <ul>
+          <li>Same entrypoint, one config/flag difference per run: <code>python src/ablations.py --mode random_rewire --config configs/ablation_random_rewire.yaml</code></li>
+          <li><strong>One GPU:</strong> run the four sequentially — four training loops at once gets you an OOM, or all four crawling.</li>
+          <li><strong>Multiple GPUs:</strong> pin each explicitly — <code>CUDA_VISIBLE_DEVICES=0 python ...</code>, <code>CUDA_VISIBLE_DEVICES=1 python ...</code> — so they don't contend for the same device.</li>
+          <li>Keep the four launches identical except the one ablation flag. A single shared base config with only that flag overridden is the easiest way to avoid drifting a hyperparameter between runs.</li>
+        </ul>
+      </div>
+
+      <div class="launch-block">
+        <h3>3g. The whole sequence, as a flow chart</h3>
+        <div class="flow-panel">
+<pre class="mermaid">flowchart TD
+    A["Create + activate&lt;br/&gt;virtual environment"] --&gt; B["pip install dependencies"]
+    B --&gt; C["Check GPU: nvidia-smi"]
+    C --&gt; D["Export NEUPRINT_TOKEN"]
+    D --&gt; E["Run Phase 0 gate:&lt;br/&gt;verify_types.py"]
+    E --&gt; F{"Types confirmed in&lt;br/&gt;verified_types.json?"}
+    F -- "No" --&gt; F1["Check neuPrint directly for&lt;br/&gt;renamed / drifted type strings"]
+    F1 --&gt; E
+    F -- "Yes" --&gt; G["Run subgraph extraction:&lt;br/&gt;subgraph.py"]
+    G --&gt; H{"Node count in range and&lt;br/&gt;motor neurons reachable?"}
+    H -- "No" --&gt; H1["Adjust k-hop radius /&lt;br/&gt;ancestor set"]
+    H1 --&gt; G
+    H -- "Yes" --&gt; I["Smoke test: 3-piece config,&lt;br/&gt;--max-steps 200"]
+    I --&gt; J{"Completes without crash?"}
+    J -- "No" --&gt; J1["Debug shape/device issue&lt;br/&gt;(see phase map)"]
+    J1 --&gt; I
+    J -- "Yes" --&gt; K["Launch real run: v1_8piece.yaml&lt;br/&gt;inside nohup or tmux"]
+    K --&gt; L["Monitor via dashboard&lt;br/&gt;+ logs"]
+    L --&gt; M{"Healthy?"}
+    M -- "No: crash / NaN / saturation" --&gt; N["Kill, diagnose via phase map,&lt;br/&gt;resume from last good checkpoint"]
+    N --&gt; K
+    M -- "Yes: training complete" --&gt; O["Launch Phase 4 ablation runs&lt;br/&gt;(sequential, or one per GPU)"]</pre>
+          <p class="flow-caption">The two decision points — types confirmed, subgraph reachable — are the gates from Phases 0 and 1. Everything past them is the training loop and its monitor/kill/resume cycle.</p>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="monitor" class="rule">
+    <div class="wrap">
+      <h2>How to actually see training progress</h2>
+      <p class="section-lede">Worth saying up front: the point-cloud and fly-avatar visualization in <code>flybeats_demo.html</code> is not a training monitor — it's mocked-up UI for a <em>trained</em> model performing in realtime. During Phase 3 you'll see numbers in a terminal or a browser dashboard, fed by an entirely separate logging mechanism.</p>
+
+      <div class="tier-grid">
+        <div class="tier-item">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="30" height="26" rx="3"/><path d="M11 17l5 4-5 4"/><path d="M20 25h9"/></svg>
+          <h4>Tier 0 — print statements</h4>
+          <p>Zero setup. The script prints step, loss, maybe grad norm and firing-rate mean, every N steps. Foreground: watch it scroll. Background:</p>
+          <div class="code">python train.py &gt; run.log 2&gt;&amp;1 &amp;
+tail -f run.log</div>
+          <p>Fine for a quick sanity check; bad past a few minutes — no curve, no side-by-side ablation comparison.</p>
+        </div>
+        <div class="tier-item">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 33V7"/><path d="M5 33h30"/><path d="M10 27l7-9 6 5 9-14"/></svg>
+          <h4>Tier 1 — TensorBoard</h4>
+          <p>Recommended default. Fully local, no account. Your script writes a few numbers per log interval to a <code>runs/</code> folder; view with <code>tensorboard --logdir runs/</code> at <code>http://localhost:6006</code>.</p>
+          <p>Put each ablation run in its own subfolder and TensorBoard overlays all four on one chart automatically — exactly the Phase 4 comparison you need. Track: loss, firing-rate mean/min/max, gradient norm, steps/sec, and per-class onset F-measure once you have an eval pass.</p>
+        </div>
+        <div class="tier-item">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M11 26a7 7 0 1 1 1-14 9 9 0 0 1 17 3 6 6 0 0 1-2 11z"/></svg>
+          <h4>Tier 2 — Weights &amp; Biases</h4>
+          <p>Same idea, hosted, one extra API-key step. Its edge here: it builds the side-by-side run-comparison table for you, mapping directly onto the Phase 4 ablation table without assembling it by hand. Trade-off: your metrics leave your machine.</p>
+        </div>
+      </div>
+
+      <h3 style="margin-top:52px; font-size:1.2rem; font-weight:600;">Reading the curves</h3>
+      <p class="section-lede">Mapping shapes back to the fail states from the phase map above.</p>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>What the chart shows</th><th>What it means</th></tr>
+          <tr><td>Loss line noisy but sloping down, no vertical jumps</td><td>Healthy</td></tr>
+          <tr><td>Loss curve breaks off, or a literal <code>nan</code> point appears</td><td>The NaN/Inf failure — go to the step right before the gap</td></tr>
+          <tr><td>Firing-rate line goes flat, pinned top or bottom, while loss still looks fine</td><td>Saturation failure — this is why firing rate needs its own chart, not something inferred from loss alone</td></tr>
+          <tr><td>Loss line is perfectly flat from step 1, never moves</td><td>Frozen-gradient failure — cross-check a gradient-norm chart sitting at 0</td></tr>
+          <tr><td>Steps/sec trending downward over hours while loss looks otherwise normal</td><td>Leak / undetached-hidden-state failure</td></tr>
+        </table>
+      </div>
+
+      <div class="callout" style="margin-top:32px">
+        <strong>logging cadence vs. checkpoint cadence</strong>
+        Two different schedules, easy to conflate. Log interval (every 10–50 steps): cheap scalar writes, fine to do often. Checkpoint interval (every N minutes or every epoch): the actual saved snapshot, bigger, meant to be less frequent. Logging often and checkpointing rarely is normal and correct — too tight a checkpoint interval is a common, self-inflicted way to slow down steps/sec via disk I/O.
+      </div>
+    </div>
+  </section>
+
+  <section id="reference" class="rule">
+    <div class="wrap">
+      <h2>Quick reference: what to watch, when</h2>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Time since starting</th><th>What you should see</th><th>If you don't, suspect</th></tr>
+          <tr><td>First 30 seconds</td><td>Process starts, first step completes, no immediate crash</td><td>Shape/device mismatch at the Phase 2/3 boundary</td></tr>
+          <tr><td>First few minutes</td><td>Loss printing every step, steps/sec roughly steady, no OOM</td><td>Batch size / sequence length too large for VRAM</td></tr>
+          <tr><td>First hour</td><td>Loss trending down with noise; firing-rate stats not pinned at extremes; at least one checkpoint written</td><td>Regularizer weight, frozen-gradient bug, or a dead subgraph from Phase 1</td></tr>
+          <tr><td>Several hours</td><td>Steps/sec still steady; loss still improving or sensibly plateaued</td><td>Memory leak (undetached hidden state) if steps/sec is falling</td></tr>
+          <tr><td>End of an ablation suite</td><td>All four runs used identical hyperparameters; results differ in a coherent story</td><td>Silently mismatched configs across ablation runs</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="killswitch" class="rule">
+    <div class="wrap">
+      <h2 class="kill-hed">When to kill a run vs. let it keep going</h2>
+      <div class="killgrid">
+        <div class="killblock accent">
+          <h4>kill immediately</h4>
+          <p>Any crash, <code>nan</code>/<code>inf</code> in the loss, OOM.</p>
+        </div>
+        <div class="killblock">
+          <h4>let it run, watch closely</h4>
+          <p>Loss flat for a while early on (rate-based LIF models can have a slow start); firing rates drifting toward an extreme but not pinned yet.</p>
+        </div>
+        <div class="killblock accent">
+          <h4>kill and investigate before restarting</h4>
+          <p>Firing rates fully pinned for many consecutive checkpoints, steps/sec steadily degrading, or a checkpoint file that hasn't updated in far longer than its save interval.</p>
+        </div>
+        <div class="killblock note">
+          <p>Don't trust "it's still going" alone — a hung process and a training process both look like nothing new happened. Confirm actual GPU/CPU activity, not just log silence, before deciding which one you have.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>flybeats — companion to PLAN.md</span>
+      <span>operation manual · v1</span>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  var canvas = document.getElementById('connectome');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W = 0, H = 0, DPR = 1;
+  var nodes = [];
+  var pulses = [];
+  var NODE_COUNT = 30;
+  var LINK_DIST = 150;
+  var lastSpawn = 0;
+  var C = { line: '#CBC9C1', muted: '#5C5B54', accent: '#C13B2E' };
+
+  function readColors(){
+    var cs = getComputedStyle(document.documentElement);
+    C.line = cs.getPropertyValue('--line').trim() || C.line;
+    C.muted = cs.getPropertyValue('--muted').trim() || C.muted;
+    C.accent = cs.getPropertyValue('--accent').trim() || C.accent;
+  }
+
+  function hexToRgba(hex, alpha){
+    hex = hex.replace('#', '');
+    if (hex.length === 3){ hex = hex.split('').map(function(c){ return c + c; }).join(''); }
+    var r = parseInt(hex.substring(0,2), 16);
+    var g = parseInt(hex.substring(2,4), 16);
+    var b = parseInt(hex.substring(4,6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+
+  function resize(){
+    var rect = canvas.parentElement.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = rect.width; H = rect.height;
+    canvas.width = Math.max(1, W * DPR);
+    canvas.height = Math.max(1, H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  function seed(){
+    nodes = [];
+    for (var i = 0; i < NODE_COUNT; i++){
+      nodes.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.14,
+        vy: (Math.random() - 0.5) * 0.14
+      });
+    }
+  }
+
+  function currentLinks(){
+    var out = [];
+    for (var i = 0; i < nodes.length; i++){
+      for (var j = i + 1; j < nodes.length; j++){
+        var dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        if (d < LINK_DIST) out.push([i, j, d]);
+      }
+    }
+    return out;
+  }
+
+  function spawnPulse(edges){
+    if (!edges.length) return;
+    var e = edges[Math.floor(Math.random() * edges.length)];
+    pulses.push({ a: e[0], b: e[1], t: 0 });
+  }
+
+  function draw(ts){
+    readColors();
+    ctx.clearRect(0, 0, W, H);
+    var edges = currentLinks();
+
+    edges.forEach(function(e){
+      var a = nodes[e[0]], b = nodes[e[1]];
+      var op = Math.max(0, 1 - e[2] / LINK_DIST) * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = hexToRgba(C.line, op);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    nodes.forEach(function(n){
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 2.1, 0, Math.PI * 2);
+      ctx.fillStyle = hexToRgba(C.muted, 0.6);
+      ctx.fill();
+    });
+
+    pulses.forEach(function(p){
+      var a = nodes[p.a], b = nodes[p.b];
+      var x = a.x + (b.x - a.x) * p.t;
+      var y = a.y + (b.y - a.y) * p.t;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+      ctx.fillStyle = C.accent;
+      ctx.fill();
+    });
+
+    if (!reduced){
+      pulses.forEach(function(p){ p.t += 0.018; });
+      pulses = pulses.filter(function(p){ return p.t < 1; });
+
+      nodes.forEach(function(n){
+        n.x += n.vx; n.y += n.vy;
+        if (n.x < 0 || n.x > W) n.vx *= -1;
+        if (n.y < 0 || n.y > H) n.vy *= -1;
+      });
+
+      if (!lastSpawn || ts - lastSpawn > 700){
+        spawnPulse(edges);
+        lastSpawn = ts;
+      }
+      requestAnimationFrame(draw);
+    }
+  }
+
+  function init(){
+    resize();
+    seed();
+    requestAnimationFrame(draw);
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      resize();
+      if (reduced) requestAnimationFrame(draw);
+    }, 150);
+  });
+
+  init();
+})();
+</script>
+
+</body>
+</html>
