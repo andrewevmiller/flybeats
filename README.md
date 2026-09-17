@@ -78,6 +78,10 @@ python src/realtime.py --config configs/v1_8piece.yaml --benchmark
 python scripts/export_bundle.py --checkpoint runs/v1_8piece_cpu/best.pt
 ```
 
+Plugging that into FL Studio, Ableton or any other host — file import, a live
+MIDI port, the note map and the controls you can reach from the command line —
+is in [DAW.md](DAW.md).
+
 Installing on a Windows laptop — every step with its disk, RAM and wall time,
 which parts of the install survive the work still in flight, and a
 troubleshooting table — is in [SETUP.md](SETUP.md).
@@ -573,6 +577,10 @@ kits needs no retraining, and the backends are interchangeable:
 |---|---|
 | `MidiBank` | notes out to a sampler or DAW — the original Phase 5 path |
 | `SampleBank` | WAV layers mixed here, so the model makes sound on its own |
+
+Getting either one into FL Studio or another host — the note map, the velocity
+floor, the virtual MIDI cable, the tempo the rendered `.mid` carries, and what
+the live path does not do — is in [DAW.md](DAW.md).
 
 A kit is a folder per class, with `<layer>_<variant>.wav` files — layer 0 is the
 softest. Velocity crossfades between adjacent layers rather than stepping
