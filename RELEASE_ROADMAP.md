@@ -111,6 +111,12 @@ This is [ROADMAP.md](ROADMAP.md) Phase C and it stays the cheapest
 high-value item on any of these pages. `scripts/export_bundle.py` already
 verifies the bundle reproduces the checkpoint exactly before writing.
 
+**It is not a cloud task.** `runs/` is gitignored and no checkpoint is
+committed anywhere, so the only machines that can cut a bundle are ones that
+have trained one. In practice that is the GPU box in [RUNBOOK.md](RUNBOOK.md),
+which makes this an errand to fold into the next session there rather than
+something to schedule independently.
+
 - Cut `flybeats-8piece.fb` from the best checkpoint that exists at R0 —
   which is a 256-clip, onset-F-0.30 model, and the release notes say so
 - Attach it to a GitHub release; `flybeats doctor --fetch-bundle` pulls it
@@ -413,6 +419,92 @@ much as a model change. **The Phase 1 trim claim** — 3 hops from JO reaches
 by anatomy — is a real methodological weakness whose fix invalidates the
 subgraph cache and every model trained on it. It belongs *between* campaigns:
 after R4's Phase D result is banked, not during it.
+
+---
+
+## Decision record: no training GUI for end users
+
+Asked directly, and worth recording because it will come back: should an end
+user get a graphical way to train the model on their own hardware?
+
+**No — not as framed, and the reason is a data problem rather than a UI one.**
+
+`src/dataset.py` binds to the GMD / E-GMD layout: an `info.csv` pointing at
+audio with **sample-aligned MIDI** and a style label. That alignment is the
+entire asset, and it exists because the corpus was captured on an electronic
+kit that emitted MIDI while it recorded audio. A user's own drum audio has no
+aligned MIDI, and nothing in this repo produces it.
+
+So "train it on your hardware" currently resolves to *recompute the same GMD
+model the project publishes as a bundle* — on fewer clips, with an untuned
+config, unseeded, in about six hours, for a result strictly worse than a 10 MB
+download. A GUI there would make an expensive no-op easy to reach.
+
+The question splits three ways and only the middle one is worth building now:
+
+| What it would mean | Audience | Verdict |
+|---|---|---|
+| Re-run canonical GMD training | end users | Don't build — the bundle is the answer |
+| Monitor and stop a run someone launched | whoever owns the GPU box | Build, at R3 |
+| Adapt the model to the user's *own* kit | end users | The real feature, and it is a data problem |
+
+### What argues for it
+
+- **Most of the hard part is written.** `scripts/bootstrap_local.py` already
+  detects the card, builds the venv, installs torch, runs the suite and the
+  CUDA smoke test, measures thread scaling and writes JSON. A GUI is largely
+  surfacing that.
+- **It could prevent the known failures rather than diagnose them.** They are
+  enumerated and machine-detectable: a CPU wheel installed while a card is
+  present, thread oversubscription (76 s → 1,415 s per epoch, which presents as
+  "training is slow"), a missing corpus. On the CLI these are discovered after
+  the evening is gone.
+- **It would close a real structural gap.** Every number in this repository
+  came off four shared cloud cores. Varied hardware, reported back, is the
+  matrix that does not exist.
+- **Progress monitoring genuinely wants a screen.** That
+  `flybeats_operation_manual.html` needs a section called "How to actually see
+  training progress" is a UI-shaped hole being filled with prose.
+
+### What argues against it, in order of weight
+
+1. **It manufactures exactly the claim this project keeps refusing to make.**
+   The discipline here is bootstrap intervals over point estimates, seeds over
+   single runs, and the ablation table alongside every headline number. The
+   repo has already been burned: `hat_open` read 0.37, then 0.18, then 0.26 on
+   one checkpoint before its sampling was seeded, and a pooled correlation
+   reported ~0.35 while the per-class picture was incoherent. A GUI that ends a
+   run by displaying `onset F: 0.31` hands a stranger a number stripped of all
+   of that, and they will quote it.
+2. **There is no `--resume`.** `train.py` saves on improvement and cannot pick
+   a run back up. A six-hour job on a laptop that sleeps, behind a window that
+   implies robustness, is a promise the code does not keep.
+3. **The support surface is unbounded and would arrive early.** Every driver,
+   wheel and GPU permutation becomes ours, against a model that is still onset
+   F 0.30 on 256 clips.
+4. **It competes for exactly the effort R2 and R3 need**, and R3's shell is a
+   prerequisite for the good version of it anyway.
+
+### What to do instead
+
+- **Now, in place of a GUI:** preflight guards. `flybeats doctor --json` is
+  already R0.2; add refuse-to-start checks to `train` for the CPU-wheel case,
+  thread oversubscription and a missing corpus, each naming its remedy. That
+  captures most of the GUI's real value for about a day of work.
+- **At R3:** training as a **read-only monitor** inside the shell already being
+  built — attach to a run, show the loss curve, per-epoch validation onset F,
+  ETA, and a stop button. Launching stays on the CLI. Best value-to-risk ratio
+  available, and it retires the operation manual's progress section. Land
+  `--resume` alongside it.
+- **Before any launch-a-run GUI:** solve the data problem. The feature users
+  actually want is "make it play like *my* kit." That needs either an e-kit
+  MIDI capture path (narrow audience, but the pipeline already consumes exactly
+  that format) or adaptation from unlabeled audio (broad audience, unsolved).
+  Either is a product decision for the roadmap, not a screen.
+
+The ordering claim underneath all of it: **a training GUI without a user-data
+path is polish on a no-op; a user-data path behind a rough CLI is a feature
+people want.** The second ships value.
 
 ---
 
