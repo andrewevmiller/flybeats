@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>flybeats in a DAW</title>
+<meta name="description" content="Getting flybeats into FL Studio or another DAW: the MIDI file, the audio render and the live port, the General MIDI note map, the velocity floor, and what the live path does not do.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@400;500;600;700&family=Geist:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+
+  /* ---------- tokens ---------- */
+  :root{
+    --bg: #F2F1EE;
+    --bg-rgb: 242,241,238;
+    --bg-soft: #E9E8E2;
+    --panel: #E1E0D9;
+    --line: #CBC9C1;
+    --ink: #1C1C1A;
+    --muted: #5C5B54;
+    --accent: #C13B2E;
+    --shadow: rgba(28,28,26,0.10);
+
+    --font-display: 'IBM Plex Serif', Georgia, 'Times New Roman', serif;
+    --font-body: 'Geist', -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+  }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg: #171716;
+      --bg-rgb: 23,23,22;
+      --bg-soft: #1E1E1C;
+      --panel: #242422;
+      --line: #3A3A35;
+      --ink: #ECEBE5;
+      --muted: #A3A29A;
+      --accent: #F2624C;
+      --shadow: rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg: #171716;
+    --bg-rgb: 23,23,22;
+    --bg-soft: #1E1E1C;
+    --panel: #242422;
+    --line: #3A3A35;
+    --ink: #ECEBE5;
+    --muted: #A3A29A;
+    --accent: #F2624C;
+    --shadow: rgba(0,0,0,0.5);
+  }
+
+  /* ---------- reset ---------- */
+  *{ box-sizing: border-box; }
+  html{ scroll-behavior: smooth; }
+  body{
+    margin: 0;
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--line) 1px, transparent 1.7px);
+    background-size: 26px 26px;
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  img, svg{ display:block; max-width:100%; }
+  a{ color: inherit; }
+  h1,h2,h3{ font-family: var(--font-display); font-weight: 700; letter-spacing: -0.01em; line-height: 1.14; margin: 0; }
+  p{ margin: 0; }
+  :focus-visible{ outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+
+  .wrap{ max-width: 1140px; margin: 0 auto; padding: 0 clamp(22px, 5vw, 64px); }
+  .measure{ max-width: 680px; }
+
+  section{ padding: clamp(56px, 9vw, 96px) 0; }
+  .rule{ border-top: 1px solid var(--line); }
+
+  ul.plain, ol.plain{ margin: 0; padding: 0; list-style: none; }
+
+  /* ---------- quick nav ---------- */
+  .quicknav{
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(var(--bg-rgb), 0.86);
+    backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  .quicknav-inner{
+    display:flex; gap: 22px; overflow-x:auto;
+    padding: 14px clamp(22px,5vw,64px);
+    font-family: var(--font-mono); font-size: 0.78rem;
+  }
+  .quicknav a{
+    color: var(--muted); text-decoration:none; white-space:nowrap;
+    padding-bottom:2px; border-bottom:1px solid transparent;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .quicknav a:hover{ color: var(--ink); border-color: var(--accent); }
+
+  /* ---------- hero ---------- */
+  .hero{
+    position: relative;
+    overflow: hidden;
+    padding: clamp(80px, 14vw, 140px) 0 clamp(60px, 9vw, 96px);
+    background: var(--bg);
+  }
+  .hero-field{ position: absolute; inset: 0; pointer-events: none; }
+  .hero-field canvas{ width: 100%; height: 100%; display:block; }
+  .hero-glass{
+    position: absolute; inset: 0;
+    background: rgba(var(--bg-rgb), 0.62);
+    backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+    pointer-events: none;
+  }
+  .hero-inner{ position: relative; z-index: 1; }
+  .hero-kicker{ font-family: var(--font-mono); font-size: 0.82rem; color: var(--muted); margin-bottom: 18px; }
+  .hero h1{ font-size: clamp(2.5rem, 6.6vw, 4.6rem); }
+  .hero-role{ margin-top: 14px; font-size: clamp(1.05rem, 2vw, 1.3rem); color: var(--muted); max-width: 36ch; }
+  .hero-lede{ margin-top: 26px; font-size: clamp(1.02rem, 1.6vw, 1.18rem); max-width: 52ch; }
+  .hero-anim{ opacity: 0; transform: translateY(10px); animation: heroIn 0.9s ease-out 0.05s forwards; }
+  @keyframes heroIn{ to{ opacity:1; transform: translateY(0); } }
+
+  .scrollcue{
+    margin-top: 52px; width: 22px; height: 34px;
+    border: 1.5px solid var(--muted); border-radius: 12px; position: relative;
+  }
+  .scrollcue::after{
+    content: ""; position: absolute; top: 6px; left: 50%;
+    width: 3px; height: 7px; margin-left: -1.5px;
+    background: var(--muted); border-radius: 2px;
+    animation: cueDrop 1.8s ease-in-out infinite;
+  }
+  @keyframes cueDrop{ 0%{ transform: translateY(0); opacity: 1;} 70%{ opacity: 0.2;} 100%{ transform: translateY(10px); opacity: 0;} }
+
+  @media (prefers-reduced-motion: reduce){
+    .hero-anim, .scrollcue::after{ animation: none !important; opacity: 1 !important; transform: none !important; }
+  }
+
+  /* ---------- section headings ---------- */
+  section > .wrap > h2{ font-size: clamp(1.5rem, 2.8vw, 2.05rem); margin-bottom: 20px; }
+  .section-lede{ color: var(--muted); font-size: 1.02rem; max-width: 62ch; margin-bottom: 10px; }
+
+  /* ---------- opening grid ---------- */
+  .model-grid{ display:grid; grid-template-columns: 160px 1fr; gap: 44px; align-items: start; }
+  .model-icon{
+    aspect-ratio: 1 / 1; max-width: 160px;
+    border: 1px solid var(--line); border-radius: 8px;
+    background-color: var(--bg-soft);
+    background-image: radial-gradient(var(--line) 1px, transparent 1.7px);
+    background-size: 16px 16px;
+    display:flex; align-items:center; justify-content:center; color: var(--muted);
+  }
+  .steps{ list-style:none; margin: 26px 0 0; padding: 0; counter-reset: stepnum; }
+  .steps li{ display:grid; grid-template-columns: 32px 1fr; gap: 16px; padding: 9px 0; counter-increment: stepnum; }
+  .steps li > span{ grid-column: 2; min-width: 0; }
+  .steps li::before{
+    content: counter(stepnum);
+    font-family: var(--font-mono); font-size: 0.82rem; color: var(--accent);
+    border: 1px solid var(--line); width: 30px; height: 30px; border-radius: 50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .twonums{ display:flex; gap: 28px; margin-top: 30px; flex-wrap: wrap; }
+  .twonums > div{ flex: 1 1 220px; border-top: 1px solid var(--line); padding-top: 14px; }
+  .twonums h4{ font-family: var(--font-mono); font-weight: 500; font-size: 0.8rem; color: var(--muted); margin: 0 0 6px; }
+  @media (max-width: 700px){ .model-grid{ grid-template-columns: 1fr; } .model-icon{ max-width: 120px; } }
+
+  /* ---------- path entries ---------- */
+  .phase-entry{ display:grid; grid-template-columns: 96px 40px 1fr; gap: 4px 22px; padding-bottom: 48px; }
+  /* grid items default to min-width:auto, so a `white-space: pre` code block
+     sets the column's floor and the whole page scrolls sideways on a phone */
+  .phase-entry > *, .model-grid > *{ min-width: 0; }
+  .phase-entry:not(:last-child){ border-bottom: 1px solid var(--line); margin-bottom: 48px; }
+  .phase-label{ font-family: var(--font-mono); font-size: 0.8rem; color: var(--muted); padding-top: 4px; }
+  .phase-glyph{ color: var(--muted); }
+  .phase-entry h3{ font-size: 1.35rem; font-weight: 600; }
+  .phase-ok{ display:flex; gap: 9px; align-items:flex-start; font-size: 0.98rem; margin-top: 14px; }
+  .phase-ok svg{ flex-shrink:0; margin-top: 3px; color: var(--accent); }
+  .phase-body{ margin-top: 14px; max-width: 74ch; font-size: 1rem; }
+  .phase-body p + p{ margin-top: 12px; }
+  .chips{ display:flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip{ font-size: 0.84rem; padding: 5px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--bg-soft); font-family: var(--font-mono); color: var(--muted); }
+  @media (max-width: 640px){
+    .phase-entry{ grid-template-columns: 34px 1fr; }
+    .phase-label{ grid-column: 1 / -1; padding-top: 0; }
+    .phase-glyph{ grid-row: 2; }
+  }
+
+  /* ---------- tables ---------- */
+  .tbl-wrap{ overflow-x: auto; margin: 18px 0 4px; border: 1px solid var(--line); border-radius: 8px; }
+  table{ width: 100%; border-collapse: collapse; font-size: 0.92rem; min-width: 580px; }
+  th{ text-align:left; font-family: var(--font-mono); font-weight: 500; font-size: 0.74rem; color: var(--muted); padding: 10px 16px; border-bottom: 1px solid var(--line); background: var(--bg-soft); }
+  td{ padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.55; }
+  tr:last-child td{ border-bottom: none; }
+  td code, p code, li code, .callout code{ font-family: var(--font-mono); font-size: 0.87em; background: var(--bg-soft); padding: 2px 6px; border-radius: 4px; }
+  td.num{ font-family: var(--font-mono); font-size: 0.86rem; white-space: nowrap; }
+  td.tick{ text-align:center; color: var(--accent); }
+  th.tick{ text-align:center; }
+
+  /* ---------- callouts ---------- */
+  .callout{ border-left: 3px solid var(--line); padding: 13px 18px; margin: 16px 0; background: var(--bg-soft); border-radius: 0 8px 8px 0; font-size: 0.96rem; }
+  /* first child only: the label. An unscoped `.callout strong` also catches
+     emphasis in the body and drops it onto its own muted mono line. */
+  .callout > strong:first-child{ display:block; font-family: var(--font-mono); font-weight: 500; font-size: 0.76rem; color: var(--muted); margin-bottom: 5px; text-transform: none; }
+  .callout--accent{ border-left-color: var(--accent); }
+
+  /* ---------- code blocks ---------- */
+  .code{ font-family: var(--font-mono); font-size: 0.85rem; background: var(--bg-soft); border: 1px solid var(--line); border-radius: 8px; padding: 14px 18px; overflow-x: auto; line-height: 1.6; margin: 14px 0; white-space: pre; }
+
+  /* ---------- panel section ---------- */
+  .launch-section{ background: var(--panel); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .launch-block{ margin-top: 40px; }
+  .launch-block:first-of-type{ margin-top: 30px; }
+  .launch-block h3{ font-size: 1.15rem; font-weight: 600; margin-bottom: 12px; }
+  .launch-block p{ font-size: 1rem; max-width: 74ch; }
+  .launch-block p + p{ margin-top: 12px; }
+  .launch-block ul{ margin: 14px 0 0; padding: 0; list-style: none; max-width: 74ch; }
+  .launch-block ul li{ position: relative; padding-left: 20px; margin-top: 10px; font-size: 0.98rem; }
+  .launch-block ul li::before{ content: "—"; position:absolute; left:0; color: var(--muted); }
+  .launch-block ol{ margin: 16px 0 0; padding: 0; list-style: none; counter-reset: launchnum; max-width: 74ch; }
+  .launch-block ol > li{ counter-increment: launchnum; padding-left: 30px; position: relative; margin-top: 16px; font-size: 0.98rem; }
+  .launch-block ol > li::before{ content: counter(launchnum); font-family: var(--font-mono); font-size: 0.8rem; color: var(--accent); position:absolute; left:0; top:1px; border:1px solid var(--line); width:22px; height:22px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+  .launch-block .tbl-wrap table{ min-width: 460px; }
+
+  .flow-panel{ background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin-top: 22px; }
+  .flow-caption{ margin-top: 14px; font-family: var(--font-mono); font-size: 0.78rem; color: var(--muted); }
+
+  /* ---------- signal-chain diagram ---------- */
+  .flow-svg{ width: 100%; height: auto; }
+  .flow-svg .box{ fill: var(--bg-soft); stroke: var(--line); stroke-width: 1; }
+  .flow-svg .box-accent{ fill: var(--bg-soft); stroke: var(--accent); stroke-width: 1.4; }
+  .flow-svg .lbl{ font-family: var(--font-body); font-size: 14px; font-weight: 500; fill: var(--ink); }
+  .flow-svg .sub{ font-family: var(--font-mono); font-size: 11px; fill: var(--muted); }
+  .flow-svg .conn{ stroke: var(--line); stroke-width: 1.4; fill: none; }
+  .flow-svg .ah-fill{ fill: var(--line); }
+  .flow-svg .aha-fill{ fill: var(--accent); }
+  .flow-svg .conn-accent{ stroke: var(--accent); stroke-width: 1.4; fill: none; }
+
+  /* ---------- three-up ---------- */
+  .tier-grid{ display:grid; grid-template-columns: repeat(3,1fr); gap: 32px; margin-top: 10px; }
+  .tier-item svg{ color: var(--muted); margin-bottom: 12px; }
+  .tier-item h4{ font-family: var(--font-body); font-weight: 600; font-size: 1.05rem; margin-bottom: 8px; }
+  .tier-item p{ color: var(--muted); font-size: 0.94rem; }
+  .tier-item p + p{ margin-top: 8px; }
+  @media (max-width: 860px){ .tier-grid{ grid-template-columns: 1fr; gap: 28px; } }
+
+  /* ---------- limits ---------- */
+  .kill-hed{ font-size: clamp(1.7rem, 4vw, 2.5rem); max-width: 22ch; }
+  .killgrid{ display:grid; gap: 16px; margin-top: 34px; }
+  .killblock{ border: 1px solid var(--line); border-left: 4px solid var(--line); border-radius: 0 8px 8px 0; padding: 16px 20px; background: var(--bg-soft); max-width: 76ch; }
+  .killblock h4{ font-family: var(--font-mono); font-size: 0.8rem; font-weight: 500; color: var(--muted); margin: 0 0 6px; }
+  .killblock p{ font-size: 0.98rem; }
+  .killblock p + p{ margin-top: 10px; }
+  .killblock.accent{ border-left-color: var(--accent); }
+  .killblock.note{ background: transparent; border: none; border-left: 4px solid var(--line); font-style: italic; padding-left: 18px; }
+
+  footer{ padding: 30px 0 44px; }
+  footer .wrap{ display:flex; justify-content: space-between; flex-wrap:wrap; gap:10px; font-size: 0.82rem; color: var(--muted); font-family: var(--font-mono); }
+
+</style>
+</head>
+<body>
+
+  <nav class="quicknav" aria-label="Section navigation">
+    <div class="quicknav-inner">
+      <a href="#three-ways">three ways in</a>
+      <a href="#routes">the routes</a>
+      <a href="#hookup">hooking it up</a>
+      <a href="#notemap">note map</a>
+      <a href="#velocity">velocity</a>
+      <a href="#controls">controls</a>
+      <a href="#troubleshooting">troubleshooting</a>
+      <a href="#limits">what it is not</a>
+    </div>
+  </nav>
+
+  <section class="hero">
+    <div class="hero-field" aria-hidden="true"><canvas id="connectome"></canvas></div>
+    <div class="hero-glass" aria-hidden="true"></div>
+    <div class="wrap hero-inner">
+      <div class="hero-kicker hero-anim">companion to DAW.md</div>
+      <h1 class="hero-anim">flybeats in a DAW</h1>
+      <p class="hero-role hero-anim">Getting the notes out of the model and into FL Studio, or anything else</p>
+      <p class="hero-lede hero-anim">The README's whole account of this is one table row: <code>MidiBank</code> sends "notes out to a sampler or DAW". Everything you actually need to make that happen — which note each drum lands on, why velocity starts at 40, the tempo the rendered <code>.mid</code> carries, and the fact that live mode is MIDI-only whatever the flags suggest — was only ever in the source.</p>
+      <div class="scrollcue hero-anim" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <section id="three-ways" class="rule">
+    <div class="wrap">
+      <div class="model-grid">
+        <div>
+          <div class="model-icon" aria-hidden="true">
+            <svg width="52" height="52" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="4" y="13" width="32" height="14" rx="7"/>
+              <circle cx="12" cy="20" r="2"/><circle cx="20" cy="20" r="2"/><circle cx="28" cy="20" r="2"/>
+              <path d="M20 13V7"/><path d="M20 27v6"/>
+            </svg>
+          </div>
+        </div>
+        <div class="measure">
+          <h2>What connects to what</h2>
+          <p><code>src/realtime.py</code> is the only thing in this repo that reaches a DAW, and it does so in three ways. Two of them are files. One of them is a cable.</p>
+
+          <ol class="steps">
+            <li><span>Audio goes in — a wav you point at, or a live input device.</span></li>
+            <li><span>The same <code>StreamingDrummer</code> runs either way, so a rendered file is exactly what the live path would have played.</span></li>
+            <li><span>Out comes <code>(class, velocity, time)</code> — <em>what</em> to hit, <em>how hard</em>, and <em>when</em>.</span></li>
+            <li><span>A <code>SoundBank</code> turns that into notes on MIDI channel 10, or into mixed audio. Everything past the tuple is taste, not neuroscience.</span></li>
+            <li><span>Your DAW receives a <code>.mid</code>, a <code>.wav</code>, or live notes through a virtual MIDI cable.</span></li>
+          </ol>
+
+          <p style="margin-top:22px">Start with a file. The two file paths need no audio device, no MIDI stack and no virtual cable, and their timing is strictly better than the live path's — which has had no hardware testing at all.</p>
+
+          <div class="twonums">
+            <div>
+              <h4>you need a model</h4>
+              <p>A <code>.fb</code> bundle or a checkpoint. No bundle is published yet.</p>
+            </div>
+            <div>
+              <h4>run from the repo root</h4>
+              <p><code>src/</code> modules import each other by bare name.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="flow-panel">
+        <svg class="flow-svg" viewBox="0 0 860 250" role="img" aria-labelledby="flowtitle flowdesc">
+          <title id="flowtitle">The flybeats signal chain into a DAW</title>
+          <desc id="flowdesc">Source audio feeds src/realtime.py, which branches two ways: to a rendered MIDI or wav file you import, or through a virtual MIDI cable into a DAW in real time.</desc>
+          <defs>
+            <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path class="ah-fill" d="M0 0L10 5L0 10z"/>
+            </marker>
+            <marker id="aha" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+              <path class="aha-fill" d="M0 0L10 5L0 10z"/>
+            </marker>
+          </defs>
+
+          <rect class="box" x="6" y="98" width="138" height="56" rx="6"/>
+          <text class="lbl" x="75" y="122" text-anchor="middle">source audio</text>
+          <text class="sub" x="75" y="140" text-anchor="middle">wav, or live in</text>
+
+          <path class="conn" d="M144 126 H178" marker-end="url(#ah)"/>
+
+          <rect class="box" x="186" y="86" width="176" height="80" rx="6"/>
+          <text class="lbl" x="274" y="118" text-anchor="middle">src/realtime.py</text>
+          <text class="sub" x="274" y="137" text-anchor="middle">StreamingDrummer</text>
+
+          <path class="conn" d="M362 126 C 394 126, 394 58, 422 58" marker-end="url(#ah)"/>
+          <path class="conn-accent" d="M362 126 C 394 126, 394 196, 422 196" marker-end="url(#aha)"/>
+
+          <rect class="box" x="428" y="32" width="186" height="52" rx="6"/>
+          <text class="lbl" x="521" y="54" text-anchor="middle">drums.mid / drums.wav</text>
+          <text class="sub" x="521" y="72" text-anchor="middle">paths A and B — import</text>
+
+          <rect class="box-accent" x="428" y="170" width="186" height="52" rx="6"/>
+          <text class="lbl" x="521" y="192" text-anchor="middle">virtual MIDI cable</text>
+          <text class="sub" x="521" y="210" text-anchor="middle">path C — live</text>
+
+          <path class="conn" d="M614 58 C 646 58, 646 126, 674 126" marker-end="url(#ah)"/>
+          <path class="conn-accent" d="M614 196 C 646 196, 646 126, 674 126" marker-end="url(#aha)"/>
+
+          <rect class="box" x="682" y="86" width="172" height="80" rx="6"/>
+          <text class="lbl" x="768" y="118" text-anchor="middle">your DAW</text>
+          <text class="sub" x="768" y="137" text-anchor="middle">channel 10 · GM notes</text>
+        </svg>
+        <p class="flow-caption">Both branches leave the same <code>(class, velocity, time)</code> tuple. The accent path is the only one that needs software you have to install first.</p>
+      </div>
+
+      <div class="tbl-wrap" style="margin-top:34px">
+        <table>
+          <tr><th>Path</th><th>You get</th><th>Extra installs</th><th>Timing</th></tr>
+          <tr><td><strong>A — MIDI file</strong></td><td>a <code>.mid</code> to import</td><td>none beyond <code>requirements.txt</code></td><td>sub-frame, baked into the file</td></tr>
+          <tr><td><strong>B — audio file</strong></td><td>a 22.05 kHz mono wav</td><td>none</td><td>baked in, tempo-independent</td></tr>
+          <tr><td><strong>C — live MIDI port</strong></td><td>notes into a running DAW</td><td><code>sounddevice</code>, <code>mido</code>, <code>python-rtmidi</code>, plus a virtual cable</td><td>quantised to the audio block — 20 ms by default</td></tr>
+        </table>
+      </div>
+
+      <div class="callout callout--accent">
+        <strong>before any of this works</strong>
+        Every command here wants <code>--bundle x.fb</code> or <code>--checkpoint runs/…/best.pt</code>. No bundle is published yet, so until one is, this needs a model you trained and exported with <code>scripts/export_bundle.py</code>. <code>--config</code> loads an <em>untrained</em> model and is for <code>--benchmark</code> only — it will emit notes, and they will be noise.
+      </div>
+    </div>
+  </section>
+
+  <section id="routes" class="rule">
+    <div class="wrap">
+      <h2>The three routes, in detail</h2>
+      <p class="section-lede" style="margin-bottom:44px">Same model, same drummer, three different edges to hand it off at. The differences that matter are tempo, latency and what the DAW is allowed to reinterpret.</p>
+
+      <!-- Path A -->
+      <div class="phase-entry">
+        <div class="phase-label">Path A<br>midi file</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 5h14l7 7v23a1 1 0 0 1-1 1H10a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1z"/><path d="M24 5v8h7"/><path d="M15 27a2.5 2.5 0 1 0 5 0V17l5 2"/></svg>
+        </div>
+        <div>
+          <h3>Render a MIDI file and import it</h3>
+          <div class="phase-ok">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-12"/></svg>
+            <span>The command prints a hit count, and the file opens in any host that reads standard MIDI.</span>
+          </div>
+          <div class="code">python src/realtime.py --bundle flybeats-8piece.fb --render song.wav --out drums.mid</div>
+          <p class="phase-body"><code>--out</code> defaults to <code>runs/render.mid</code> when no sample kit is in play.</p>
+          <div class="tbl-wrap">
+            <table>
+              <tr><th>Property</th><th>What the file contains</th></tr>
+              <tr><td>tracks</td><td>one, <code>is_drum=True</code>, program 0, named <code>flybeats</code></td></tr>
+              <tr><td>channel</td><td>10, the GM percussion channel (<code>channel=9</code> zero-indexed)</td></tr>
+              <tr><td>resolution</td><td>960 ticks/beat — a ~0.5 ms grid, below the ~5 ms the model resolves</td></tr>
+              <tr><td>note length</td><td>a fixed 50 ms, for every hit</td></tr>
+              <tr><td>velocity</td><td>40–127, never lower</td></tr>
+              <tr><td>timing</td><td>absolute seconds from the first sample of <code>song.wav</code></td></tr>
+            </table>
+          </div>
+          <div class="callout callout--accent">
+            <strong>the tempo trap</strong>
+            <code>realtime.py</code> never sets <code>initial_tempo</code>, so the file carries pretty_midi's default <strong>120 BPM</strong> tempo map and the hit times are absolute seconds converted through it. A host that reads the ticks under its own project tempo instead puts every hit at <code>t × 120 / project_BPM</code> seconds — at 140 BPM a hit at 10.000 s lands at 8.571 s, and the further into the take, the worse it gets. Set the project to 120 before importing, or accept the file's tempo when the DAW offers to.
+          </div>
+          <p class="phase-body">Related, and more fundamental: flybeats does not estimate tempo and never has. The output is a timestamped performance, not a pattern on a grid. Bars will not line up with the project unless the source audio happened to start on one.</p>
+        </div>
+      </div>
+
+      <!-- Path B -->
+      <div class="phase-entry">
+        <div class="phase-label">Path B<br>audio file</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20h3"/><path d="M12 12v16"/><path d="M19 6v28"/><path d="M26 14v12"/><path d="M33 18v4"/></svg>
+        </div>
+        <div>
+          <h3>Render audio and drop it on a track</h3>
+          <div class="phase-ok">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-12"/></svg>
+            <span>Needs nothing installed beyond <code>requirements.txt</code>, and its timing cannot be reinterpreted by anything.</span>
+          </div>
+          <div class="code">python src/realtime.py --bundle flybeats-8piece.fb --render song.wav \
+    --sound-source samples --kit-dir kits/synth --out drums.wav</div>
+          <ul style="margin-top:14px; padding:0; list-style:none; max-width:74ch;">
+            <li style="margin-top:8px;">Output is <strong>mono at the model's sample rate</strong>, 22 050 Hz. Your DAW will resample it; if that matters, resample it yourself with something better than a linear interpolator first.</li>
+            <li style="margin-top:8px;">Input is resampled to 22 050 Hz by linear interpolation and peak-normalised before inference. Feeding 22.05 kHz audio skips the resampler entirely.</li>
+            <li style="margin-top:8px;">A 2-second tail is appended so cymbals ring out instead of being cut off.</li>
+            <li style="margin-top:8px;">The mix is only normalised if it clips, never quietly.</li>
+            <li style="margin-top:8px;">The last partial block — under 20 ms — is dropped, so the render can end one block short of the input.</li>
+          </ul>
+          <div class="callout">
+            <strong>about the shipped kit</strong>
+            <code>kits/synth/</code> is generated from pitch-enveloped sines and filtered noise. It is not a good kit. It is tiny, unambiguously ours to ship, and it exercises every path the player has — point <code>--kit-dir</code> at a real one. Third-party kits are auto-mapped by filename, with <code>manifest.yaml</code>'s <code>aliases</code> as the manual override.
+          </div>
+        </div>
+      </div>
+
+      <!-- Path C -->
+      <div class="phase-entry">
+        <div class="phase-label">Path C<br>live port</div>
+        <div class="phase-glyph" aria-hidden="true">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="20" r="4"/><path d="M18 12a11 11 0 0 1 0 16"/><path d="M24 6a19 19 0 0 1 0 28"/><path d="M30 1a26 26 0 0 1 0 38" opacity="0.5"/></svg>
+        </div>
+        <div>
+          <h3>Play into a running DAW</h3>
+          <div class="phase-ok">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5 11-12"/></svg>
+            <span>It prints the port it is sending to, then runs until Ctrl-C. Setup is <a href="#hookup">the next section</a>.</span>
+          </div>
+          <div class="code">python src/realtime.py --bundle flybeats-8piece.fb --midi-port "loopMIDI Port 1"</div>
+          <p class="phase-body">No <code>--render</code> means live. It opens a <strong>mono 22 050 Hz input stream</strong> on the default recording device.</p>
+          <p class="phase-body">Before the stream opens it re-runs the benchmark and <strong>halves <code>--speed</code> until the p95 fits the block</strong>, printing what it capped to. An audio callback that overruns does not degrade gracefully — it drops buffers, and the result is clicks that sound like a broken model rather than a machine out of headroom. If even speed 1 misses, it says so and plays anyway; expect dropouts.</p>
+          <div class="callout callout--accent">
+            <strong>read this before blaming the model</strong>
+            Live is <em>always</em> MIDI — <code>--sound-source samples</code> is only read on the <code>--render</code> branch, and <code>run_live</code> builds a <code>MidiBank</code> unconditionally. And emission is quantised to the block: hits carry a sub-frame timestamp, but every hit in a block is sent when that block finishes, so your DAW sees 20 ms quantisation on top of its own latency. The <a href="#limits">full list</a> is at the bottom.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="hookup" class="launch-section">
+    <div class="wrap">
+      <h2>Hooking it up, live</h2>
+      <p class="section-lede">Five steps, in the order they need to happen. Skipping the benchmark is the one that bites.</p>
+
+      <div class="launch-block">
+        <h3>1. Install the realtime extras</h3>
+        <p>They are commented out of <code>requirements.txt</code> because they need system audio and MIDI libraries:</p>
+        <div class="code">pip install sounddevice mido python-rtmidi</div>
+        <p><code>python-rtmidi</code> ships Windows wheels for <strong>Python 3.11 and 3.12 only</strong>; on 3.13+ pip builds from source and wants the MSVC Build Tools. This is one of the reasons SETUP.md recommends 3.12.</p>
+      </div>
+
+      <div class="launch-block">
+        <h3>2. Create a virtual MIDI cable</h3>
+        <p>flybeats opens a MIDI <em>output</em>; the DAW opens a MIDI <em>input</em>. Something has to join them, and only macOS ships it.</p>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>OS</th><th>What to use</th></tr>
+            <tr><td>Windows</td><td><strong>loopMIDI</strong> — install, add a port, name it something you will recognise</td></tr>
+            <tr><td>macOS</td><td>built in: <code>Audio MIDI Setup → Window → Show MIDI Studio → IAC Driver</code>, tick <em>Device is online</em></td></tr>
+            <tr><td>Linux</td><td>ALSA sequencer ports are virtual already; <code>mido</code> opens one directly, or use <code>a2jmidid</code> for a JACK host</td></tr>
+          </table>
+        </div>
+      </div>
+
+      <div class="launch-block">
+        <h3>3. Find the port name</h3>
+        <p>There is no <code>--list-ports</code> flag. This is the one-liner:</p>
+        <div class="code">python -c "import mido; print(mido.get_output_names())"</div>
+        <div class="callout callout--accent">
+          <strong>always pass --midi-port</strong>
+          With no <code>--midi-port</code>, <code>mido.open_output()</code> takes the system default — on Windows usually the Microsoft GS Wavetable Synth. You will hear a General MIDI drum kit coming from the OS, the DAW will receive nothing, and it looks exactly like a routing bug.
+        </div>
+      </div>
+
+      <div class="launch-block">
+        <h3>4. Check this machine can keep up</h3>
+        <div class="code">python src/realtime.py --bundle flybeats-8piece.fb --benchmark
+python src/realtime.py --bundle flybeats-8piece.fb --benchmark --speed 4</div>
+        <p>It prints mean and p95 inference per block and exits <strong>0 within budget, 1 over</strong>, so it drops into a shell script. Measured on 4 CPU cores, no GPU:</p>
+        <div class="tbl-wrap">
+          <table>
+            <tr><th>Subgraph tier</th><th>Nodes</th><th>Edges</th><th>Inference / 20 ms block</th><th>Headroom</th></tr>
+            <tr><td>live (small)</td><td class="num">10,000</td><td class="num">643k</td><td class="num">5.4 ms mean, 5.9 ms p95</td><td class="num">3.7× realtime</td></tr>
+            <tr><td>live (default)</td><td class="num">30,000</td><td class="num">2.94M</td><td class="num">14.2 ms mean, 16.8 ms p95</td><td class="num">1.4× realtime</td></tr>
+          </table>
+        </div>
+        <p style="margin-top:14px">A latency number from someone else's machine tells you nothing about yours; that is what the flag is for. Over budget, the fixes are a smaller <code>subgraph.max_nodes</code>, a larger <code>audio.step_ms</code>, or path A.</p>
+      </div>
+
+      <div class="launch-block">
+        <h3>5a. FL Studio</h3>
+        <ol>
+          <li><strong>Options → MIDI Settings</strong> (F10). Under <strong>Input</strong>, select the loopMIDI port, click <strong>Enable</strong>, and give it a <strong>Port number</strong> — say 1.</li>
+          <li>Add your drum sampler to a channel. In the plugin wrapper's settings, set <strong>Input port</strong> to the same number, so the notes reach that plugin regardless of which channel is selected.</li>
+          <li>Map the pads to <a href="#notemap">the note map</a>. A sampler's default layout is its own, not necessarily GM's.</li>
+          <li>To capture it: arm the transport for recording with <strong>Notes</strong> enabled in the recording filter, then run flybeats and play the source material into your input device.</li>
+        </ol>
+        <p style="margin-top:18px">Importing a rendered <code>.mid</code> instead: set the project tempo to <strong>120</strong>, then <code>File → Import → MIDI file</code> or drag it onto the playlist. Line the clip up with the source audio at <strong>sample 0</strong> — hit times are measured from the first sample fed to <code>--render</code>, so any offset you give the audio track you must give the MIDI clip too.</p>
+      </div>
+
+      <div class="launch-block">
+        <h3>5b. Everything else</h3>
+        <ul>
+          <li><strong>Ableton Live</strong> — <code>Preferences → Link/Tempo/MIDI</code>, turn on <em>Track</em> for the port, then set a MIDI track's input to it and arm the track. Dropping a <code>.mid</code> into a MIDI track imports the notes without touching the project tempo, so set 120 yourself first.</li>
+          <li><strong>Logic</strong> — any enabled MIDI input reaches the selected track; select the drum-sampler track.</li>
+          <li><strong>Reaper</strong> — <code>Preferences → MIDI Devices</code>, enable the input, then arm a track with that input and monitoring on.</li>
+          <li><strong>Bitwig, Studio One, anything else</strong> — they all read a plain MIDI file. The only thing to watch is the same 120 BPM tempo map.</li>
+        </ul>
+      </div>
+
+    </div>
+  </section>
+
+  <section id="notemap" class="rule">
+    <div class="wrap">
+      <h2>The note map</h2>
+      <p class="section-lede"><code>src/decoder.py</code> holds one General MIDI map, and <code>DrumKit.notes</code> is the only thing that reaches MIDI. Both banks use it, so file and live agree.</p>
+
+      <div class="callout">
+        <strong>match the numbers, not the names</strong>
+        Note <em>names</em> are a DAW convention, not a fact. FL Studio calls MIDI note 60 C5; Ableton and Logic call it C3. Both columns are below.
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Class</th><th>Note</th><th>FL Studio</th><th>Ableton / Logic</th><th class="tick">3piece</th><th class="tick">8piece</th><th class="tick">articulated</th></tr>
+          <tr><td><code>kick</code></td><td class="num">36</td><td class="num">C3</td><td class="num">C1</td><td class="tick">●</td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>sidestick</code></td><td class="num">37</td><td class="num">C#3</td><td class="num">C#1</td><td></td><td></td><td class="tick">●</td></tr>
+          <tr><td><code>snare</code></td><td class="num">38</td><td class="num">D3</td><td class="num">D1</td><td class="tick">●</td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>hat_closed</code></td><td class="num">42</td><td class="num">F#3</td><td class="num">F#1</td><td class="tick">●</td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>hat_pedal</code></td><td class="num">44</td><td class="num">G#3</td><td class="num">G#1</td><td></td><td></td><td class="tick">●</td></tr>
+          <tr><td><code>tom_low</code></td><td class="num">45</td><td class="num">A3</td><td class="num">A1</td><td></td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>hat_open</code></td><td class="num">46</td><td class="num">A#3</td><td class="num">A#1</td><td></td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>tom_mid</code></td><td class="num">47</td><td class="num">B3</td><td class="num">B1</td><td></td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>crash</code></td><td class="num">49</td><td class="num">C#4</td><td class="num">C#2</td><td></td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>tom_high</code></td><td class="num">50</td><td class="num">D4</td><td class="num">D2</td><td></td><td class="tick">●</td><td class="tick">●</td></tr>
+          <tr><td><code>ride</code></td><td class="num">51</td><td class="num">D#4</td><td class="num">D#2</td><td></td><td></td><td class="tick">●</td></tr>
+          <tr><td><code>ride_bell</code></td><td class="num">53</td><td class="num">F4</td><td class="num">F2</td><td></td><td></td><td class="tick">●</td></tr>
+        </table>
+      </div>
+
+      <div class="chips" aria-label="Also in the map, in no tier">
+        <span class="chip">clap · 39 — no tier</span><span class="chip">cowbell · 56 — no tier</span>
+      </div>
+
+      <p style="margin-top:26px; max-width:74ch">Which tier you get is <code>kit.tier</code> in the config the model was trained with, and it is fixed at training time — a bundle plays the kit it was trained on. Kit size is capped by anatomy rather than by the GM chart: the tiers exist because Phase 0 confirmed 15 wing steering motor types, and nothing above <code>articulated</code> fits without leg motor neurons.</p>
+
+      <div class="callout callout--accent">
+        <strong>choke groups are not in the MIDI</strong>
+        One hi-hat cannot be open and closed at once, and <code>SampleBank</code> enforces that with a 5 ms fade — but choking lives in the sound layer, and <code>MidiBank</code> does not do it. The <code>note_off</code> is not a choke either; it goes out immediately after every <code>note_on</code>. So set the choke in your sampler: most call it a mute group, cut group or choke group. Put <code>hat_closed</code> (42) and <code>hat_open</code> (46) in one, which is what <code>kits/synth/manifest.yaml</code> declares for the sample path.
+      </div>
+    </div>
+  </section>
+
+  <section id="velocity" class="rule">
+    <div class="wrap">
+      <h2>Velocity, and why it starts at 40</h2>
+      <div class="measure">
+        <p><code>MidiBank.to_midi_velocity</code> is <code>clip(round(40 + 87 × v), 1, 127)</code> for a model velocity <code>v</code> in 0..1 — so the DAW <strong>never sees a velocity below 40</strong>, by design, so that a quiet hit still speaks.</p>
+      </div>
+
+      <div class="tier-grid" style="margin-top:36px">
+        <div class="tier-item">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 32V20"/><path d="M14 32V13"/><path d="M22 32V8"/><path d="M30 32V16"/><path d="M4 32h32"/></svg>
+          <h4>What it costs you</h4>
+          <p>The bottom third of your sampler's velocity layers is unreachable. If a kit's soft layers matter, remap 40–127 onto 1–127 with a velocity curve in the sampler, or pick a kit whose layers sit in the top two thirds.</p>
+        </div>
+        <div class="tier-item">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="20" cy="20" r="13"/><path d="M20 11v9l6 4"/></svg>
+          <h4>Where the number comes from</h4>
+          <p>A <strong>velocity head</strong> — a second readout over the same motor pool, trained against the drummer's own MIDI velocities and wearing the same hemisphere mask, so a hit's strength comes from the hemisphere that produced the hit.</p>
+        </div>
+        <div class="tier-item">
+          <svg width="30" height="30" viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6l15 27H5z"/><path d="M20 16v8"/><path d="M20 28h.01"/></svg>
+          <h4>The old fallback</h4>
+          <p>A bundle exported before that head existed (format v1) still loads, and falls back to <em>peak height above the threshold</em> — detection confidence wearing dynamics' clothes. A hesitant model plays quietly and a certain one plays loudly, which is not what a drummer does.</p>
+        </div>
+      </div>
+
+      <div class="callout callout--accent" style="margin-top:36px">
+        <strong>honestly, today</strong>
+        The head is built, trained and tested, and it does not yet produce dynamics on real audio — it gets two classes backwards. Expect a narrow velocity spread in the DAW for now. See <em>What the velocity head can and cannot do</em> in the README.
+      </div>
+    </div>
+  </section>
+
+  <section id="controls" class="rule">
+    <div class="wrap">
+      <h2>The controls, from the command line</h2>
+      <p class="section-lede">All of these work on every path — file render, audio render and live — unless noted. There is no live control surface: they are set at launch and hold for the run.</p>
+
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Flag</th><th>What it does</th></tr>
+          <tr><td><code>--speed N</code></td><td>core updates per encoder frame: 1 as trained, 4 the fly's own timescale</td></tr>
+          <tr><td><code>--class-speed kick=1 …</code></td><td>hold named classes back to a human timescale while the rest run fast</td></tr>
+          <tr><td><code>--slider NAME VALUE</code></td><td><code>drive</code>, <code>tightness</code>, <code>pocket</code>, <code>gate</code> — repeatable</td></tr>
+          <tr><td><code>--lesion POP</code></td><td>mute a confirmed population mid-performance, e.g. <code>pIP10</code></td></tr>
+          <tr><td><code>--style N</code></td><td>swap the groove without swapping checkpoints (needs a multi-style model)</td></tr>
+          <tr><td><code>--threshold X</code></td><td>peak-picking threshold; default is whatever the model's own eval sweep chose</td></tr>
+          <tr><td><code>--block-ms X</code></td><td>audio block size; 20 by default</td></tr>
+          <tr><td><code>--midi-port NAME</code></td><td>which MIDI output to open, live</td></tr>
+          <tr><td><code>--kit-dir DIR</code></td><td>sample kit, for <code>--sound-source samples</code></td></tr>
+        </table>
+      </div>
+
+      <h3 style="margin-top:52px; font-size:1.2rem; font-weight:600;">Speed</h3>
+      <p class="section-lede">Inference-time only. No retraining, and at speed 1 the output is unchanged.</p>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Speed</th><th>Effective τ</th><th></th></tr>
+          <tr><td class="num">1</td><td class="num">20 ms</td><td>as trained</td></tr>
+          <tr><td class="num">4</td><td class="num">5 ms</td><td><strong>full fly</strong> — the wingbeat period, and the model's own τ floor</td></tr>
+          <tr><td class="num">8+</td><td class="num">≤2.5 ms</td><td>faster than the animal; a musical effect, not a biological one</td></tr>
+        </table>
+      </div>
+      <p style="margin-top:16px; max-width:74ch">Cost is linear in the dial, which is why the live path caps it and the offline renderer does not. The per-class refractory scales with speed by default, so naming a class pins it back to a human timescale while the hats flutter:</p>
+      <div class="code">python src/realtime.py --bundle m.fb --render song.wav --out fly.mid \
+    --speed 8 --class-speed kick=1 snare=1</div>
+
+      <h3 style="margin-top:52px; font-size:1.2rem; font-weight:600;">Sliders and lesions</h3>
+      <p class="section-lede">Each one addresses a Phase-0-confirmed population, not a knob someone invented.</p>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Slider</th><th>Population</th><th>Effect</th></tr>
+          <tr><td><code>drive</code></td><td>pC1 (155 neurons)</td><td>fill density, intensity</td></tr>
+          <tr><td><code>tightness</code></td><td>inhibitory neurons (GABA / Glu / His)</td><td>tight vs. sloppy timing</td></tr>
+          <tr><td><code>pocket</code></td><td>membrane time constant</td><td>slower τ drags the beat</td></tr>
+          <tr><td><code>gate</code></td><td>pIP10 (2 neurons)</td><td>song on/off, near-binary</td></tr>
+        </table>
+      </div>
+      <div class="code">python src/realtime.py --bundle m.fb --render song.wav --out busier.mid \
+    --slider drive 1.5 --slider pocket 1.2
+
+python src/realtime.py --bundle m.fb --render song.wav --out lesioned.mid \
+    --lesion pIP10</div>
+      <p style="max-width:74ch"><code>--lesion</code> takes any population in the model's role index — an unknown name fails with the list of what is available. Automating any of this from the DAW would need a MIDI <em>input</em> that flybeats does not have.</p>
+
+      <h3 style="margin-top:52px; font-size:1.2rem; font-weight:600;">Timing, precisely</h3>
+      <p class="section-lede">Worth knowing before you conclude the model is drifting.</p>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Detail</th><th>Why it is like that</th></tr>
+          <tr><td>The clock is built from the <strong>true encoder hop</strong>, not the nominal <code>step_ms</code></td><td>The hop is a whole number of samples — 110 at 22.05 kHz, which is 4.9887 ms, not 5. A clock built from <code>step_ms</code> drifts 0.23% against the audio: 9 ms over a four-second clip, 2.3 s over an album side.</td></tr>
+          <tr><td>Hits carry a timestamp, not a step count</td><td>With a fractional <code>--speed</code> there is no uniform grid to be on.</td></tr>
+          <tr><td>Per-class refractory is <code>50 / speed</code> ms by default</td><td>At a fixed 50 ms every class caps at 20 hits/s and the speed dial does nothing at all. A <code>--class-speed</code> override is absolute.</td></tr>
+          <tr><td>Peak picking looks one step ahead <strong>within the block only</strong></td><td>At a block boundary the next block sees the peak as a rising edge instead, so changing <code>--block-ms</code> can change which peaks are picked. Keep it fixed between takes you intend to compare.</td></tr>
+          <tr><td>Align an imported render to sample 0 of the source audio</td><td>Everything is measured from the first sample fed to <code>--render</code>.</td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="troubleshooting" class="rule">
+    <div class="wrap">
+      <h2>When it does not work</h2>
+      <div class="tbl-wrap">
+        <table>
+          <tr><th>Symptom</th><th>Cause</th><th>Fix</th></tr>
+          <tr><td>A GM drum kit plays from the OS, the DAW gets nothing</td><td>No <code>--midi-port</code>, so <code>mido</code> took the system default</td><td>Pass <code>--midi-port</code>, from <code>mido.get_output_names()</code></td></tr>
+          <tr><td><code>get_output_names()</code> is empty on Windows</td><td>No virtual cable installed</td><td>Install loopMIDI and add a port</td></tr>
+          <tr><td>MIDI arrives but nothing sounds</td><td>The sampler's pads are not on the GM notes, or the wrapper's input port is unset</td><td>Check the note map; set the plugin's <strong>Input port</strong> in FL</td></tr>
+          <tr><td>Imported MIDI drifts further out the longer it plays</td><td>Project is not at 120 BPM</td><td>Set 120, adopt the file's tempo, or use path B</td></tr>
+          <tr><td>Both hats ring at once</td><td>No choke group in the sampler — MIDI carries none</td><td>Put notes 42 and 46 in one mute/cut group</td></tr>
+          <tr><td>Every hit is loud, dynamics are flat</td><td>A v1 bundle with no velocity head, or the head's known limits</td><td>Re-export from a checkpoint trained with <code>velocity_head: true</code></td></tr>
+          <tr><td>Velocities never go below 40</td><td>Intentional floor in <code>to_midi_velocity</code></td><td>Remap with a velocity curve in the sampler</td></tr>
+          <tr><td>Clicks and dropouts live</td><td>Inference overran the block</td><td><code>--benchmark</code> first; lower <code>--speed</code>, lower <code>subgraph.max_nodes</code>, or use <code>--render</code></td></tr>
+          <tr><td><code>--speed</code> printed a "capping to" line</td><td><code>fit_speed_to_budget</code> found the dial too fast for this machine</td><td>Expected. The offline renderer has no such ceiling</td></tr>
+          <tr><td>Live mode emits nothing at all</td><td><code>--block-ms</code> below the ~5 ms encoder hop, so blocks contain no steps</td><td>Raise <code>--block-ms</code></td></tr>
+          <tr><td>154 hits in four seconds</td><td>The threshold was not the one the model was scored at</td><td>Drop <code>--threshold</code>, or re-export the bundle with <code>--threshold</code> so it ships with the model</td></tr>
+          <tr><td><code>--sound-source samples</code> live produces no audio</td><td>Live is MIDI-only</td><td>Use <code>--render</code>, or a sampler in the DAW</td></tr>
+          <tr><td><code>python-rtmidi</code> will not install</td><td>No wheel for your Python version</td><td>Use Python 3.12, or install the MSVC Build Tools</td></tr>
+          <tr><td><code>ModuleNotFoundError: No module named 'build'</code></td><td><code>src/</code> modules import each other by bare name</td><td>Run <code>python src/realtime.py</code> from the repo root, not <code>python -m src.realtime</code></td></tr>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <section id="limits" class="rule">
+    <div class="wrap">
+      <h2 class="kill-hed">What this is not, so none of it is a surprise mid-session</h2>
+      <div class="killgrid">
+        <div class="killblock accent">
+          <h4>no MIDI in</h4>
+          <p>No clock sync, no transport, no external control of sliders, speed, style or lesions. They are launch-time arguments, and flybeats is free running against the audio it hears.</p>
+        </div>
+        <div class="killblock">
+          <h4>not a plugin</h4>
+          <p>There is no VST or AU. flybeats is a command-line process running next to the DAW; the connection is a MIDI cable or a file.</p>
+        </div>
+        <div class="killblock accent">
+          <h4>the live path is untested on hardware</h4>
+          <p>Written, reviewed and unexercised — no audio device has ever been attached to it in this project. Emission is also quantised to <code>--block-ms</code>. If something misbehaves, this is the likeliest place to look.</p>
+        </div>
+        <div class="killblock">
+          <h4>fixed at training time</h4>
+          <p>The kit is whichever tier the model was trained on. And there is no tempo estimation anywhere, so no grid, no bars, no quantise — the 120 BPM tempo map in a rendered <code>.mid</code> is pretty_midi's default, not a decision about your project.</p>
+        </div>
+        <div class="killblock note">
+          <p>And the model itself is undertrained. Expect a busy, snare-heavy performance that follows the music's energy rather than its groove. The mechanism is verified end to end; the musicality is not. Read <em>Results, and what they are not</em> before forming an opinion about what comes out.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap">
+      <span>flybeats — companion to DAW.md</span>
+      <span>DAW guide · v1</span>
+    </div>
+  </footer>
+
+<script>
+(function(){
+  var canvas = document.getElementById('connectome');
+  if (!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var W = 0, H = 0, DPR = 1;
+  var nodes = [];
+  var pulses = [];
+  var NODE_COUNT = 30;
+  var LINK_DIST = 150;
+  var lastSpawn = 0;
+  var C = { line: '#CBC9C1', muted: '#5C5B54', accent: '#C13B2E' };
+
+  function readColors(){
+    var cs = getComputedStyle(document.documentElement);
+    C.line = cs.getPropertyValue('--line').trim() || C.line;
+    C.muted = cs.getPropertyValue('--muted').trim() || C.muted;
+    C.accent = cs.getPropertyValue('--accent').trim() || C.accent;
+  }
+
+  function hexToRgba(hex, alpha){
+    hex = hex.replace('#', '');
+    if (hex.length === 3){ hex = hex.split('').map(function(c){ return c + c; }).join(''); }
+    var r = parseInt(hex.substring(0,2), 16);
+    var g = parseInt(hex.substring(2,4), 16);
+    var b = parseInt(hex.substring(4,6), 16);
+    return 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+  }
+
+  function resize(){
+    var rect = canvas.parentElement.getBoundingClientRect();
+    DPR = Math.min(window.devicePixelRatio || 1, 2);
+    W = rect.width; H = rect.height;
+    canvas.width = Math.max(1, W * DPR);
+    canvas.height = Math.max(1, H * DPR);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+
+  function seed(){
+    nodes = [];
+    for (var i = 0; i < NODE_COUNT; i++){
+      nodes.push({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.14,
+        vy: (Math.random() - 0.5) * 0.14
+      });
+    }
+  }
+
+  function currentLinks(){
+    var out = [];
+    for (var i = 0; i < nodes.length; i++){
+      for (var j = i + 1; j < nodes.length; j++){
+        var dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+        var d = Math.sqrt(dx*dx + dy*dy);
+        if (d < LINK_DIST) out.push([i, j, d]);
+      }
+    }
+    return out;
+  }
+
+  function spawnPulse(edges){
+    if (!edges.length) return;
+    var e = edges[Math.floor(Math.random() * edges.length)];
+    pulses.push({ a: e[0], b: e[1], t: 0 });
+  }
+
+  function draw(ts){
+    readColors();
+    ctx.clearRect(0, 0, W, H);
+    var edges = currentLinks();
+
+    edges.forEach(function(e){
+      var a = nodes[e[0]], b = nodes[e[1]];
+      var op = Math.max(0, 1 - e[2] / LINK_DIST) * 0.5;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = hexToRgba(C.line, op);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    });
+
+    nodes.forEach(function(n){
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, 2.1, 0, Math.PI * 2);
+      ctx.fillStyle = hexToRgba(C.muted, 0.6);
+      ctx.fill();
+    });
+
+    pulses.forEach(function(p){
+      var a = nodes[p.a], b = nodes[p.b];
+      var x = a.x + (b.x - a.x) * p.t;
+      var y = a.y + (b.y - a.y) * p.t;
+      ctx.beginPath();
+      ctx.arc(x, y, 2.6, 0, Math.PI * 2);
+      ctx.fillStyle = C.accent;
+      ctx.fill();
+    });
+
+    if (!reduced){
+      pulses.forEach(function(p){ p.t += 0.018; });
+      pulses = pulses.filter(function(p){ return p.t < 1; });
+
+      nodes.forEach(function(n){
+        n.x += n.vx; n.y += n.vy;
+        if (n.x < 0 || n.x > W) n.vx *= -1;
+        if (n.y < 0 || n.y > H) n.vy *= -1;
+      });
+
+      if (!lastSpawn || ts - lastSpawn > 700){
+        spawnPulse(edges);
+        lastSpawn = ts;
+      }
+      requestAnimationFrame(draw);
+    }
+  }
+
+  function init(){
+    resize();
+    seed();
+    requestAnimationFrame(draw);
+  }
+
+  var resizeTimer = null;
+  window.addEventListener('resize', function(){
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function(){
+      resize();
+      if (reduced) requestAnimationFrame(draw);
+    }, 150);
+  });
+
+  init();
+})();
+</script>
+
+</body>
+</html>
