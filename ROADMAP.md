@@ -5,7 +5,9 @@ does and does not do is the README's
 [Results](README.md#results-and-what-they-are-not) and
 [What is not done](README.md#what-is-not-done). This file is narrower: the
 order of the next few pieces of work, what each costs, and what would count as
-finishing it.
+finishing it. The longer arc past v1.0 — packaging, the installer wizard, the
+operating shell, and the training campaign that runs alongside them — is
+[RELEASE_ROADMAP.md](RELEASE_ROADMAP.md).
 
 **Two releases, because two different things are "done":**
 
