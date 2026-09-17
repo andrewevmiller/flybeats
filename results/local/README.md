@@ -14,6 +14,10 @@ a measurement nobody can find again is not a measurement.
 machine turned out to be, what its card can and cannot do, what the report
 below actually says, and what is still unverified.
 
+`handoff-2026-09-17.md` is a briefing written in a cloud session for the
+machine itself: two configuration traps that bite the moment a CUDA wheel
+lands, and the order the next evening's work wants to happen in.
+
 ### `bootstrap-LAPTOP-I9B30DJE-20260914-2359.json`
 
 The first run on real hardware. Ryzen mobile, 16 logical cores, 42.3 GB RAM,
