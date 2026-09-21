@@ -31,6 +31,13 @@ Three things follow from having real hardware, in the order they pay off:
 
 ## Start here: one command
 
+> **Read the current handoff first.**
+> [results/local/handoff-2026-09-21.md](results/local/handoff-2026-09-21.md)
+> says what the last session on this machine did, what is ready to run, and —
+> more importantly — the two decisions that should be taken before any
+> expensive run starts, because both change what the campaign measures.
+> The `results/local/` index lists the dated notes behind it.
+
 From the clone — including the one at
 `C:\Users\ricos\Documents\AI Databases\flybeats\git`, which may be behind:
 

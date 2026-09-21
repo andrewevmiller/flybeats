@@ -14,9 +14,20 @@ a measurement nobody can find again is not a measurement.
 machine turned out to be, what its card can and cannot do, what the report
 below actually says, and what is still unverified.
 
-`handoff-2026-09-17.md` is a briefing written in a cloud session for the
-machine itself: two configuration traps that bite the moment a CUDA wheel
-lands, and the order the next evening's work wants to happen in.
+`handoff-2026-09-21.md` is where to start. It is the current briefing for
+whoever picks the project up next: the two decisions that should be taken
+before anything expensive runs, what is done, what is ready to run and has
+not been, and the traps specific to this machine.
+
+`handoff-2026-09-17.md` is the one it supersedes, written in a cloud session:
+two configuration traps that bite the moment a CUDA wheel lands, and the order
+that evening's work wanted to happen in. Its items 1-3 are done.
+
+The dated notes are the narrative record, newest last:
+`2026-09-14-gpu-bringup.md`, the five `2026-09-15-*.md` reports,
+`2026-09-16-threshold-response.md` (why the headline metric was choosing the
+winner) and `2026-09-21-tier1-and-the-broken-venv.md` (the environment
+failure, and the Tier 1 test gate).
 
 ### `bootstrap-LAPTOP-I9B30DJE-20260914-2359.json`
 
