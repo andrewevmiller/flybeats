@@ -19,6 +19,15 @@ data:
   seconds: 2.0
   max_files: 64
 train:
+  # Pinned, not inherited. v1_8piece.yaml sets `device: auto`, which resolves
+  # to CUDA wherever a card is visible -- so every config in this _cpu family
+  # silently moved to GPU the moment a CUDA wheel landed on the training
+  # machine, with nothing in the filename or the config saying so. That is not
+  # a performance question: the Phase A' velocity arms are only interpretable
+  # against each other, A'1 was measured on CPU, and an arm that quietly ran
+  # somewhere else is not a comparison. Every config inheriting from this one
+  # is now on CPU by construction; tests/test_config.py asserts it.
+  device: cpu
   epochs: 6
   batch_size: 4
   tbptt_steps: 100
