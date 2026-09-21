@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -189,3 +190,102 @@ def test_build_arm_realises_each_arms_own_spectral_radius():
     torch.manual_seed(0)
     model, _ = build_arm("gru", cfg, sg, n_styles=1, seed=0)
     assert model.rnn.cfg.spectral_radius == 3.0
+
+
+# --- every arm must actually run (TEST_PLAN T1.1) --------------------------
+
+def _arm_fixture():
+    """A small real graph and a config that cannot wander off this machine.
+
+    ``device: cpu`` is pinned rather than inherited: ``v1_8piece.yaml`` sets
+    ``device: auto``, which resolves to CUDA wherever a card exists, and a test
+    that silently changes device between machines is not testing one thing.
+    """
+    import torch
+
+    from build import get_subgraph, load_config
+
+    from conftest import use_small_graph
+
+    cfg = use_small_graph(load_config(ROOT / "configs" / "sanity_3piece.yaml"))
+    cfg["train"]["device"] = "cpu"
+    sg = get_subgraph(cfg)
+    wav = torch.randn(2, 11025, generator=torch.Generator().manual_seed(2)) * 0.1
+    return cfg, sg, wav
+
+
+@pytest.mark.parametrize("arm", ARMS)
+def test_every_arm_builds_forward_passes_and_backprops(arm):
+    """The failure with a precedent: an arm that cannot run at all.
+
+    The CI workflow's own header records it -- "two arms that could not do a
+    forward pass, because a signature changed in model.py and the replacement
+    cores in ablations.py did not. A test existed for neither." CI was the
+    response, but CI ran a suite that still never called an arm, so the same
+    drift recurred immediately: ``substeps`` was added to ``ConnectomeRNN`` and
+    to ``FlyBeats.forward``, and ``GRUCore``/``ShortcutCore`` went on not
+    accepting it. Both raised ``TypeError`` on every call through
+    ``FlyBeats.forward`` -- playback, transcription, bundle export -- while
+    training stayed green, because ``run_epoch`` calls ``model.rnn`` directly.
+
+    Phase D is a GPU day. A broken arm fails after the money is spent.
+    """
+    import torch
+
+    from ablations import build_arm
+
+    cfg, sg, wav = _arm_fixture()
+    torch.manual_seed(0)
+    model, kit = build_arm(arm, cfg, sg, n_styles=3, seed=0)
+    model.train()
+
+    logits, state = model(wav)
+    assert logits.shape[0] == wav.shape[0]
+    assert logits.shape[2] == len(kit.classes), f"{arm} predicts the wrong kit"
+    assert logits.shape[1] == wav.shape[-1] // model.encoder.hop
+    assert torch.isfinite(logits).all(), f"{arm} produced non-finite logits"
+
+    # Backward too: an arm that forward-passes and then has no gradient path to
+    # its own parameters trains for a day and learns nothing.
+    logits.square().mean().backward()
+    trained = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+    assert trained, f"{arm} has no trainable parameters"
+    got = [(n, p) for n, p in trained if p.grad is not None]
+    assert got, f"{arm} reached no parameter with a gradient"
+    for n, p in got:
+        assert torch.isfinite(p.grad).all(), f"{arm}.{n} has a non-finite gradient"
+
+
+@pytest.mark.parametrize("arm", ARMS)
+def test_every_arm_honours_the_speed_dial(arm):
+    """``substeps`` has to mean the same thing to every core.
+
+    ``StreamingDrummer`` reads timestamps off the returned row count, so a core
+    that accepted the argument and ignored it would not fail -- it would place
+    every hit at the wrong moment, which is worse.
+    """
+    import torch
+
+    from ablations import build_arm
+
+    cfg, sg, wav = _arm_fixture()
+    torch.manual_seed(0)
+    model, _ = build_arm(arm, cfg, sg, n_styles=3, seed=0)
+    model.eval()
+
+    with torch.no_grad():
+        base, _ = model(wav)
+        fast, _ = model(wav, substeps=2)
+        # A per-frame schedule is the fractional dial: 1,2,1,2,... averages 1.5.
+        frames = base.shape[1]
+        sched = [1 + (i % 2) for i in range(frames)]
+        frac, _ = model(wav, substeps=sched)
+
+    assert fast.shape[1] == 2 * base.shape[1], f"{arm} ignored substeps=2"
+    assert frac.shape[1] == sum(sched), f"{arm} ignored the per-frame schedule"
+    assert torch.isfinite(fast).all() and torch.isfinite(frac).all()
+
+    with pytest.raises(ValueError):
+        model(wav, substeps=0)
+    with pytest.raises(ValueError):
+        model(wav, substeps=[1] * (frames + 3))

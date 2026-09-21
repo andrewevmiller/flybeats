@@ -79,6 +79,38 @@ class SparseSpMM(torch.autograd.Function):
         return grad_v, grad_r, None, None, None, None, None, None, None
 
 
+def substep_schedule(substeps: int | Sequence[int], n_frames: int) -> list[int]:
+    """How many core updates each encoder frame gets. One definition, shared.
+
+    A scalar means the same ``k`` everywhere; a sequence is a per-frame
+    schedule, which is what makes a *fractional* dial possible (speed 2.5 is
+    alternating 2 and 3, not 2.5 updates on any frame). Either way the output
+    of a core that honours this has ``sum(schedule)`` rows, not ``n_frames``.
+
+    It lives at module scope because every core has to agree about it: the
+    ablation arms in ``ablations.py`` replace ``ConnectomeRNN`` outright, and
+    a replacement that quietly ignored the speed control -- or rejected the
+    argument -- would break the playback path for that arm alone. That is not
+    hypothetical: ``substeps`` was added to ``ConnectomeRNN.forward`` and to
+    ``FlyBeats.forward``, and ``GRUCore`` and ``ShortcutCore`` went on not
+    accepting it, so two of the five arms raised ``TypeError`` on any call
+    through ``FlyBeats.forward``. Training never noticed, because
+    ``train.run_epoch`` calls ``model.rnn`` directly and never passes it.
+    """
+    if isinstance(substeps, (int, np.integer)):
+        substeps = int(substeps)
+        if substeps < 1:
+            raise ValueError(f"substeps must be >= 1, got {substeps}")
+        return [substeps] * n_frames
+    schedule = [int(k) for k in substeps]
+    if len(schedule) != n_frames:
+        raise ValueError(
+            f"substeps schedule has {len(schedule)} entries for {n_frames} frames")
+    if any(k < 1 for k in schedule):
+        raise ValueError(f"substeps must be >= 1, got {min(schedule)}")
+    return schedule
+
+
 @dataclass
 class ModelConfig:
     step_ms: float = 5.0
@@ -275,18 +307,7 @@ class ConnectomeRNN(nn.Module):
         ``step_ms``. See SPEED_PLAN.md.
         """
         b, t, _ = drive.shape
-        if isinstance(substeps, (int, np.integer)):
-            substeps = int(substeps)
-            if substeps < 1:
-                raise ValueError(f"substeps must be >= 1, got {substeps}")
-            schedule = [substeps] * t
-        else:
-            schedule = [int(k) for k in substeps]
-            if len(schedule) != t:
-                raise ValueError(
-                    f"substeps schedule has {len(schedule)} entries for {t} frames")
-            if any(k < 1 for k in schedule):
-                raise ValueError(f"substeps must be >= 1, got {min(schedule)}")
+        schedule = substep_schedule(substeps, t)
         v = self.initial_state(b, drive.device, drive.dtype) if state is None else state
         w = self.edge_weight()
         alpha = (1.0 / self.tau_steps).clamp(max=1.0)

@@ -31,11 +31,34 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from model import substep_schedule
 from subgraph import SubGraph
 
 ROOT = Path(__file__).resolve().parents[1]
 
 ARMS = ("real", "rewired", "sign_shuffled", "gru", "shortcut")
+
+
+def hold_drive(drive: torch.Tensor, substeps) -> torch.Tensor:
+    """Repeat each encoder frame for its sub-steps, so ``k`` means the same
+    thing to a replacement core as it does to ``ConnectomeRNN``.
+
+    ``ConnectomeRNN`` runs the relaxation ``k`` times while holding one frame
+    of drive; a core with a different update rule cannot share that loop, but
+    it can be fed the held frame ``k`` times, which is the same statement about
+    time. Both give ``sum(schedule)`` output rows, which is what the caller
+    needs: ``StreamingDrummer`` carries real timestamps off that row count, so
+    a core returning ``n_frames`` rows under speed 2 would put every hit at the
+    wrong moment rather than fail.
+
+    The fast path is the one that matters -- ``substeps=1`` is every training
+    run and every offline eval -- so it returns the tensor untouched.
+    """
+    schedule = substep_schedule(substeps, drive.shape[1])
+    if all(k == 1 for k in schedule):
+        return drive
+    reps = torch.tensor(schedule, device=drive.device)
+    return drive.repeat_interleave(reps, dim=1)
 
 
 # ---------------------------------------------------------------- topology --
@@ -121,9 +144,10 @@ class GRUCore(nn.Module):
                            device=device or self.readout.weight.device,
                            dtype=dtype or self.readout.weight.dtype)
 
-    def forward(self, drive, state=None, tonic=None, return_all=False):
+    def forward(self, drive, state=None, tonic=None, return_all=False, substeps=1):
         if state is not None and state.dim() == 2:
             state = state.unsqueeze(0)
+        drive = hold_drive(drive, substeps)
         h, state = self.gru(drive, state)
         rates = torch.nn.functional.softplus(self.readout(h))
         return rates, state
@@ -183,7 +207,8 @@ class ShortcutCore(nn.Module):
                            device=device or self.proj.weight.device,
                            dtype=dtype or self.proj.weight.dtype)
 
-    def forward(self, drive, state=None, tonic=None, return_all=False):
+    def forward(self, drive, state=None, tonic=None, return_all=False, substeps=1):
+        drive = hold_drive(drive, substeps)
         return torch.nn.functional.softplus(self.proj(drive)), self.initial_state(
             drive.shape[0], drive.device, drive.dtype)
 
