@@ -32,6 +32,13 @@ a gap that wastes a GPU day is worth more than four gaps that waste a minute.
 
 These are the ones to write first, and all four are cheap.
 
+> **All four landed on 21 September** (`tests/test_ablations.py`,
+> `tests/test_config.py`, `tests/test_evaluate.py`), taking the suite from 137
+> CPU tests to 192. The sections below are kept as the reasoning, not as a
+> to-do list; each now ends with what writing it found. Two of them found
+> something. See
+> [results/local/2026-09-21-tier1-and-the-broken-venv.md](results/local/2026-09-21-tier1-and-the-broken-venv.md).
+
 ### 1.1 Every ablation arm must build and do a forward pass
 
 **The gap:** `tests/test_ablations.py` tests the graph *transforms* — rewiring
@@ -60,6 +67,15 @@ Add a backward pass and a finite-gradient assertion to the same test. Roughly
 thirty lines, and it retires the only failure mode on this page with a known
 precedent.
 
+**Found:** the precedent had already recurred. `substeps` went into
+`ConnectomeRNN.forward` and `FlyBeats.forward`; `GRUCore` and `ShortcutCore`
+did not follow, and both raised `TypeError` on every call through
+`FlyBeats.forward` — playback, transcribe, bundle export, and two of the five
+Phase D columns. Training stayed green because `run_epoch` calls `model.rnn`
+directly. Fixed by giving the speed schedule one definition
+(`model.substep_schedule`, `ablations.hold_drive`); the test now also pins the
+row count, a per-frame schedule, and rejection of a bad one.
+
 ### 1.2 `build.deep_merge` — config inheritance
 
 **The gap:** four lines implementing `_base_` inheritance, untested, and every
@@ -79,6 +95,15 @@ resolves to, per config, so the inherited surface is visible:
   test that prints the resolved config is the cheapest defence against the
   class of trap above.
 
+**Found:** the trap was live. All five `_cpu` configs resolved to
+`device: auto`. `device: cpu` is now pinned in `v1_8piece_cpu.yaml`, the root
+of that family, so the four velocity configs inherit it; `device_of` is
+asserted separately from the table, because the `_cpu` name is a promise about
+where a run happens and no row edit can satisfy it. The table covers all ten
+configs, and a config with no row fails a completeness test. One addition to
+the plan: each Phase A′ arm is checked to differ from the baseline by exactly
+one knob, since an arm carrying two changes attributes both to one.
+
 ### 1.3 `train.evaluate` — the function every headline number comes from
 
 **The gap:** never called in the suite. It returns `onset_f` and
@@ -91,6 +116,13 @@ copy scores 1.0, silence scores 0.0, and the swept `best_threshold` agrees with
 this for `onset_f_measure` — the gap is that `evaluate`'s own aggregation and
 threshold sweep sit above it, untested.
 
+**Found:** nothing wrong. Seven tests, driven by a stub model returning
+prescribed activations so the expected answer is not computed by the code under
+test. Beyond the plan: the headline equals the curve's argmax, a fixed
+threshold off the grid is added to the sweep, clips average rather than pool,
+and a velocity head predicting each class's mean scores r = 0 with an MAE under
+0.25 — the trap per-class correlation exists to catch.
+
 ### 1.4 Seed determinism across the arms
 
 Phase D's result is a comparison of arms across five seeds, so the harness must
@@ -99,6 +131,12 @@ same weights; different seeds give different ones; and — the one worth pinning
 — **a stochastic arm's seed must not change the real arm's graph.**
 `STOCHASTIC_ARMS` exists in `ablations.py`; nothing tests that the distinction
 holds.
+
+**Found:** it holds. Stated as an iff, since membership is what decides whether
+an arm gets repeats or one run quoted with no error bar. The real arm is also
+checked to survive the null draws intact — every arm is built from one shared
+`SubGraph`, so a rewiring that wrote through it would contaminate the baseline
+the nulls are compared against.
 
 ---
 

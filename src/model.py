@@ -48,7 +48,14 @@ class SparseSpMM(torch.autograd.Function):
     tensor every timestep, which matters a lot inside a 1,600-step BPTT loop.
     """
 
+    # autocast has no concept of sparsity: torch.sparse.mm forwards to
+    # aten::addmm, which IS on the lower_precision_fp cast list, so an enclosing
+    # bf16 region casts the CSR values on the way in and the kernel then hits a
+    # hard "compute capability < 8.0" gate. Pin this island to fp32 and let the
+    # dense half of the model autocast as it likes. A no-op outside autocast:
+    # the operands are fp32 there already.
     @staticmethod
+    @torch.amp.custom_fwd(device_type="cuda", cast_inputs=torch.float32)
     def forward(ctx, values, r, crow, col, crow_t, col_t, perm_t, row, n):
         out = torch.sparse.mm(
             torch.sparse_csr_tensor(crow, col, values, size=(n, n)), r.t()
@@ -58,6 +65,7 @@ class SparseSpMM(torch.autograd.Function):
         return out
 
     @staticmethod
+    @torch.amp.custom_bwd(device_type="cuda")
     def backward(ctx, grad_out):
         values, r, crow_t, col_t, perm_t, row, col = ctx.saved_tensors
         grad_out = grad_out.contiguous()
@@ -69,6 +77,38 @@ class SparseSpMM(torch.autograd.Function):
         if ctx.needs_input_grad[0]:
             grad_v = (grad_out[:, row] * r[:, col]).sum(0)
         return grad_v, grad_r, None, None, None, None, None, None, None
+
+
+def substep_schedule(substeps: int | Sequence[int], n_frames: int) -> list[int]:
+    """How many core updates each encoder frame gets. One definition, shared.
+
+    A scalar means the same ``k`` everywhere; a sequence is a per-frame
+    schedule, which is what makes a *fractional* dial possible (speed 2.5 is
+    alternating 2 and 3, not 2.5 updates on any frame). Either way the output
+    of a core that honours this has ``sum(schedule)`` rows, not ``n_frames``.
+
+    It lives at module scope because every core has to agree about it: the
+    ablation arms in ``ablations.py`` replace ``ConnectomeRNN`` outright, and
+    a replacement that quietly ignored the speed control -- or rejected the
+    argument -- would break the playback path for that arm alone. That is not
+    hypothetical: ``substeps`` was added to ``ConnectomeRNN.forward`` and to
+    ``FlyBeats.forward``, and ``GRUCore`` and ``ShortcutCore`` went on not
+    accepting it, so two of the five arms raised ``TypeError`` on any call
+    through ``FlyBeats.forward``. Training never noticed, because
+    ``train.run_epoch`` calls ``model.rnn`` directly and never passes it.
+    """
+    if isinstance(substeps, (int, np.integer)):
+        substeps = int(substeps)
+        if substeps < 1:
+            raise ValueError(f"substeps must be >= 1, got {substeps}")
+        return [substeps] * n_frames
+    schedule = [int(k) for k in substeps]
+    if len(schedule) != n_frames:
+        raise ValueError(
+            f"substeps schedule has {len(schedule)} entries for {n_frames} frames")
+    if any(k < 1 for k in schedule):
+        raise ValueError(f"substeps must be >= 1, got {min(schedule)}")
+    return schedule
 
 
 @dataclass
@@ -267,18 +307,7 @@ class ConnectomeRNN(nn.Module):
         ``step_ms``. See SPEED_PLAN.md.
         """
         b, t, _ = drive.shape
-        if isinstance(substeps, (int, np.integer)):
-            substeps = int(substeps)
-            if substeps < 1:
-                raise ValueError(f"substeps must be >= 1, got {substeps}")
-            schedule = [substeps] * t
-        else:
-            schedule = [int(k) for k in substeps]
-            if len(schedule) != t:
-                raise ValueError(
-                    f"substeps schedule has {len(schedule)} entries for {t} frames")
-            if any(k < 1 for k in schedule):
-                raise ValueError(f"substeps must be >= 1, got {min(schedule)}")
+        schedule = substep_schedule(substeps, t)
         v = self.initial_state(b, drive.device, drive.dtype) if state is None else state
         w = self.edge_weight()
         alpha = (1.0 / self.tau_steps).clamp(max=1.0)

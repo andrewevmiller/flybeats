@@ -70,6 +70,17 @@ def velocity_loss(pred: torch.Tensor, target: torch.Tensor,
     return ((pred - target).pow(2) * w).sum() / denom
 
 
+def velocity_mass(onsets: torch.Tensor, peak_only: float = 0.0) -> torch.Tensor:
+    """The denominator ``velocity_loss`` uses, computed over any span.
+
+    ``run_epoch`` needs the whole clip's mass to weight each TBPTT chunk's
+    contribution, and it has to be exactly the quantity velocity_loss puts in
+    its own denominator. Kept next to it so the two cannot drift apart.
+    """
+    w = onsets if peak_only <= 0.0 else onsets * (onsets >= peak_only)
+    return w.sum()
+
+
 def rate_penalty(rates: torch.Tensor, ceiling: float) -> torch.Tensor:
     """Penalise mean activity *above* ``ceiling``. Nothing below it is penalised.
 
@@ -145,11 +156,37 @@ def calibrate_encoder(model, dataset, cfg, device, n_clips: int = 16) -> dict:
     return model.encoder.calibrate(wavs)
 
 
+def resolve_bf16(setting, device) -> bool:
+    """Resolve ``train.bf16`` -- ``true``, ``false``, or ``auto`` -- for a device.
+
+    ``auto`` means bf16 only where the silicon actually has it: compute
+    capability 8.0 (Ampere) and up. Below that torch will still *run* bf16, by
+    emulation, and on a Turing card (7.5) that measured 1.4x SLOWER than fp32
+    -- 6.49 ms vs 4.63 ms on a 2048^3 GEMM. So ``auto`` is not the cautious
+    choice, it is the fast one, and it is why this is not simply ``false``:
+    on an Ampere box the same config should still get bf16.
+
+    An explicit ``true`` is honoured on any card. ``SparseSpMM`` pins its own
+    operands to fp32, so the bf16 path runs below 8.0 rather than raising --
+    it just has nothing to win. Keeping ``true`` meaningful everywhere is what
+    lets the bf16 tests run on this machine instead of skipping.
+    """
+    if device.type != "cuda":
+        return False
+    if isinstance(setting, str):
+        if setting.strip().lower() != "auto":
+            raise SystemExit(
+                f"train.bf16 must be true, false, or 'auto' -- got {setting!r}"
+            )
+        return torch.cuda.get_device_capability(device)[0] >= 8
+    return bool(setting)
+
+
 def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bool = True):
     model.train(train)
     tb = cfg["train"]
     chunk = int(tb.get("tbptt_steps", 150))
-    amp = bool(tb.get("bf16", False)) and device.type == "cuda"
+    amp = resolve_bf16(tb.get("bf16", False), device)
     ckpt = bool(tb.get("grad_checkpoint", False)) and train
     totals = {"loss": 0.0, "bce": 0.0, "rate": 0.0, "vel": 0.0, "n": 0}
     if "target_rate_hz" in tb:
@@ -169,10 +206,22 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
         n_chunks = 0
         if train:
             opt.zero_grad(set_to_none=True)
-        n_total = max(1, (steps + chunk - 1) // chunk)
+        # Clip-level velocity mass. velocity_loss divides by the onset mass
+        # inside its own chunk, so under a flat 1/n_total a chunk holding one
+        # hit gave that hit ~30x the gradient of a hit in a chunk holding
+        # thirty -- and where the boundary falls is an artefact of clip length,
+        # not of the music. Normalising by the clip total makes every hit carry
+        # the same weight wherever it lands.
+        vel_mass = float(velocity_mass(y[:, :steps], tb.get("velocity_peak_only", 0.0)))
 
         for a in range(0, steps, chunk):
             b = min(a + chunk, steps)
+            # This chunk's share of the clip, not 1/n_chunks. Each chunk's loss
+            # is already a mean over its own elements, and the last chunk is a
+            # remainder -- 800 steps at 150 leaves 50 -- so a flat 1/n_total
+            # handed those 50 steps 3x the per-step gradient of the other 750,
+            # on every clip, deterministically.
+            frac = (b - a) / steps
             # Truncated BPTT: carry the state forward but cut the graph, so
             # memory stays flat in sequence length. The encoder and the genre
             # bias are rebuilt per chunk for the same reason -- a single shared
@@ -197,14 +246,23 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
                 reg = rate_penalty(rates.float(), resolve_rate_ceiling(model, tb, rates))
                 loss = bce + tb.get("rate_weight", 0.1) * reg
                 vloss = torch.zeros((), device=loss.device, dtype=loss.dtype)
+                vshare = 0.0
                 if model.decoder.has_velocity:
+                    peak_only = tb.get("velocity_peak_only", 0.0)
                     vloss = velocity_loss(model.decoder.velocity(motor).float(),
                                           vel_y[:, a:b], y[:, a:b],
-                                          peak_only=tb.get("velocity_peak_only", 0.0))
+                                          peak_only=peak_only)
+                    if vel_mass > 0.0:
+                        vshare = float(velocity_mass(y[:, a:b], peak_only)) / vel_mass
                     loss = loss + tb.get("velocity_weight", 1.0) * vloss
+                # loss is what gets reported; grad_loss is what gets
+                # differentiated. They differ only in the chunk weighting, so
+                # the printed numbers stay comparable with earlier histories.
+                grad_loss = (frac * (bce + tb.get("rate_weight", 0.1) * reg)
+                             + tb.get("velocity_weight", 1.0) * vloss * vshare)
 
             if train:
-                (loss / n_total).backward()
+                grad_loss.backward()
             totals["loss"] += float(loss.detach())
             totals["bce"] += float(bce.detach())
             totals["rate"] += float(reg.detach())
@@ -241,7 +299,8 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
     step_ms = cfg["audio"]["step_ms"]
     tol = cfg["eval"].get("tolerance_s", 0.05)
     fixed = cfg["eval"].get("threshold", 0.3)
-    sweep = cfg["eval"].get("threshold_sweep", [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6])
+    sweep = cfg["eval"].get("threshold_sweep",
+                            [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     if fixed not in sweep:
         sweep = sorted(sweep + [fixed])
 
@@ -320,6 +379,15 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
         "velocity_r_pooled": vel_r_pooled,
         "onset_f_fixed": means[fixed],
         "best_threshold": best_t,
+        # The whole sweep, not just its argmax. Reporting only the max hides
+        # how much of a score is the model and how much is the selection: in
+        # the B=4 pilot the real arm gained 0.008 from being scored at its own
+        # best threshold while a rewired draw gained 0.128 -- larger than the
+        # gap between the arms, so the ranking was decided by the selection
+        # rather than by the topology. Keeping the curve makes that visible,
+        # and lets a common operating point be chosen after the fact without
+        # re-running. String keys because this is serialised to JSON.
+        "onset_f_curve": {f"{t:g}": means[t] for t in sorted(means)},
         "beat_align_ms": float(np.mean(ba_all)) if ba_all else float("nan"),
         "groove_sim": float(np.mean(gs_all)) if gs_all else float("nan"),
         "mean_dev_ms": float(np.mean(dev_all)) if dev_all else float("nan"),

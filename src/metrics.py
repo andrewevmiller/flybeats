@@ -102,7 +102,8 @@ def onset_f_sweep(pred_act: np.ndarray, ref_act: np.ndarray, step_ms: float,
     return out
 
 
-def beat_alignment_error(pred_act: np.ndarray, step_ms: float, tempo_bpm: float) -> float:
+def beat_alignment_error(pred_act: np.ndarray, step_ms: float, tempo_bpm: float,
+                         threshold: float = 0.3) -> float:
     """RMS distance from predicted onsets to the nearest grid line, in ms.
 
     Low is 'on the grid'. This is descriptive: PLAN.md wants feel measured, so
@@ -112,7 +113,8 @@ def beat_alignment_error(pred_act: np.ndarray, step_ms: float, tempo_bpm: float)
     if tempo_bpm <= 0:
         return float("nan")
     grid = 60.0 / tempo_bpm / 4.0     # 16th notes
-    times = np.concatenate([peak_pick(pred_act[:, c], step_ms) for c in range(pred_act.shape[1])]) \
+    times = np.concatenate([peak_pick(pred_act[:, c], step_ms, threshold)
+                            for c in range(pred_act.shape[1])]) \
         if pred_act.shape[1] else np.array([])
     if len(times) == 0:
         return float("nan")
@@ -138,7 +140,8 @@ def swing_ratio(onsets_s: np.ndarray, tempo_bpm: float) -> float:
 
 
 def groove_similarity(pred_act: np.ndarray, ref_act: np.ndarray, step_ms: float,
-                      tempo_bpm: float, subdivisions: int = 16) -> float:
+                      tempo_bpm: float, subdivisions: int = 16,
+                      threshold: float = 0.3) -> float:
     """Cosine similarity of the two rhythms folded onto one bar.
 
     This is the standard groove-similarity construction: bin onsets by metric
@@ -157,7 +160,10 @@ def groove_similarity(pred_act: np.ndarray, ref_act: np.ndarray, step_ms: float,
                 v[int((t % bar) / bar * subdivisions) % subdivisions, c] += 1.0
         return v.ravel()
 
-    a, b = fold(pred_act, 0.3), fold(ref_act, 0.5)
+    # Only the prediction side moves. The reference is ground truth, so its
+    # 0.5 is not an operating point to be chosen -- shifting it would change
+    # what the model is being compared against.
+    a, b = fold(pred_act, threshold), fold(ref_act, 0.5)
     na, nb = np.linalg.norm(a), np.linalg.norm(b)
     if na == 0 or nb == 0:
         return 0.0
