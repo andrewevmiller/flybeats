@@ -299,7 +299,8 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
     step_ms = cfg["audio"]["step_ms"]
     tol = cfg["eval"].get("tolerance_s", 0.05)
     fixed = cfg["eval"].get("threshold", 0.3)
-    sweep = cfg["eval"].get("threshold_sweep", [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6])
+    sweep = cfg["eval"].get("threshold_sweep",
+                            [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9])
     if fixed not in sweep:
         sweep = sorted(sweep + [fixed])
 
@@ -378,6 +379,15 @@ def evaluate(model, loader, cfg, device, use_genre: bool = True) -> dict:
         "velocity_r_pooled": vel_r_pooled,
         "onset_f_fixed": means[fixed],
         "best_threshold": best_t,
+        # The whole sweep, not just its argmax. Reporting only the max hides
+        # how much of a score is the model and how much is the selection: in
+        # the B=4 pilot the real arm gained 0.008 from being scored at its own
+        # best threshold while a rewired draw gained 0.128 -- larger than the
+        # gap between the arms, so the ranking was decided by the selection
+        # rather than by the topology. Keeping the curve makes that visible,
+        # and lets a common operating point be chosen after the fact without
+        # re-running. String keys because this is serialised to JSON.
+        "onset_f_curve": {f"{t:g}": means[t] for t in sorted(means)},
         "beat_align_ms": float(np.mean(ba_all)) if ba_all else float("nan"),
         "groove_sim": float(np.mean(gs_all)) if gs_all else float("nan"),
         "mean_dev_ms": float(np.mean(dev_all)) if dev_all else float("nan"),

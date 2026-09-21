@@ -137,4 +137,7 @@ eval:
   threshold: 0.3        # reported as onset_f_fixed, for continuity
   # Headline onset F uses the best of these per model. A single fixed threshold
   # scores output scale as much as timing, which is unfair across Phase 4 arms.
-  threshold_sweep: [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6]
+  # Runs above 0.6 because the B=4 spread pilot put two of three rewired draws
+  # at 0.6 -- the old top of the grid -- so their argmax was not bracketed and
+  # the reported F was a truncated maximum, not a peak.
+  threshold_sweep: [0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]

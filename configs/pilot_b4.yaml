@@ -1,0 +1,34 @@
+# Stage 2 pilot -- the go/no-go before the Phase 4 campaign is funded.
+#
+# Not a campaign config. Short runs whose only job is to answer three
+# questions before ~31-53 h of GPU is committed (see
+# results/local/2026-09-15-throughput.md for where those hours come from):
+#
+#   1. Does training clear the frozen-core ceiling at all? The linear probe
+#      caps an untrained core at ~0.20 onset F and README's trained models
+#      reach ~0.30. If a pilot does not move off ~0.20, the campaign produces
+#      a flat table whatever the topology does.
+#   2. What is the seed-to-seed spread of trained val F? Nobody has this
+#      number, and the arm comparison is meaningless without it -- the probe
+#      work found the between-arm effect sitting *under* the measurement
+#      noise, so assume nothing here either.
+#   3. Does the real/rewired gap show any sign of opening?
+#
+# batch_size 4, deliberately, against the shipped 16. Question 1 is entangled
+# with the batch-size decision the throughput note left open: 5 epochs at
+# B=16 is 260 optimiser steps, against 1,055 at B=4. A B=16 pilot that failed
+# to clear 0.20 could not distinguish "training does not help" from "260 steps
+# is not enough", and log_gain -- 97% of the trainable parameters -- was
+# already measured moving only ~0.15% of its median magnitude per step. B=4
+# maximises optimiser steps per epoch and is the conservative choice for the
+# question that gates the rest.
+#
+# Each arm still runs at its own spectral radius, inherited from the
+# by-arm map in v1_8piece.yaml (real 5.0, rewired 0.5).
+_base_: v1_8piece.yaml
+
+name: pilot_b4
+
+train:
+  batch_size: 4
+  epochs: 5
