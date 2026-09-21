@@ -34,7 +34,7 @@ These are the ones to write first, and all four are cheap.
 
 > **All four landed on 21 September** (`tests/test_ablations.py`,
 > `tests/test_config.py`, `tests/test_evaluate.py`), taking the suite from 137
-> CPU tests to 187. The sections below are kept as the reasoning, not as a
+> CPU tests to 192. The sections below are kept as the reasoning, not as a
 > to-do list; each now ends with what writing it found. Two of them found
 > something. See
 > [results/local/2026-09-21-tier1-and-the-broken-venv.md](results/local/2026-09-21-tier1-and-the-broken-venv.md).

@@ -147,7 +147,7 @@ session there.
 | T3.3 | A small `.fb` fixture built from `subgraph_2k` | 25k–40k | Gives the play-path test something to run without training |
 
 **Gate total: ~50k–80k remaining.** Tier 1 is done — 137 CPU tests before it,
-187 after — and it paid for itself on the first one. See
+192 after — and it paid for itself on the first one. See
 [results/local/2026-09-21-tier1-and-the-broken-venv.md](results/local/2026-09-21-tier1-and-the-broken-venv.md),
 which also records a Phase D confound found in passing: the `gru` and
 `shortcut` arms discard the genre tonic entirely, so they differ from the real

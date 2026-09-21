@@ -101,7 +101,7 @@ would put every hit at the wrong moment instead of failing.
 | T1.3 | `train.evaluate`: perfect copy 1.0, silence 0.0, headline = curve argmax, curve = independent sweep, clips averaged not pooled, per-class velocity r | held |
 | T1.4 | same seed rebuilds an arm; an arm moves with the seed **iff** it is in `STOCHASTIC_ARMS`; a null draw cannot reach the real arm | held |
 
-Suite: **137 CPU tests before, 187 after** (4 GPU tests deselected, not run).
+Suite: **137 CPU tests before, 192 after** (4 GPU tests deselected, not run).
 
 T1.2's resolution table is the durable half. `v1_8piece.yaml` sets
 `device: auto`, `device_of` resolves that to CUDA wherever a card is visible,
@@ -173,4 +173,4 @@ and `site-packages` does not.
 §8.1 of the 16 September note or on §4 above. Both are recommendations
 awaiting one.
 
-`pytest -q -m "not gpu"` in `.venv`: **187 passed, 4 deselected**.
+`pytest -q -m "not gpu"` in `.venv`: **192 passed, 4 deselected**.
