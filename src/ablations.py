@@ -326,9 +326,13 @@ def main(argv=None) -> int:
     ap.add_argument("--epochs", type=int, default=None)
     ap.add_argument("--out", type=Path, default=None)
     ap.add_argument("--seeds", type=int, default=1,
-                    help="repeats per arm. rewired and sign_shuffled each draw one random "
-                         "topology, so a single run cannot separate 'random is worse' from "
-                         "'this draw was unlucky'. 3-5 gives a usable spread")
+                    help="null topology draws per stochastic arm -- NOT seed-to-seed "
+                         "spread. The init seed and the loader are pinned to base_seed "
+                         "for every rep, so only the draw varies, and the deterministic "
+                         "arms get one run each. A single draw cannot separate 'random "
+                         "is worse' from 'this draw was unlucky'; and with B draws the "
+                         "smallest one-sided rank p is 1/(B+1), so B=3 floors at p=0.25 "
+                         "and p<=0.05 needs B>=19")
     ap.add_argument("--lesion", action="store_true",
                     help="after training the real arm, sweep lesions over confirmed populations")
     ap.add_argument("--smoke", action="store_true")

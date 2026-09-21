@@ -8,10 +8,24 @@
 #      caps an untrained core at ~0.20 onset F and README's trained models
 #      reach ~0.30. If a pilot does not move off ~0.20, the campaign produces
 #      a flat table whatever the topology does.
-#   2. What is the seed-to-seed spread of trained val F? Nobody has this
+#   2. What is the *topology-draw* spread of trained val F? Nobody has this
 #      number, and the arm comparison is meaningless without it -- the probe
 #      work found the between-arm effect sitting *under* the measurement
 #      noise, so assume nothing here either.
+#
+#      Not seed-to-seed spread, which is what this line used to say.
+#      `ablations.py` pins `torch.manual_seed(base_seed)` and resets the
+#      loader to `base_seed` before every rep, and passes `base_seed + rep`
+#      only to `build_arm`. So `--seeds 3` varies the topology draw and
+#      nothing else: it is one observed topology against N draws from the
+#      null, which is the right design for this question and was simply
+#      mislabelled. Two consequences. The real arm has a deterministic
+#      topology and `n_reps` 1, so it gets no error bar of this kind at all.
+#      And with B null draws the smallest achievable one-sided rank p-value
+#      is 1/(B+1) -- at B=3 that floor is 0.25, so no separation measured
+#      here can be significant at any conventional threshold. Reaching
+#      p <= 0.05 needs B >= 19. See
+#      results/local/2026-09-16-threshold-response.md sections 2 and 7.
 #   3. Does the real/rewired gap show any sign of opening?
 #
 # batch_size 4, deliberately, against the shipped 16. Question 1 is entangled
