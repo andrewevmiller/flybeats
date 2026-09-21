@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
+import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
@@ -201,8 +202,6 @@ def _arm_fixture():
     ``device: auto``, which resolves to CUDA wherever a card exists, and a test
     that silently changes device between machines is not testing one thing.
     """
-    import torch
-
     from build import get_subgraph, load_config
 
     from conftest import use_small_graph
@@ -230,8 +229,6 @@ def test_every_arm_builds_forward_passes_and_backprops(arm):
 
     Phase D is a GPU day. A broken arm fails after the money is spent.
     """
-    import torch
-
     from ablations import build_arm
 
     cfg, sg, wav = _arm_fixture()
@@ -264,8 +261,6 @@ def test_every_arm_honours_the_speed_dial(arm):
     that accepted the argument and ignored it would not fail -- it would place
     every hit at the wrong moment, which is worse.
     """
-    import torch
-
     from ablations import build_arm
 
     cfg, sg, wav = _arm_fixture()
@@ -289,3 +284,78 @@ def test_every_arm_honours_the_speed_dial(arm):
         model(wav, substeps=0)
     with pytest.raises(ValueError):
         model(wav, substeps=[1] * (frames + 3))
+
+
+# --- seed discipline (TEST_PLAN T1.4) --------------------------------------
+
+def _weights(model):
+    return {k: v.detach().clone() for k, v in model.state_dict().items()}
+
+
+def _same(a, b):
+    return a.keys() == b.keys() and all(torch.equal(a[k], b[k]) for k in a)
+
+
+def _build(arm, cfg, sg, seed):
+    """One arm, from a fixed initialisation RNG. Only ``seed`` varies.
+
+    ``ablations.main`` does exactly this -- ``torch.manual_seed(base_seed)``
+    before every rep, with ``seed = base_seed + rep`` going to ``build_arm`` --
+    so the repeats vary the topology draw and nothing else.
+    """
+    from ablations import build_arm
+
+    torch.manual_seed(0)
+    np.random.seed(0)
+    model, _ = build_arm(arm, cfg, sg, n_styles=3, seed=seed)
+    return _weights(model)
+
+
+@pytest.mark.parametrize("arm", ARMS)
+def test_one_seed_rebuilds_the_same_arm(arm):
+    cfg, sg, _ = _arm_fixture()
+    assert _same(_build(arm, cfg, sg, 0), _build(arm, cfg, sg, 0)), \
+        f"{arm} is not reproducible under its own seed"
+
+
+@pytest.mark.parametrize("arm", ARMS)
+def test_only_a_stochastic_arm_moves_with_the_seed(arm):
+    """`STOCHASTIC_ARMS` exists; nothing checked that the distinction holds.
+
+    It decides how many repeats each arm gets (`n_reps = seeds if arm in
+    STOCHASTIC_ARMS else 1`), so an arm wrongly outside it would be run once
+    and quoted without an error bar, and one wrongly inside it would spend
+    four extra GPU runs re-measuring optimiser noise.
+    """
+    from ablations import STOCHASTIC_ARMS
+
+    cfg, sg, _ = _arm_fixture()
+    moved = not _same(_build(arm, cfg, sg, 0), _build(arm, cfg, sg, 1))
+    assert moved == (arm in STOCHASTIC_ARMS), (
+        f"{arm} {'moved with' if moved else 'ignored'} the seed, "
+        f"but is {'in' if arm in STOCHASTIC_ARMS else 'not in'} STOCHASTIC_ARMS")
+
+
+def test_a_stochastic_arms_seed_cannot_reach_the_real_arm():
+    """Phase D's claim is one observed topology against N draws from a null.
+
+    Every arm is built from one shared `SubGraph`, so a rewiring that wrote
+    through it would change the real arm's graph too -- and the comparison
+    would be against a control that had already contaminated its own baseline.
+    """
+    from ablations import degree_matched_rewire, shuffle_signs
+
+    cfg, sg, _ = _arm_fixture()
+    before = _build("real", cfg, sg, 0)
+    edges, signs = sg.edge_index.copy(), sg.edge_sign.copy()
+
+    for seed in range(3):
+        _build("rewired", cfg, sg, seed)
+        _build("sign_shuffled", cfg, sg, seed)
+        degree_matched_rewire(sg, seed)
+        shuffle_signs(sg, seed)
+
+    assert np.array_equal(sg.edge_index, edges), "the shared subgraph was rewired in place"
+    assert np.array_equal(sg.edge_sign, signs), "the shared subgraph's signs were shuffled in place"
+    assert _same(before, _build("real", cfg, sg, 0)), \
+        "the real arm changed after the null arms were drawn"
