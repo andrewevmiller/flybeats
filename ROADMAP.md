@@ -91,6 +91,14 @@ checkpoint before its sampling was seeded, and a pooled correlation reported
 process and the oversubscribed threads spin rather than progress — one epoch
 went from 76 s to 1,415 s. Sequential, or set `OMP_NUM_THREADS`.
 
+**A′2 and A′3 are one command, and it is queued rather than started by hand:**
+`scripts/run_velocity_queue.ps1` on Windows, `run_velocity_queue.sh` on Linux.
+It waits out anything already training, trains and probes each arm in turn, and
+refuses to start if the venv cannot import torch or if any arm resolves to a
+device other than CPU — A′1's intervals were measured on CPU, and an arm
+measured elsewhere is not a comparison. **Budget ~4 h per arm on the local
+machine**, not the 100 min above: that estimate came off cloud cores.
+
 ---
 
 ## Phase B′ — the full-corpus run

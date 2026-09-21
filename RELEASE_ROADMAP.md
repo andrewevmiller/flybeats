@@ -139,15 +139,19 @@ session there.
 
 | | Test | Tokens | Why here |
 |---|---|---|---|
-| T1.1 | Every arm in `ARMS` builds and forward-passes, parametrized | 40k–60k | This failure has a precedent: two arms once could not forward-pass after a `model.py` signature moved, and no test existed. CI was the response but still does not build an arm |
-| T1.2 | `deep_merge` plus a resolution table per shipped config | 30k–45k | `device: auto` and `bf16: true` reach every `*_cpu.yaml` unseen. A test that asserts resolved values makes the inherited surface visible |
-| T1.3 | `train.evaluate` against known activations | 35k–50k | Produces every onset F and threshold the project quotes |
-| T1.4 | Seed determinism across arms; a stochastic arm's seed must not move the real arm's graph | 30k–45k | Phase D's claim is a five-seed comparison |
+| ~~T1.1~~ | ~~Every arm in `ARMS` builds and forward-passes, parametrized~~ | **landed 21 Sep** | And it caught the thing it was written for, live: `substeps` had reached `ConnectomeRNN` and `FlyBeats` but not `GRUCore`/`ShortcutCore`, so both raised `TypeError` on every call through `FlyBeats.forward`. Same failure as the precedent, different keyword |
+| ~~T1.2~~ | ~~`deep_merge` plus a resolution table per shipped config~~ | **landed 21 Sep** | The `_cpu` family was resolving to `device: auto`. Pinned at the root of the family; the table now covers all ten configs and a config with no row fails |
+| ~~T1.3~~ | ~~`train.evaluate` against known activations~~ | **landed 21 Sep** | Held |
+| ~~T1.4~~ | ~~Seed determinism across arms~~ | **landed 21 Sep** | Held, including the one worth pinning: an arm moves with the seed iff it is in `STOCHASTIC_ARMS` |
 | T3.2 | Argument-surface smoke tests for every entry point | 25k–40k | **Land before R0.1b.** Cheapest possible refactor insurance |
 | T3.3 | A small `.fb` fixture built from `subgraph_2k` | 25k–40k | Gives the play-path test something to run without training |
 
-**Gate total: ~185k–280k.** Tier 1 before any GPU time is the single highest-value
-block on this page.
+**Gate total: ~50k–80k remaining.** Tier 1 is done — 137 CPU tests before it,
+187 after — and it paid for itself on the first one. See
+[results/local/2026-09-21-tier1-and-the-broken-venv.md](results/local/2026-09-21-tier1-and-the-broken-venv.md),
+which also records a Phase D confound found in passing: the `gru` and
+`shortcut` arms discard the genre tonic entirely, so they differ from the real
+arm in two ways rather than one. That needs a decision, not a commit.
 
 **R0 done when** someone goes from a package manager to a wav of drums, the only
 document they needed fits on one screen, and the suite proves every ablation arm
