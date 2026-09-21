@@ -150,9 +150,77 @@ def check_git(pull: bool) -> None:
                  (out.stdout or out.stderr).strip() else "")
 
 
+def abi_mismatch(venv: Path, py: Path) -> str:
+    """Does the interpreter in this venv still match the packages inside it?
+
+    A venv is a launcher plus a `pyvenv.cfg` pointing at a base interpreter,
+    and `python -m venv` over an existing directory rewrites both while
+    leaving `site-packages` untouched. So a second Python on the machine --
+    a new release, an IDE creating an environment, a stray `py -m venv` --
+    can repoint the venv at itself and leave every compiled wheel in it built
+    for the old ABI.
+
+    That happened here on 16 September: `.venv` was rebuilt with 3.14 over a
+    3.12 site-packages, and every run afterwards died at `import torch` with
+    "PyTorch has loaded the torch/_C folder of the PyTorch repository", which
+    names neither Python nor the version. The DLLs were all present and
+    hash-correct; the interpreter simply could not load a `cp312` extension.
+
+    Returns a description of the mismatch, or "" when the venv is coherent.
+    """
+    out = run([py, "-c", "import sys, sysconfig; "
+                         "print(f'{sys.version_info[0]}.{sys.version_info[1]}'); "
+                         "print(sysconfig.get_path('purelib'))"])
+    if out.returncode != 0:
+        return f"the interpreter in {venv} does not run: {(out.stderr or out.stdout).strip()[:200]}"
+    lines = out.stdout.strip().splitlines()
+    running, site = lines[0], Path(lines[-1])
+    if not site.is_dir():
+        return ""
+
+    return describe_abi_mismatch(venv, running, abi_tags(site))
+
+
+def abi_tags(site: Path) -> set[str]:
+    """Python versions the compiled extensions in ``site`` were built for.
+
+    Extensions carry their ABI in the filename -- ``_C.cp312-win_amd64.pyd``,
+    ``_speedups.cpython-312-x86_64-linux-gnu.so``. One level down covers both
+    top-level modules and each package's own extensions, which is where torch
+    keeps its. Pure-Python packages contribute nothing and are not evidence
+    either way.
+    """
+    tags: set[str] = set()
+    for pat in ("*.pyd", "*.so", "*/*.pyd", "*/*.so"):
+        for f in site.glob(pat):
+            for part in f.name.split("."):
+                if part.startswith(("cp3", "cpython-3")):
+                    digits = part.split("-")[0].replace("cpython-", "").replace("cp", "")
+                    if digits.isdigit() and len(digits) >= 2:
+                        tags.add(f"{digits[0]}.{digits[1:]}")
+    return tags
+
+
+def describe_abi_mismatch(venv: Path, running: str, tags: set[str]) -> str:
+    """The message, given what the venv runs and what is installed in it."""
+    if not tags or running in tags:
+        return ""
+    want = sorted(tags)[0]
+    return (f"the venv runs Python {running} but its packages were built for "
+            f"{', '.join(sorted(tags))}. `python -m venv` over an existing "
+            f"directory repoints the launcher and leaves site-packages alone. "
+            f"Rebuild it with the matching interpreter: "
+            f"`<python{want}> -m venv {venv}` (site-packages survives), "
+            f"or delete {venv} and start over.")
+
+
 def ensure_venv(venv: Path, check_only: bool) -> Path | None:
     py = venv_python(venv)
     if py.exists():
+        bad = abi_mismatch(venv, py)
+        if bad:
+            step("venv", False, bad)
+            return None
         step("venv", True, f"reusing {venv}")
         return py
     if check_only:
