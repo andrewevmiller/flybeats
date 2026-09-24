@@ -408,6 +408,10 @@ def load_checkpoint(path: Path, device: torch.device):
 
     ck = torch.load(path, map_location=device, weights_only=False)
     cfg = ck["config"]
+    # As load_bundle does: play at the threshold the eval sweep chose, not the
+    # config's fixed one. An explicit --threshold still wins in drummer_for.
+    if ck.get("best_threshold") is not None:
+        cfg.setdefault("eval", {})["threshold"] = float(ck["best_threshold"])
     sg = get_subgraph(cfg)
     model, kit = build_model(cfg, sg, n_styles=max(int(ck.get("n_styles", 1) or 1), 1))
     model.load_state_dict(ck["model"])
