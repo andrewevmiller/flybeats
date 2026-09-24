@@ -32,6 +32,7 @@ import torch
 import torch.nn as nn
 
 from model import substep_schedule
+from progress import describe, estimate
 from subgraph import SubGraph
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -408,11 +409,14 @@ def main(argv=None) -> int:
             print(f"\n=== {tag} === params {n_par:,} | "
                   f"core {type(model.rnn).__name__}{rho}")
 
+            curve = []
             for ep in range(cfg["train"].get("epochs", 10)):
                 tr = train_mod.run_epoch(model, train_loader, opt, cfg, device, train=True)
                 ev = train_mod.evaluate(model, val_loader, cfg, device)
+                curve.append(ev["onset_f"])
                 print(f"  ep{ep:>3} loss {tr['loss']:.4f} | onset_F {ev['onset_f']:.4f} "
                       f"@thr {ev['best_threshold']:.2f} | groove {ev['groove_sim']:.3f}")
+            print("  " + describe(estimate(curve)))
 
             ev = train_mod.evaluate(model, val_loader, cfg, device)
             runs.append(ev)

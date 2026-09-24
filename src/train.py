@@ -31,6 +31,7 @@ from build import build_model, device_of, get_subgraph, load_config
 from dataset import build_dataset
 from metrics import (beat_alignment_error, groove_similarity, onset_f_measure,
                      onset_f_sweep)
+from progress import describe, estimate
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -569,9 +570,11 @@ def main(argv=None) -> int:
             stop.unlink()
             print(f"stopped after epoch {ep + 1} of {n_epochs} on request ({stop.name} file); "
                   f"continue with --resume")
+            print(describe(estimate([r["onset_f"] for r in history])))
             return 0
 
     print(f"best val onset F: {best:.4f} -> {out}")
+    print(describe(estimate([r["onset_f"] for r in history])))
     if (best >= 0.0 and model.decoder.has_velocity
             and cfg["train"].get("refit_velocity_head", True)):
         refit_best(model, out, train_loader, cfg)
