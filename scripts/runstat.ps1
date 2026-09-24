@@ -135,6 +135,7 @@ function Show-Queue {
     $alive = $false
     if (Test-Path $lock) { $alive = [bool](Get-Process -Id ([int](Get-Content $lock -Raw)) -ErrorAction SilentlyContinue) }
     $state = if ($text -match 'queue done') { "FINISHED" }
+             elseif (-not $alive -and $last -match 'queue paused') { "PAUSED -- run the queue again to resume from last.pt" }
              elseif (-not $alive) { "STOPPED -- no queue process holds the lock; see $($plan.out)\queue.log" }
              elseif ($last -match 'holding until (.+)$') { "holding until $($Matches[1])" }
              else { "running" }

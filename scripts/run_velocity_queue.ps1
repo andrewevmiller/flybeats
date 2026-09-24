@@ -201,10 +201,24 @@ try {
             Wait-ForIdle
             Say "training $cfg"
             $log = Join-Path $Q "$cfg.log"
-            $rc = Invoke-Py $log @("-u", "src\train.py", "--config", "configs\$cfg.yaml")
-            $best = (Select-String -Path $log -Pattern 'best val onset F: ([0-9.]+)' |
-                     Select-Object -Last 1).Matches.Groups[1].Value
+            # --resume: an arm cut short -- by a STOP file, a crash or a restart
+            # -- carries on from runs\<arm>\last.pt instead of starting over,
+            # and matches the run that was never interrupted (test_resume.py).
+            $rc = Invoke-Py $log @("-u", "src\train.py", "--config", "configs\$cfg.yaml", "--resume")
+            # No such line when the run stopped early or crashed; indexing the
+            # missing match threw and took the whole queue down with it.
+            $hit = Select-String -Path $log -Pattern 'best val onset F: ([0-9.]+)' | Select-Object -Last 1
+            $best = if ($hit) { $hit.Matches[0].Groups[1].Value } else { "none yet" }
             Say ("{0} exit {1} (best val onset F: {2})" -f $cfg, $rc, $best)
+            # An arm that did not finish is not probed or marked done: its
+            # best.pt is a partial run, and probing it would put a half-trained
+            # model into SUMMARY under the finished arm's name.
+            if (-not (Test-RunComplete $cfg)) {
+                $done = @((Get-Content (Join-Path $Repo "runs\$cfg\history.json") -Raw -ErrorAction SilentlyContinue | ConvertFrom-Json)).Count
+                Say ("{0} stopped after {1} of {2} epochs; runs\{0}\last.pt holds its place" -f $cfg, $done, $Epochs[$cfg])
+                Say "queue paused -- run this queue again to resume"
+                return
+            }
         }
         Invoke-Probe $cfg
         Set-Content -Path (Join-Path $Q "DONE_$cfg") -Value (Get-Date -Format s) -Encoding ascii
