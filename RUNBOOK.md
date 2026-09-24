@@ -271,6 +271,35 @@ Cost on CPU is 15–20 min/epoch, 3–4 h for 12 — an extrapolation from Phase
 runs, not a measurement. On a GPU, time the first epoch and scale from that;
 do not trust any projection in this repository for your hardware.
 
+### Splitting a long run, or surviving a restart
+
+A run does not have to happen in one sitting. After every epoch `train.py`
+writes **`last.pt`** beside `best.pt`: the weights, AdamW's state, the history
+so far, and every random stream including the loader's shuffle order.
+`--resume` carries on from it, and the result is **bit-identical** to a run
+that was never stopped (`tests/test_resume.py` checks exactly that).
+
+To stop cleanly, create a `STOP` file in the run's directory. The run finishes
+the epoch it is on, saves, and exits; the file is consumed, so it cannot stop
+the resume too:
+
+```bash
+touch runs/v1_8piece/STOP          # PowerShell: New-Item runs\v1_8piece\STOP
+python src/train.py --config configs/v1_8piece.yaml --resume
+```
+
+`--resume` with no `last.pt` simply starts fresh, so it is safe to always pass.
+A shutdown, a crash or a Windows Update restart loses at most the epoch in
+progress: rerun the same command with `--resume`. It refuses a `last.pt`
+written under a different config — including a different `device` — because
+that would be neither run. The one exception is `train.epochs`: raise it and
+resume to extend a finished run.
+
+The Phase A′ queue (`scripts/run_velocity_queue.ps1`) always passes `--resume`.
+An arm that ends short is not probed or marked done; the queue logs `queue
+paused` and exits, `runstat.ps1` shows **PAUSED**, and running the same queue
+command again picks it up.
+
 Note this config is the **30k-node tier, which has never been trained at any
 size**. Every run so far was at 10k. If it will not fit, `configs/v1_8piece_cpu.yaml`
 is the 10k version — raise `data.max_files` (or remove it) to use the whole
@@ -355,4 +384,6 @@ whether the project is usable, and it needs a trained model and about an hour.
 | bf16 errors or looks wrong | `torch.cuda.is_bf16_supported()` is False on older cards. Set `train.bf16: false`; it is a speed option, not a correctness one. |
 | Live path misses the 20 ms budget | Threads, nearly always. `OMP_NUM_THREADS=1` first, `--speed` second. Offline `--render` has no budget and is unaffected. |
 | An epoch is 20× slower than expected | Two jobs on one box, or thread oversubscription. Never run two. |
+| The machine restarted mid-run | Rerun the same command with `--resume` (or rerun the queue); it continues from the last finished epoch. Check the Windows System log for event 1074 to see what restarted it. |
+| `--resume` says "different config" | The `last.pt` in that run directory came from other settings. Resume under the original config, or move `last.pt` aside to start over. |
 | A metric moved and nothing else did | Check the seed before the science. `train.seed` now pins batch order, training windows and calibration; validation windows are fixed regardless. |
