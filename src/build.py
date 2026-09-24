@@ -141,6 +141,7 @@ def build_model(cfg: dict, sg: SubGraph, n_styles: int = 1, verified: dict | Non
         motor_side=sg.side[motor], bilateral=cfg["kit"].get("bilateral", False),
         velocity_head=cfg["kit"].get("velocity_head", True),
         velocity_activation=cfg["kit"].get("velocity_activation", "sigmoid"),
+        standardize_motor=cfg["kit"].get("standardize_motor", False),
     )
 
     genre = None

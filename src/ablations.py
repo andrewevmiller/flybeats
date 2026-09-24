@@ -385,6 +385,10 @@ def main(argv=None) -> int:
             # fixed DSP and the audio, and it is deterministic, so the arms
             # differ in the recurrent core and nothing else.
             train_mod.calibrate_encoder(model, train_loader.dataset, cfg, device)
+            # The motor standardisation, by contrast, is per arm: it is
+            # measured on each arm's own untrained core. A no-op unless
+            # kit.standardize_motor is set.
+            train_mod.calibrate_decoder(model, train_loader.dataset, cfg, device)
             # weight_decay explicitly, because AdamW's default is 0.01 and
             # train.py passes 0.0: without this the arms trained with decoupled
             # decay on log_gain while the headline run did not, breaking the

@@ -256,8 +256,16 @@ download.)
 ```bash
 python src/train.py --config configs/v1_8piece.yaml
 python scripts/diagnose.py --checkpoint runs/v1_8piece/best.pt
-python scripts/export_bundle.py --checkpoint runs/v1_8piece/best.pt
+python scripts/export_bundle.py --checkpoint runs/v1_8piece/best_refit.pt
 ```
+
+Since 24 September, `train.py` finishes by writing **`best_refit.pt`** beside
+`best.pt`: the same network with its velocity head solved in closed form on
+the train split (`src/refit.py`), because the SGD head does not converge in a
+run this length. `best.pt` stays exactly as trained. Bundle, play and
+velocity-probe `best_refit.pt`; timing is identical in both. Turn the step off
+with `train.refit_velocity_head: false`. For older checkpoints, run
+`python scripts/refit_velocity_head.py --checkpoint <best.pt> --out <best_refit.pt>`.
 
 Cost on CPU is 15–20 min/epoch, 3–4 h for 12 — an extrapolation from Phase A′
 runs, not a measurement. On a GPU, time the first epoch and scale from that;

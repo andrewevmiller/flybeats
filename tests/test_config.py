@@ -86,6 +86,7 @@ RESOLVED = {
     "velocity_w5_cpu.yaml":   ("cpu",  "auto", 10000,     5,          256),
     "velocity_lin_cpu.yaml":  ("cpu",  "auto", 10000,     5,          256),
     "velocity_peak_cpu.yaml": ("cpu",  "auto", 10000,     5,          256),
+    "velocity_std_cpu.yaml":  ("cpu",  "auto", 10000,     5,          256),
 }
 
 

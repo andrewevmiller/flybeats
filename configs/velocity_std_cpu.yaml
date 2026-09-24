@@ -1,0 +1,16 @@
+# Phase A' follow-up: standardise the motor rates before the readouts.
+#
+# On every A' checkpoint the velocity head ended within a cosine of 0.99 of its
+# initialisation, yet a least-squares fit of the same head on the same motor
+# features read snare, tom_low and tom_mid at r +0.30 to +0.39 on validation.
+# The rates at hits are a large shared level (summed mean^2 ~65x the summed
+# variance) with the dynamics in the wobble, which is the shape SGD crawls on.
+# This fixes a per-unit affine on the untrained network, the way the encoder's
+# features already are, so both readouts learn in centred, unit-scale
+# coordinates. Still one linear layer each. Everything else is the baseline, so
+# the affine is the only variable -- compare against velocity_probe_cpu (seed 0)
+# and velocity_probe_s1_cpu (seed 1).
+_base_: velocity_probe_cpu.yaml
+name: velocity_std_cpu
+kit:
+  standardize_motor: true

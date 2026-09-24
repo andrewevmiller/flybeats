@@ -156,6 +156,44 @@ def calibrate_encoder(model, dataset, cfg, device, n_clips: int = 16) -> dict:
     return model.encoder.calibrate(wavs)
 
 
+@torch.no_grad()
+def calibrate_decoder(model, dataset, cfg, device, n_clips: int = 16) -> dict:
+    """Measure the decoder's motor standardisation on the untrained network.
+
+    The same seeded clips as :func:`calibrate_encoder`, run through the
+    calibrated encoder and the untrained core, so it must be called after the
+    encoder is calibrated and before the first optimiser step. A no-op unless
+    ``kit.standardize_motor`` is set. Each model calibrates against its own
+    initial activity, as the rate ceiling does, because an ablation arm with a
+    different core has a different motor operating point.
+    """
+    if not getattr(model.decoder, "standardize_motor", False):
+        return {"calibrated": False}
+    seed = int(cfg["train"].get("seed", 0))
+    np_state, torch_state = np.random.get_state(), torch.random.get_rng_state()
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    try:
+        items = [dataset[i] for i in range(min(n_clips, len(dataset)))]
+    finally:
+        np.random.set_state(np_state)
+        torch.random.set_rng_state(torch_state)
+    was_training = model.training
+    model.eval()
+    try:
+        rates = []
+        for item in items:
+            wav = torch.as_tensor(item[0]).unsqueeze(0).to(device)
+            style = torch.as_tensor(item[3]).reshape(1).to(device)
+            drive = model.encoder(wav)
+            tonic = model.genre(style) if model.genre is not None else None
+            full, _ = model.rnn(drive, tonic=tonic, return_all=True)
+            rates.append(full[:, :, model.rnn.motor_idx])
+    finally:
+        model.train(was_training)
+    return model.decoder.calibrate(rates)
+
+
 def resolve_bf16(setting, device) -> bool:
     """Resolve ``train.bf16`` -- ``true``, ``false``, or ``auto`` -- for a device.
 
@@ -480,6 +518,9 @@ def main(argv=None) -> int:
     # first step and saved with the weights.
     stats = calibrate_encoder(model, train_loader.dataset, cfg, device)
     print(f"encoder calibration: {stats}")
+    dstats = calibrate_decoder(model, train_loader.dataset, cfg, device)
+    if dstats.get("calibrated"):
+        print(f"decoder calibration: {dstats}")
 
     opt = torch.optim.AdamW(
         [p for p in model.parameters() if p.requires_grad],
@@ -520,7 +561,42 @@ def main(argv=None) -> int:
         (out / "history.json").write_text(json.dumps(history, indent=2))
 
     print(f"best val onset F: {best:.4f} -> {out}")
+    if (best >= 0.0 and model.decoder.has_velocity
+            and cfg["train"].get("refit_velocity_head", True)):
+        refit_best(model, out, train_loader, cfg)
     return 0
+
+
+def refit_best(model, out: Path, loader, cfg) -> dict:
+    """Write ``best_refit.pt``: ``best.pt`` with its velocity head solved in closed form.
+
+    The SGD head does not converge in a run of this length -- it ends within a
+    cosine of 0.99 of its initialisation -- while a closed-form fit of the same
+    head on the same frozen network gets classes confidently right that the
+    trained head could not (see ``src/refit.py``). So every run with a velocity
+    head gets both. ``best.pt`` is left exactly as trained, so every earlier
+    comparison and every tool that reads it means what it always did;
+    ``best_refit.pt`` is the one to probe, bundle and play. Only the train
+    split is used, and ``train.refit_velocity_head: false`` turns this off.
+    """
+    from refit import refit_velocity_head
+
+    device = next(model.parameters()).device
+    ck = torch.load(out / "best.pt", map_location=device, weights_only=False)
+    model.load_state_dict(ck["model"])
+    seed = int(cfg["train"].get("seed", 0))
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    t0 = time.time()
+    report = refit_velocity_head(model, loader)
+    ck["model"] = model.state_dict()
+    ck["refit"] = {"source": "best.pt", **report, "seconds": round(time.time() - t0, 1),
+                   "when": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    torch.save(ck, out / "best_refit.pt")
+    fitted = {k: v["train_r"] for k, v in report["classes"].items() if v["refit"]}
+    print(f"velocity head refit on {report['clips']} train clips "
+          f"({ck['refit']['seconds']}s), train r {fitted} -> {out / 'best_refit.pt'}")
+    return report
 
 
 if __name__ == "__main__":
