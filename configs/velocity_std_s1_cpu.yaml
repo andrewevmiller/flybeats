@@ -1,0 +1,14 @@
+# velocity_std_cpu with a second seed. The seed-0 run was the day's best
+# result by a margin -- the trained velocity head got snare and both toms
+# right on its own, and onset F rose to 0.3207 against the baseline's 0.2834 --
+# but on 24 Sep the trained heads' verdicts were shown to swing with the
+# initialisation, so one seed is not enough to build Phase B' on.
+#
+# window_seed is pinned to 0 as in the other *_s1 configs: it fixes the
+# validation windows, which would otherwise follow train.seed.
+_base_: velocity_std_cpu.yaml
+name: velocity_std_s1_cpu
+data:
+  window_seed: 0
+train:
+  seed: 1
