@@ -14,10 +14,14 @@ a measurement nobody can find again is not a measurement.
 machine turned out to be, what its card can and cannot do, what the report
 below actually says, and what is still unverified.
 
-`handoff-2026-09-21.md` is where to start. It is the current briefing for
-whoever picks the project up next: the two decisions that should be taken
-before anything expensive runs, what is done, what is ready to run and has
-not been, and the traps specific to this machine.
+Start at `handoff-2026-09-24.md`, a briefing whose log is `log-2026-09-24.md`. Before it, `handoff-2026-09-23.md` covered: the overnight Phase A′ queue
+(four velocity arms on CPU) and its results, the four bugs that would have
+stopped the queue before its first arm, the two smoke-test fixes, and the
+30k-tier live latency on CPU against GPU (`streaming_latency_30k.json`).
+
+`handoff-2026-09-21.md` is the one it supersedes, and its "start here" is
+still open: the two decisions that should be taken before anything expensive
+runs, and the traps specific to this machine.
 
 `handoff-2026-09-17.md` is the one it supersedes, written in a cloud session:
 two configuration traps that bite the moment a CUDA wheel lands, and the order
