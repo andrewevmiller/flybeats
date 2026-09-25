@@ -1,0 +1,48 @@
+ARM A2 - "straight-line loudness output"            (config: velocity_lin_cpu)
+Finished 00:44 on 23 September 2026
+==========================================================================
+
+WHAT THIS ARM CHANGED
+The part of the model that guesses how hard each drum is hit used to pass its
+answer through an S-shaped curve. The worry was that this curve makes it hard
+for guesses to move away from "medium". This arm replaced the curve with a
+straight line. Nothing else changed.
+
+DID IT RUN CLEANLY?
+Yes. All 12 training rounds finished (23:45 to 00:44, about 5 minutes a round),
+then the loudness check ran in 35 seconds. No errors.
+
+LOUDNESS, DRUM BY DRUM  (does the model hit harder when the drummer did?)
+  kick         gets it BACKWARDS (confident)   [-0.20, sure-range -0.34 to -0.04]
+  snare        can't tell yet, leaning right    [+0.06, -0.01 to +0.15]
+  closed hat   can't tell yet                   [+0.01, -0.10 to +0.12]
+  open hat     can't tell yet                   [+0.20, -0.21 to +0.47]
+  low tom      gets it BACKWARDS (confident)   [-0.20, -0.34 to -0.13]
+  mid tom      can't tell yet, leaning right    [+0.11, -0.01 to +0.23]
+  high tom     too few hits to judge
+  crash        gets it RIGHT (confident)       [+0.39, +0.24 to +0.52]
+
+It is still mostly guessing one medium loudness for everything: its guesses
+spread only a quarter as much as the real hits do [0.072 vs 0.279].
+
+COMPARED WITH THE BASELINE
+Tonight's baseline runs last (around 3:50 AM), so for now this compares with
+the old cloud baseline. Snare improved from "backwards" to "can't tell". Low tom
+is still backwards, crash is still right. Kick got worse, from "can't tell" to
+"backwards". The guesses are not more spread out than before (cloud: 0.084).
+
+TIMING SCORE
+0.279 (cloud baseline 0.301). Roughly the same as, or slightly below, the
+reference. This will be re-checked against tonight's baseline.
+
+ONE CAVEAT THAT APPLIES TO EVERY ARM
+The copy of the model that gets saved and checked is the round with the best
+timing score. Here that was round 3 of 12, and the loudness skill was still
+improving after that (its rough loudness score rose from +0.06 at round 3 to
++0.13 at round 12). So this report reads an early version of the model.
+
+BOTTOM LINE
+Not a win. Removing the S-curve did not make the guesses more varied, and two
+drums are confidently backwards, which fails the project's bar for a loudness
+fix. This is one run, and it is scored on an early checkpoint, so treat it as
+a strong hint rather than proof.

@@ -1,0 +1,49 @@
+STANDARDISED READOUTS - "even out the signals before the final guesses"   (config: velocity_std_cpu)
+Finished 12:17 on 24 September 2026
+==========================================================================
+
+WHAT THIS RUN CHANGED
+The model's final guesses (when to hit, and how hard) read a set of output
+signals that sit at a big steady level with small wobbles on top, and the
+useful information is in the wobbles. This run measures each signal's usual
+level and wobble once, before training, and hands the guesses "level
+removed, wobble scaled up" instead. The guesses stay the same simple
+one-layer kind. Everything else is the baseline, first seed.
+
+DID IT RUN CLEANLY?
+Yes. All 12 training rounds finished (11:17 to 12:17, about 5 minutes a
+round), the loudness guess was refitted (46 seconds), and both versions were
+checked. No errors. The signals' steady level measured 326 times their
+wobble, even worse than expected, which is exactly the problem this fixes.
+
+LOUDNESS, DRUM BY DRUM   as trained                      after the refit
+  kick          can't tell  [-0.01]                    can't tell  [-0.05]
+  snare         RIGHT       [+0.14, +0.05 to +0.23]   RIGHT       [+0.26, +0.17 to +0.34]
+  closed hat    can't tell  [-0.03]                    can't tell  [-0.03]
+  open hat      can't tell  [-0.03]                    can't tell  [+0.00]
+  low tom       RIGHT       [+0.22, +0.06 to +0.39]   RIGHT       [+0.27, +0.14 to +0.40]
+  mid tom       RIGHT       [+0.41, +0.26 to +0.55]   RIGHT       [+0.36, +0.20 to +0.51]
+  high tom      too few hits                           too few hits
+  crash         can't tell  [-0.08]                    RIGHT       [+0.31, +0.08 to +0.53]
+  Right / backwards    3 / 0                              4 / 0
+
+DID IT FIX THE LOUDNESS GUESS?  Yes, as far as one run can say.
+Trained normally, the baseline's guess got only crash right, and that by
+luck. With the signals evened out, training itself now gets snare, low tom
+and mid tom right, the same three the exact refit finds. The guess actually
+moved away from its random start this time, which it never did before. The
+refit still adds a little on top (crash).
+
+TIMING SCORE  (the big surprise)
+0.321, against 0.283 for the baseline (first seed) and 0.267 (second). That
+is the best timing score of any local run, and above the old cloud baseline
+(0.301). It was still rising at the last round. The timing guess reads the
+same evened-out signals, and it was stuck near its start too, so it
+benefits the same way.
+
+BOTTOM LINE
+This is the most promising change so far, by a wide margin: loudness is
+learned in training, not just patched afterwards, and timing improves by
+about 0.04. It is one run on one seed, trained on one drummer's playing, so
+the obvious next step is a second seed. If that holds, this should be the
+default for the full-data run (Phase B').

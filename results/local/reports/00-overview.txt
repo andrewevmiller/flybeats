@@ -1,0 +1,46 @@
+OVERNIGHT LOUDNESS EXPERIMENTS - OVERVIEW  (corrected)
+Rewritten 24 September 2026, after fixing the loudness check
+==========================================================================
+
+All four arms finished overnight (the queue ended at 04:32). The first
+overview judged them with a flawed loudness check. It is kept as
+00-overview-old-probe-2026-09-24.txt, and why-kick-and-low-tom-read-
+backwards.txt explains the flaw. This is the same four models, rechecked
+with the fixed check: every test song, one score per hit, and 95% ranges
+measured song by song. No retraining.
+
+  Arm                        Right / Backwards / Can't tell   Timing   Spread*
+  Baseline (no change)       1 / 0 / 6                        0.283    0.105
+  A1 loudness counts 5x      1 / 1 / 5                        0.287    0.122
+  A2 straight-line output    3 / 0 / 4                        0.279    0.072
+  A3 graded at the hit       2 / 0 / 5                        0.284    0.105
+  (High tom has too few hits to judge in every arm.)
+  * how varied the loudness guesses are. The real hits spread 0.279.
+
+  Right in every arm: crash.
+  A2 adds snare [+0.10, +0.005 to +0.19] and mid tom [+0.18, +0.04 to +0.33].
+  A3 adds mid tom [+0.15, +0.003 to +0.29].
+  A1's kick is backwards [-0.16, -0.29 to -0.04].
+
+KICK AND LOW TOM: not backwards. "Can't tell" in every arm except A1's kick.
+
+DID ANY FIX WORK?  On the project's bar, A2 passes (two drums newly right,
+none backwards) and A3 scrapes through on one. Both pass by a hair: the
+lower ends of those ranges sit just above zero, and the baseline's own mid
+tom range reaches +0.27. Treat A2 as the lead to follow up, not a result.
+A1 fails because of the backwards kick.
+
+A NEW, BIGGER FINDING
+The fixed check also measures how much loudness information is present
+inside the model, whether or not its loudness guess uses it. For kick, snare,
+low tom and mid tom that ceiling is +0.14 to +0.38 in every arm, while the
+actual guesses score -0.16 to +0.18. The information is getting in, and the
+last step, which turns it into a guess, is not using it. That points at how
+the guess is trained, not at the model's hearing. (The ceiling is measured
+on the test songs themselves, so it may flatter a little. The gap is still
+large.)
+
+NEXT STEP (Andrew's call): decide between repeating A2 (another seed) to see
+whether its edge holds, and working on the last step directly. The full-data
+GPU run (Phase B') still has no clear winner to carry.
+One run per arm: hints, not proof.

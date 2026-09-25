@@ -1,0 +1,30 @@
+DOES A2 BEAT THE BASELINE ON BOTH SEEDS?
+Written 24 September 2026, 14:00
+==========================================================================
+
+Judged on the REFITTED loudness guess. The trained one barely leaves its
+random start, so its verdicts mostly reflect luck, and the refit is what
+makes runs comparable.
+
+                     Drums RIGHT after the refit (none backwards anywhere)   Timing
+  Baseline, seed 1   snare, low tom, mid tom                                0.283
+  Baseline, seed 2   snare, low tom, mid tom                                0.267
+  A2, seed 1         snare, low tom, mid tom, open hat                      0.279
+  A2, seed 2         snare, low tom, mid tom, KICK                          0.260
+
+ANSWER: yes, narrowly, on both seeds.
+- On both seeds A2 gets one drum right that its baseline could not, and
+  nothing backwards, so it clears the project's bar twice.
+- But the extra drum is a different one each time (open hat, then kick), and
+  both sit close to the "can't tell" line. The shared three drums are the same
+  for both recipes. A2 is also a bit stronger on them on average
+  (low tom +0.37/+0.32 vs +0.22/+0.26). So: a modest, repeatable edge, not a
+  different class of result.
+- Timing: A2 is slightly lower on both seeds (by 0.004 and 0.007). That is
+  small enough to call "about the same", though it points the same way twice.
+
+PERSPECTIVE
+The standardisation run (see arm-standardised-readouts.txt) moved things
+far more than A2 did: timing 0.321, and loudness learned during training
+itself. A2's edge is worth keeping in mind, not building on alone.
+Two seeds per recipe: a firmer hint than one, still not proof.

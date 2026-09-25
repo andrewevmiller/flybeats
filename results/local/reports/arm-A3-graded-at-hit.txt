@@ -1,0 +1,51 @@
+ARM A3 - "graded on loudness only at the moment of the hit"   (config: velocity_peak_cpu)
+Finished 01:45 on 23 September 2026
+==========================================================================
+
+WHAT THIS ARM CHANGED
+Before, the model was graded on loudness across a blurred window of about a
+tenth of a second around each hit, even though live playback only reads
+loudness at the instant of the hit. This arm grades loudness only at that
+instant. Nothing else changed.
+
+DID IT RUN CLEANLY?
+Yes. All 12 training rounds finished (00:45 to 01:45, about 5 minutes a round,
+a little slower in rounds 8-11), then the loudness check ran in 34 seconds.
+No errors.
+
+LOUDNESS, DRUM BY DRUM  (does the model hit harder when the drummer did?)
+  kick         gets it BACKWARDS (confident)   [-0.19, sure-range -0.33 to -0.03]
+  snare        gets it RIGHT (confident)       [+0.12, +0.04 to +0.20]
+  closed hat   can't tell yet                   [+0.02, -0.09 to +0.13]
+  open hat     can't tell yet                   [+0.15, -0.24 to +0.43]
+  low tom      gets it BACKWARDS (confident)   [-0.26, -0.36 to -0.17]
+  mid tom      can't tell yet                   [+0.01, -0.14 to +0.15]
+  high tom     too few hits to judge
+  crash        gets it RIGHT (confident)       [+0.31, +0.15 to +0.46]
+
+Its guesses spread a bit more than arm A2's, but still only about a third as
+much as the real hits [0.105 vs 0.279].
+
+COMPARED WITH THE BASELINE
+Tonight's baseline runs last (about 3:50 AM), so for now this compares with
+the old cloud baseline. The snare flipped from "backwards" to "right", which is
+real progress on the most-played drum. Crash is still right. Low tom is still
+backwards, and kick went from "can't tell" to "backwards".
+Compared with arm A2 from earlier tonight: better on snare and spread,
+about the same everywhere else.
+
+TIMING SCORE
+0.284 (cloud baseline 0.301, arm A2 0.279). About the same.
+
+SAME CAVEAT AS EVERY ARM
+The copy that gets checked is the round with the best timing score, which was
+again round 3 of 12. The rough loudness score kept rising after that (+0.08
+at round 3, +0.10 to +0.13 in rounds 8-12).
+
+BOTTOM LINE
+Better than A2, and the snare result is encouraging, but it still has two
+drums confidently backwards (kick and low tom), so it does not pass the
+project's bar on its own. The kick and low-tom problem shows up in both arms so
+far, which suggests it comes from something these arms share, not from either
+change. Tonight's baseline will show whether it was there all along. One run,
+early checkpoint: a hint, not proof.

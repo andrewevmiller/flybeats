@@ -1,0 +1,35 @@
+OVERNIGHT LOUDNESS EXPERIMENTS - OVERVIEW
+Written 01:55 on 24 September 2026 (backup report session)
+==========================================================================
+
+THE QUEUE STOPPED PARTWAY THROUGH. ONLY 2 OF THE 4 ARMS FINISHED.
+
+What happened: at 01:59 on 23 September, Windows Update restarted the laptop
+(a planned "service pack" restart, followed by a second restart at 02:02 to
+finish installing the September preview update). That killed the training
+run. Nothing restarted it, so the machine has sat idle for about 24 hours.
+There is no error message in the logs - the training simply stops mid-run.
+
+Last lines of the logs:
+  queue.log:           [01:45:55] training velocity_w5_cpu   (nothing after)
+  velocity_w5_cpu.log: ep 1 ... val onset_F 0.2328 ... | 292.2s   (round 2 of 12)
+
+  Arm                        Status                  Drums right / backwards / can't tell   Timing
+  A2 straight-line output    done 00:44              1 / 2 / 4 (high tom: too few hits)     0.279
+  A3 graded at the hit       done 01:45              2 / 2 / 3 (high tom: too few hits)     0.284
+  A1 loudness 5x             stopped at round 2/12   --                                     --
+  Baseline                   never started           --                                     --
+
+Reports for A2 and A3 are in this folder. No reports for A1 or the baseline,
+because they never finished.
+
+So far, A3 looks more promising than A2: it gets the snare right, and its
+guesses are more varied. But both arms get the kick and low tom confidently
+backwards, so neither passes the project's bar yet. Without tonight's baseline
+we can't tell whether those two drums were already backwards before either
+change.
+
+NEXT STEP (Andrew's call): re-run the two missing arms (A1 and the baseline).
+Before that, consider pausing Windows Update overnight. Note that
+runs\queue\queue.lock still names a process (49076) that is no longer running.
+Nothing was restarted or deleted by this session.

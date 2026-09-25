@@ -1,0 +1,39 @@
+OVERNIGHT LOUDNESS EXPERIMENTS - OVERVIEW
+Written 04:40 on 24 September 2026
+==========================================================================
+
+** LATER UPDATE: the loudness check itself was flawed. The "backwards"
+** verdicts below came from a lopsided slice of the test songs, mostly one
+** drummer. Read why-kick-and-low-tom-read-backwards.txt before this table.
+
+ALL FOUR ARMS FINISHED. The queue was relaunched at 02:00 after the 23 Sep
+Windows Update restart, and it ran cleanly to the end at 04:32. (The old
+"queue stopped" overview is kept as 00-overview-stopped-2026-09-24.txt.)
+
+  Arm                        Right / Backwards / Can't tell   Timing   Spread*
+  Baseline (no change)       2 / 2 / 3                        0.283    0.105
+  A1 loudness counts 5x      2 / 2 / 3                        0.287    0.122
+  A2 straight-line output    1 / 2 / 4                        0.279    0.072
+  A3 graded at the hit       2 / 2 / 3                        0.284    0.105
+  (High tom has too few hits to judge in every arm.)
+  * how varied the loudness guesses are. The real hits spread 0.279.
+
+WERE KICK AND LOW TOM BACKWARDS ALL ALONG?  Yes. The baseline has them
+backwards too, so none of the fixes caused it, and none of them fixed it.
+Something all four share is behind it.
+
+DID ANY FIX WORK?  No. None passes the project's bar, because no fix turned
+a drum from wrong or can't-tell into right. Snare and crash were already
+right in the baseline. The "snare improved" notes in the A1 and A3 reports
+were measured against the old cloud baseline, and tonight's baseline cancels
+them out.
+  - A3 turned out almost identical to the baseline, round by round.
+  - A2 is slightly worse: it lost the snare and its guesses are flatter.
+  - A1 is the least bad: its guesses are the most varied, its timing is not
+    hurt, and its loudness score was still climbing at the end. But its
+    headline cloud result (both toms right) did NOT repeat here.
+
+NEXT STEP (Andrew's call): the planned full-data GPU run (Phase B') has no
+clear winner to carry. It may be worth first finding why kick and low tom
+come out backwards, and scoring the models at the end of training rather
+than at round 3-5. One run per arm: hints, not proof.

@@ -1,0 +1,42 @@
+BASELINE, SECOND SEED - "no change", run again        (config: velocity_probe_s1_cpu)
+Finished 11:13 on 24 September 2026
+==========================================================================
+
+WHAT THIS RUN CHANGED
+Nothing about the recipe. It is the baseline started from different random
+settings, the partner of A2's second seed, so A2 can be judged against a
+baseline that also had a second try. Same test songs as every other run.
+
+DID IT RUN CLEANLY?
+Yes. All 12 training rounds finished (09:51 to 11:13, about 7 minutes a
+round, slower while other checks shared the computer), then the loudness guess
+was refitted automatically (57 seconds, the first run to get the new
+standard step), and both versions were checked. No errors.
+
+LOUDNESS, DRUM BY DRUM   as trained                      after the refit
+  kick          can't tell  [-0.12, -0.26 to +0.02]   can't tell  [-0.07]
+  snare         can't tell  [+0.10, -0.00 to +0.19]   RIGHT       [+0.22, +0.12 to +0.32]
+  closed hat    can't tell  [-0.07]                    can't tell  [-0.04]
+  open hat      can't tell  [+0.11]                    can't tell  [+0.14]
+  low tom       RIGHT       [+0.17, +0.01 to +0.32]   RIGHT       [+0.26, +0.08 to +0.42]
+  mid tom       RIGHT       [+0.38, +0.20 to +0.53]   RIGHT       [+0.40, +0.22 to +0.55]
+  high tom      too few hits                           too few hits
+  crash         RIGHT       [+0.26, +0.05 to +0.45]   can't tell  [-0.10]
+  Right / backwards    3 / 0                              3 / 0
+
+COMPARED WITH THE BASELINE'S FIRST SEED
+As trained, the two baselines barely agree: the first had only crash right,
+this one has low tom, mid tom and crash. That is the "loudness guess never
+leaves its random start" problem again: the trained verdicts are largely
+luck.
+After the refit they agree exactly: snare, low tom and mid tom right in
+both, nothing backwards, crash back to "can't tell". The refit is what makes
+runs comparable.
+
+TIMING SCORE
+0.267 (first seed 0.283). Its best round was round 9 of 12.
+
+BOTTOM LINE
+Refitted, the baseline reliably gets snare and both toms right and nothing
+backwards, on both seeds. That is now the bar any loudness change has to
+beat. See 00-seed2-verdict.txt for how A2 does against it.
