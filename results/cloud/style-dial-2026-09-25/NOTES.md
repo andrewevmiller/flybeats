@@ -24,3 +24,4 @@ A second check (scratch script) with every pC1 neuron held at the full cap:
 - +5: rates finite, drum shift 0.341, drum probabilities 0.021..0.808, no drum pinned on or off.
 - -5: rates finite, drum shift 0.010, nothing pinned.
 - The network's max rate is 20.0 (the state clip) with or without tonic, so something already sits at the clip at rest; the pC1 push does not add saturation of its own. Judged safe to train.
+- Full suite after the changes (-m "not gpu", 02:35 UTC): 264 passed, 4 deselected (the 2 earlier skips ran now that data is present; 10 new tests in tests/test_style_dial.py plus 7 new config rows/tests).
