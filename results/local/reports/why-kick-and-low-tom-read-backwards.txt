@@ -1,0 +1,63 @@
+WHY DID KICK AND LOW TOM COME OUT "BACKWARDS"?
+Written 24 September 2026, after the overnight queue
+==========================================================================
+
+SHORT ANSWER
+Mostly the way they were measured, not the model. The loudness check
+scored every arm on a small, lopsided slice of the test songs and then
+overstated how sure it was. Scored fairly, low tom is "can't tell" in every
+arm. Kick is "can't tell" in three arms and only slightly backwards in A1.
+
+WHAT WAS WRONG WITH THE CHECK
+1. It only looked at the last 30% of the test songs, in file order.
+   The test songs are listed drummer by drummer, so that slice is 29 of 36
+   songs by one drummer (drummer 7). Only 14 songs in it have a low tom. So
+   "backwards" really meant "backwards for drummer 7's playing". That is
+   also why all four arms got the same verdict: they were all graded on the
+   same slice.
+2. It counted each hit two or three times, and treated songs as if they
+   were thousands of separate samples. Hits within one song are alike, so
+   the 95% ranges came out far too narrow. Resampled by song instead, the
+   original slice's own range for low tom is [-0.47 to +0.23], which is
+   plainly "can't tell".
+
+The model's loudness guess is never fitted on those songs anyway, so there
+was no reason to hold 70% of them out. The 30% cut only matters for the
+side-by-side "ceiling" probes in the same check.
+
+FAIR RESCORING  (all 92-108 test songs, one score per hit, range by song)
+                baseline      A1 5x          A2 straight    A3 at the hit
+  kick          can't tell    BACKWARDS      can't tell     can't tell
+                [-0.08]       [-0.16, -0.29 to -0.04]  [-0.07]  [-0.08]
+  snare         can't tell    can't tell     RIGHT (just)   can't tell
+                [+0.08]       [+0.09]        [+0.10, +0.00 to +0.19]  [+0.08]
+  low tom       can't tell    can't tell     can't tell     can't tell
+                [-0.04]       [+0.11]        [-0.02]        [-0.03]
+  mid tom       can't tell    can't tell     RIGHT          RIGHT (just)
+                [+0.12]       [+0.08]        [+0.18, +0.04 to +0.33]  [+0.15, +0.00 to +0.29]
+  crash         RIGHT         RIGHT          RIGHT          RIGHT
+                [+0.33]       [+0.41]        [+0.38]        [+0.35]
+  hats          can't tell in every arm. High tom: too few hits (10).
+
+WHAT THAT CHANGES
+- Kick and low tom are not a shared defect. The model's guesses carry no
+  clear signal of how hard they were hit, which is "can't tell", not
+  "backwards". (An earlier draft said the kick's loudness barely reaches the
+  model at all. The fixed check shows it does [ceiling +0.18 for kick, +0.25
+  for low tom]. The guess just doesn't use it. See 00-overview.txt.)
+- Last night's verdicts should be reread. On this fairer scoring A2 (the
+  arm that looked worst) is the only one that gets two drums right beyond
+  the baseline (snare and mid tom) with nothing backwards. Both of those
+  sit right at the edge of the range, so this is a weak hint, not a winner.
+- A1 (loudness 5x) is the one arm with a drum truly backwards: the kick.
+
+UPDATE: THE CHECK IS FIXED AND ALL FOUR ARMS WERE RECHECKED
+scripts\probe_velocity.py now scores every test song, one row per hit, with
+song-level 95% ranges, and its ceiling probes are cross-checked song by song
+in shuffled groups. Rerun on all four arms, it reproduces the table above
+exactly. The results are in runs\queue\SUMMARY_v2.txt, and the corrected
+verdicts are in 00-overview.txt. The old probe files and SUMMARY.txt are kept
+unchanged beside the new ones.
+
+The test set is also half one drummer (60 of 124 songs are drummer 1).
+Worth keeping in mind for every loudness number.

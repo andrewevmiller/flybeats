@@ -87,7 +87,13 @@ class StreamingDrummer:
         default_ms = refractory_ms / max(self.speed, 1e-6)
         self.refractory_ms = {c: float((class_refractory_ms or {}).get(c, default_ms))
                               for c in kit.classes}
-        self.device = device or torch.device("cpu")
+        # The model's own device unless told otherwise. A CPU default put the
+        # numpy-built blocks beside CUDA weights, so nothing that streams --
+        # benchmark, drummer_for, the live path -- could run on a GPU at all.
+        if device is None:
+            p = next(model.parameters(), None)
+            device = p.device if p is not None else torch.device("cpu")
+        self.device = device
 
         self.hop = model.encoder.hop
         # Ring buffer holding the causal context the encoder needs, so the
@@ -408,6 +414,10 @@ def load_checkpoint(path: Path, device: torch.device):
 
     ck = torch.load(path, map_location=device, weights_only=False)
     cfg = ck["config"]
+    # As load_bundle does: play at the threshold the eval sweep chose, not the
+    # config's fixed one. An explicit --threshold still wins in drummer_for.
+    if ck.get("best_threshold") is not None:
+        cfg.setdefault("eval", {})["threshold"] = float(ck["best_threshold"])
     sg = get_subgraph(cfg)
     model, kit = build_model(cfg, sg, n_styles=max(int(ck.get("n_styles", 1) or 1), 1))
     model.load_state_dict(ck["model"])

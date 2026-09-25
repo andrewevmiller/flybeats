@@ -52,7 +52,9 @@ will compact mid-task and lose the thread. Those tasks are marked
 Four facts set everything below. Each is already recorded in the repo.
 
 **1. There is no shippable model, and no shipped anything.** The last run
-trained on 256 of 897 GMD clips and reached onset F 0.30. No `.fb` bundle exists
+trained on 256 of 897 GMD clips and reached onset F 0.30. Those 256 are all
+from drummer1, because `max_files` keeps the first rows of an info.csv ordered
+by drummer. No `.fb` bundle exists
 anywhere, so SETUP.md's five-minute "play path" is unfollowable by anybody.
 
 **2. There is no UI code.** `viz/` does not exist. `src/masking.py` does not

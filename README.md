@@ -378,7 +378,10 @@ hit.
 pool — snare 0.23, tom_low 0.39, crash 0.30 — and the head's spread rises from
 0.021 to 0.087. So the flat statement "a connectome-constrained readout cannot
 say how hard" was an artefact of the synthetic corpus, where every hit is the
-same synthesised sample at a scaled amplitude, and it is withdrawn.
+same synthesised sample at a scaled amplitude, and it is withdrawn. Those 256
+clips are all drummer1, 227 of them fills, because `max_files` keeps the first
+rows of an info.csv ordered by drummer: this is one player's dynamics, not
+GMD's nine.
 
 What replaces it is narrower and better evidenced. Per class, on held-out rows,
 with 95% bootstrap intervals:

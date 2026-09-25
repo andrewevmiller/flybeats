@@ -372,6 +372,14 @@ The default corpus is Magenta **GMD** (`groove-v1.0.0`): 1,150 clips, 18 styles,
 audio plus sample-aligned MIDI. `--corpus egmd` fetches E-GMD instead, whose
 audio archive is 96 GB — the README explains why GMD is the default.
 
+`--corpus egmd` needs the zip and the extracted files on disk together, about
+238 GB. To use E-GMD without that, `python scripts/fetch_egmd_subset.py`
+fetches chosen recordings from inside the archive, stores them as 22.05 kHz
+FLAC, and writes an `info.csv` into `data\egmd\e-gmd-subset\`. The default,
+four kits per train performance with five kits held out, is a 7.9 GB download
+that takes 2.8 GB on disk. `--plan` prints the sizes without fetching audio.
+`--kits 8` or `--kits all` grows the same folder later.
+
 With the corpus present, `pytest -q` becomes **134 passed, 4 skipped** (the GPU tests, unless this machine has a card), and the real-corpus
 CPU run becomes available:
 

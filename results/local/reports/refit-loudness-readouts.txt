@@ -1,0 +1,58 @@
+REFITTING THE LOUDNESS GUESS, ALL FOUR ARMS  (no retraining)
+Written 24 September 2026, 09:40
+==========================================================================
+
+WHAT WAS DONE
+Each of the four overnight models had its loudness guess worked out again
+with one exact calculation on the training songs, instead of the slow
+step-by-step learning that had left it stuck near its random start.
+Nothing else in the models changed: same hearing, same timing, same
+simple one-layer guess. It was then scored on the test songs with the
+fixed check. The original models are kept unchanged for comparison.
+Took about 4-5 minutes per arm on the CPU.
+
+LOUDNESS, DRUM BY DRUM, AFTER THE REFIT
+                baseline        A1 5x           A2 straight     A3 at the hit
+  kick          can't tell      can't tell      can't tell*     can't tell
+  snare         RIGHT [+0.36]   RIGHT [+0.32]   RIGHT [+0.38]   RIGHT [+0.36]
+  closed hat    can't tell      can't tell      can't tell      can't tell
+  open hat      can't tell      can't tell      RIGHT [+0.27]   can't tell
+  low tom       RIGHT [+0.22]   can't tell      RIGHT [+0.37]   RIGHT [+0.21]
+                                [+0.13]
+  mid tom       RIGHT [+0.29]   RIGHT [+0.30]   RIGHT [+0.36]   RIGHT [+0.30]
+  crash         can't tell      can't tell      can't tell      can't tell
+  high tom      too few hits in every arm
+  Right / backwards        3 / 0       2 / 0       4 / 0       3 / 0
+  Before the refit         1 / 0       1 / 1       3 / 0       2 / 0
+
+  * A2's kick is just short of "right" [+0.13, -0.01 to +0.27].
+  Full 95% ranges are in runs\refit\probe_<arm>.txt.
+
+WHAT IT SHOWS
+1. The information was there all along. With the same simple guess,
+   properly fitted, every arm gets the snare and mid tom confidently right,
+   and most get the low tom too. That is the drums that were "backwards" or
+   "can't tell" last night.
+2. Nothing is backwards in any arm any more. A1's backwards kick is gone.
+3. Crash drops from "right" to "can't tell" everywhere. Its earlier "right"
+   was mostly luck from where the guess happened to start, not a skill.
+4. A2 (the straight-line output) comes out best: 4 drums right, and the
+   strongest numbers on snare, both toms and open hat. Its fitted guess also
+   tracked the training songs best. So A2 may genuinely help, now through
+   the fitted guess rather than the trained one. That is still one run.
+5. A1 and A3 add nothing over the baseline once the guess is fitted
+   properly. A3 is the same as the baseline, which fits: both started from
+   the same random settings and the rest of the model trained almost
+   identically.
+
+CAVEATS
+- The guesses still vary less than real drummers do [spread 0.12-0.14 vs
+  0.28]. That is expected for a guess that is only partly right, not a flaw.
+- Timing is untouched: the refit only changes the loudness guess.
+- This fixes the saved models after the fact. The standardisation run
+  (finishing about 12:40) tests whether training itself can get there.
+
+BOTTOM LINE
+Loudness was not the model's hearing problem. It was the guess never
+finishing learning. A quick refit gets three to four drums confidently
+right with none backwards, and A2 is the best starting point.

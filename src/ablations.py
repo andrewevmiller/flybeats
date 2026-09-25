@@ -32,6 +32,7 @@ import torch
 import torch.nn as nn
 
 from model import substep_schedule
+from progress import describe, estimate
 from subgraph import SubGraph
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -385,6 +386,10 @@ def main(argv=None) -> int:
             # fixed DSP and the audio, and it is deterministic, so the arms
             # differ in the recurrent core and nothing else.
             train_mod.calibrate_encoder(model, train_loader.dataset, cfg, device)
+            # The motor standardisation, by contrast, is per arm: it is
+            # measured on each arm's own untrained core. A no-op unless
+            # kit.standardize_motor is set.
+            train_mod.calibrate_decoder(model, train_loader.dataset, cfg, device)
             # weight_decay explicitly, because AdamW's default is 0.01 and
             # train.py passes 0.0: without this the arms trained with decoupled
             # decay on log_gain while the headline run did not, breaking the
@@ -404,11 +409,14 @@ def main(argv=None) -> int:
             print(f"\n=== {tag} === params {n_par:,} | "
                   f"core {type(model.rnn).__name__}{rho}")
 
+            curve = []
             for ep in range(cfg["train"].get("epochs", 10)):
                 tr = train_mod.run_epoch(model, train_loader, opt, cfg, device, train=True)
                 ev = train_mod.evaluate(model, val_loader, cfg, device)
+                curve.append(ev["onset_f"])
                 print(f"  ep{ep:>3} loss {tr['loss']:.4f} | onset_F {ev['onset_f']:.4f} "
                       f"@thr {ev['best_threshold']:.2f} | groove {ev['groove_sim']:.3f}")
+            print("  " + describe(estimate(curve)))
 
             ev = train_mod.evaluate(model, val_loader, cfg, device)
             runs.append(ev)

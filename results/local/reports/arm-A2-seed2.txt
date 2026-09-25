@@ -1,0 +1,53 @@
+ARM A2, SECOND SEED - "straight-line loudness output", run again   (config: velocity_lin_s1_cpu)
+Finished 09:51 on 24 September 2026
+==========================================================================
+
+WHAT THIS RUN CHANGED
+Nothing about the recipe. It is A2 exactly, started from different random
+settings, to see whether A2's narrow lead survives a second try. It was
+scored on the same test songs as every other run.
+
+DID IT RUN CLEANLY?
+Yes. All 12 training rounds finished (08:36 to 09:49, about 6 minutes a
+round), then the loudness check ran in 48 seconds. No errors. It trained
+before the automatic refit step existed, so its loudness guess was refitted
+by hand afterwards (3 minutes), the same way as the other four.
+
+LOUDNESS, DRUM BY DRUM   as trained                      after the refit
+  kick          can't tell  [-0.11, -0.25 to +0.03]   RIGHT       [+0.20, +0.05 to +0.33]
+  snare         RIGHT       [+0.12, +0.02 to +0.22]   RIGHT       [+0.32, +0.21 to +0.42]
+  closed hat    can't tell  [-0.05]                    can't tell  [-0.02]
+  open hat      can't tell  [+0.08]                    can't tell  [+0.08]
+  low tom       RIGHT       [+0.21, +0.06 to +0.38]   RIGHT       [+0.32, +0.12 to +0.49]
+  mid tom       RIGHT       [+0.43, +0.26 to +0.57]   RIGHT       [+0.34, +0.16 to +0.49]
+  high tom      too few hits                           too few hits
+  crash         can't tell  [+0.18, -0.06 to +0.43]   can't tell  [+0.03]
+  Right / backwards    3 / 0                              4 / 0
+
+COMPARED WITH A2'S FIRST SEED
+As trained, the verdicts moved around: seed 1 had snare, mid tom and crash
+right, while this one has snare, low tom and mid tom. That fits the
+finding that the trained guess barely leaves its random start, so which
+drums come out right is partly luck.
+After the refit the two seeds agree much better. Snare, low tom and mid tom
+are right in both, with none backwards in either, and each gets one more
+drum right (open hat before, kick now). This is the first time the kick has
+come out confidently right anywhere.
+
+COMPARED WITH THE BASELINE
+The baseline's second seed is training now (finishing around 11:25). On the
+first seed, the refitted baseline had 3 drums right (snare, both toms), and
+refitted A2 had 4. A2 is ahead again, by one drum, but the fair comparison
+needs the baseline's second seed.
+
+TIMING SCORE
+0.260, noticeably lower than A2's first seed (0.279) and the baseline's
+(0.283). Its best round was the last one (12 of 12), so it was still
+improving. That may be seed-to-seed variation or a real cost. The
+baseline's second seed will show which.
+
+BOTTOM LINE
+With the refit, A2 again gets 4 drums right and none backwards, and the
+core three (snare, low tom, mid tom) now hold across both seeds. Its timing
+came out lower this time. Whether A2 truly beats the baseline waits on the
+baseline's second seed. Two runs: a firmer hint than one, still not proof.

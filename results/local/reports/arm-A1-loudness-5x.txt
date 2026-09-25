@@ -1,0 +1,68 @@
+ARM A1 - "loudness counts 5x as much in grading"     (config: velocity_w5_cpu)
+Finished 03:20 on 24 September 2026
+==========================================================================
+
+WHAT THIS ARM CHANGED
+While training, the model is graded on two things at once: WHEN each drum is
+hit (timing) and HOW HARD (loudness). The timing grade is about ten times
+bigger than the loudness grade, so the worry was that the model barely
+bothers learning loudness. This arm made the loudness grade count five times
+as much. Nothing else changed.
+
+DID IT RUN CLEANLY?
+Yes, on the second attempt. The first attempt (23 Sep) was killed by a
+Windows Update restart after 2 rounds. This relaunch started from scratch:
+all 12 training rounds finished (02:01 to 03:20, about 6.5 minutes a round,
+nearly 8 at the start and 6 by the end), then the loudness check ran in 38
+seconds. No errors. Its first two rounds matched the killed attempt exactly.
+
+LOUDNESS, DRUM BY DRUM  (does the model hit harder when the drummer did?)
+  kick         gets it BACKWARDS (confident)   [-0.18, sure-range -0.32 to -0.03]
+  snare        gets it RIGHT (confident)       [+0.11, +0.02 to +0.19]
+  closed hat   can't tell yet                   [-0.01, -0.13 to +0.09]
+  open hat     can't tell yet                   [+0.12, -0.29 to +0.40]
+  low tom      gets it BACKWARDS (confident)   [-0.35, -0.46 to -0.22]
+  mid tom      can't tell yet, leaning wrong    [-0.11, -0.28 to +0.08]
+  high tom     too few hits to judge
+  crash        gets it RIGHT (confident)       [+0.38, +0.22 to +0.51]
+
+Its guesses spread more than either earlier arm's, but still less than half
+as much as the real hits [0.122 vs 0.279; A2 0.072, A3 0.105].
+
+UPDATE 04:35, NOW THAT TONIGHT'S BASELINE HAS FINISHED
+Tonight's baseline already had the snare RIGHT, and kick and low tom already
+BACKWARDS. So the "snare flipped" note below is not real progress, and this
+arm changed no drum's verdict. Low tom and mid tom lean slightly more wrong
+than in the baseline, but the ranges overlap, so that is not a clear
+difference. See arm-baseline.txt and 00-overview.txt.
+
+COMPARED WITH THE BASELINE  (written at 03:25, before the baseline had run)
+Tonight's baseline has just started (should finish about 04:45), so for now
+this compares with the old cloud baseline and the other two arms.
+On the cloud, this same change turned both toms confidently RIGHT. That did
+NOT happen here: low tom is backwards (more strongly than in any arm so far)
+and mid tom leans the wrong way. So the cloud's headline result did not
+repeat on this machine.
+Like A3, the snare flipped from "backwards" (cloud baseline) to "right", and
+crash is still right. Like both other arms, kick and low tom are backwards.
+
+TIMING SCORE
+0.287 (cloud baseline 0.301, A2 0.279, A3 0.284). The best of tonight's
+arms so far, so turning up loudness did not cost any timing here. (On the
+cloud it did cost some: 0.276.)
+
+SAME CAVEAT AS EVERY ARM
+The copy that gets checked is the round with the best timing score, which
+here was round 5 of 12 (a little later than A2 and A3, which both peaked at
+round 3). The rough loudness score kept rising after that (+0.07 at round 5,
++0.15 at round 12, the highest end-of-run value of the three arms).
+
+BOTTOM LINE
+Roughly a tie with A3: same drums right (snare, crash), same drums backwards
+(kick, low tom), slightly more varied guesses and slightly better timing.
+It does not pass the project's bar, because two drums are confidently
+backwards. The toms result that made this arm look promising on the cloud
+did not reproduce. Kick and low tom are now backwards in all three arms,
+which points more strongly at something they share. The baseline, due
+around 04:45, will show whether they were backwards all along.
+One run, early checkpoint: a hint, not proof.

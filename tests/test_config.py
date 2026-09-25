@@ -83,9 +83,13 @@ RESOLVED = {
     "sanity_3piece.yaml":     ("auto", "auto", 10000,     5,          None),
     "sanity_3piece_run.yaml": ("auto", "auto", 10000,     5,          None),
     "velocity_probe_cpu.yaml": ("cpu", "auto", 10000,     5,          256),
+    "velocity_probe_s1_cpu.yaml": ("cpu", "auto", 10000,  5,          256),
     "velocity_w5_cpu.yaml":   ("cpu",  "auto", 10000,     5,          256),
     "velocity_lin_cpu.yaml":  ("cpu",  "auto", 10000,     5,          256),
+    "velocity_lin_s1_cpu.yaml": ("cpu", "auto", 10000,    5,          256),
     "velocity_peak_cpu.yaml": ("cpu",  "auto", 10000,     5,          256),
+    "velocity_std_cpu.yaml":  ("cpu",  "auto", 10000,     5,          256),
+    "velocity_std_s1_cpu.yaml": ("cpu", "auto", 10000,    5,          256),
 }
 
 

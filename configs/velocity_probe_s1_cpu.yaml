@@ -1,0 +1,13 @@
+# The Phase A' baseline again with a second seed, the partner of
+# velocity_lin_s1_cpu. A'2's edge over the baseline is a difference between two
+# single runs; with both repeated on seed 1, the question becomes whether the
+# difference survives a change of seed on both sides, not just on one.
+#
+# window_seed is pinned to 0 for the same reason as in velocity_lin_s1_cpu: it
+# fixes the validation windows, and it would otherwise follow train.seed.
+_base_: velocity_probe_cpu.yaml
+name: velocity_probe_s1_cpu
+data:
+  window_seed: 0
+train:
+  seed: 1

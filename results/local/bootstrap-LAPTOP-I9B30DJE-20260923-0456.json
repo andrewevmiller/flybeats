@@ -1,0 +1,109 @@
+{
+  "steps": [
+    {
+      "name": "git state",
+      "status": "ok",
+      "detail": "cuda-path-verified at 2a64149, 1 behind / 1 ahead of origin/main"
+    },
+    {
+      "name": "venv",
+      "status": "ok",
+      "detail": "reusing C:\\Users\\ricos\\Documents\\AI Databases\\flybeats\\git\\.venv"
+    },
+    {
+      "name": "install",
+      "status": "skipped",
+      "detail": "would install torch + requirements-dev.txt"
+    },
+    {
+      "name": "torch sees the GPU",
+      "status": "ok",
+      "detail": "2.14.0+cu126 (CUDA 12.6) -> NVIDIA GeForce RTX 2060 with Max-Q Design, 6.4 GB, bf16 yes"
+    },
+    {
+      "name": "pytest",
+      "status": "ok",
+      "detail": "196 passed, 3 warnings in 77.10s (0:01:17) in 79s"
+    },
+    {
+      "name": "cuda_smoke.py",
+      "status": "FAILED",
+      "detail": "see the checks above"
+    },
+    {
+      "name": "thread timing",
+      "status": "ok",
+      "detail": "1 thread: 12.8 ms (1.56x realtime), 8 threads: 7.2 ms (2.76x realtime), 16 threads: 7.9 ms (2.53x realtime)"
+    }
+  ],
+  "machine": {
+    "when": "2026-09-23T04:54:20+00:00",
+    "os": "Windows 11",
+    "machine": "AMD64",
+    "processor": "AMD64 Family 23 Model 96 Stepping 1, AuthenticAMD",
+    "cpu_count": 16,
+    "python": "3.12.10",
+    "python_exe": "C:\\Users\\ricos\\Documents\\AI Databases\\flybeats\\git\\.venv\\Scripts\\python.exe",
+    "ram_gb": 42.3
+  },
+  "gpu": {
+    "present": true,
+    "raw": "NVIDIA GeForce RTX 2060 with Max-Q Design, 616.56, 6144 MiB",
+    "name": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+    "driver": "616.56",
+    "memory": "6144 MiB"
+  },
+  "git": {
+    "branch": "cuda-path-verified",
+    "head": "2a64149",
+    "dirty": false,
+    "behind_main": "1",
+    "ahead_main": "1"
+  },
+  "torch": {
+    "version": "2.14.0+cu126",
+    "cuda_build": "12.6",
+    "cuda_available": true,
+    "threads": 8,
+    "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+    "capability": "7.5",
+    "vram_gb": 6.4,
+    "bf16": true
+  },
+  "pytest": {
+    "summary": "196 passed, 3 warnings in 77.10s (0:01:17)",
+    "seconds": 79.3,
+    "returncode": 0
+  },
+  "cuda_smoke": {
+    "returncode": 1,
+    "cuda": true,
+    "checks": [
+      "[PASS] sparse spmm + custom backward vs dense (duplicate edges) -- forward 4.44e-16, grad_values 0.00e+00, grad_r 0.00e+00",
+      "[rate] ceiling = 8.7559 activation (4.0x this model's initial mean)",
+      "[FAIL] bf16 autocast step -- finite=True, non-zero=True, worst relative drift 1.756 on genre.embed.weight",
+      "[PASS] gradient checkpointing is transparent -- 13 tensors, worst difference 1.49e-08 (decoder.readout.weight)",
+      "[PASS] one training epoch end to end -- loss 1.9161, 0.9s for 4 clips, peak VRAM 0.03 GB",
+      "[FAIL] streaming inference benchmark -- RuntimeError: Expected all tensors to be on the same device, but got weight is on cuda:0, different from other tensors on cpu (when checking argument in method wrapper_CUDA___slow_conv2d_forward)"
+    ]
+  },
+  "threads": {
+    "1": {
+      "ms": 12.79180999918026,
+      "x": 1.5635003960566696
+    },
+    "8": {
+      "ms": 7.235964998835698,
+      "x": 2.7639713574095643
+    },
+    "16": {
+      "ms": 7.9139449990179855,
+      "x": 2.5271846092538843
+    }
+  },
+  "threads_best": {
+    "count": 8,
+    "ms": 7.235964998835698
+  },
+  "exit_code": 1
+}

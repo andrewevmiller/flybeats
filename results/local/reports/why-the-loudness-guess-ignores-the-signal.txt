@@ -1,0 +1,66 @@
+WHY THE MODEL'S LOUDNESS GUESS IGNORES INFORMATION IT HAS
+Written 24 September 2026
+==========================================================================
+
+SHORT ANSWER
+The part of the model that makes the loudness guess never finishes learning.
+The information it needs is there, and a guess of exactly the same simple
+kind can use it. Training just doesn't get it there in 12 rounds. This is a
+training problem, not a hearing problem, and it is probably cheap to fix.
+
+WHAT I CHECKED
+1. Is the loudness part being trained at all?  Yes, but it hardly moves.
+   After training, its settings are still almost exactly where they started
+   at random. In all four arms they match each other almost perfectly (99%
+   and up), and they are the same size as at the start. That is also why A3
+   came out nearly identical to the baseline: both started from the same
+   random settings and neither moved far from them.
+2. Is some safety limit starving it of updates?  No. Training caps how big
+   each update can be, but the cap never kicked in, and the loudness part
+   gets some of the largest updates in the whole model. They just point in
+   different directions from one step to the next and mostly cancel out.
+3. Could the same kind of guess do better?  Yes, a lot better. I fitted
+   the same simple kind of guess (same inputs, same one-sided wiring) in one
+   exact calculation on the training songs, then scored it on the test songs:
+
+     drum       trained guess   same kind, fitted exactly
+     snare          +0.08        +0.39   RIGHT (confident) [+0.27 to +0.49]
+     low tom        -0.04        +0.30   RIGHT (confident) [+0.14 to +0.46]
+     mid tom        +0.12        +0.34   RIGHT (confident) [+0.16 to +0.49]
+     kick           -0.08        +0.11   can't tell        [-0.04 to +0.26]
+     closed hat     +0.07        -0.06   can't tell
+     crash          +0.33        +0.12   can't tell
+
+   Fitted the way training actually grades it (across the whole hit, not
+   only its peak), it still reaches +0.27, +0.18 and +0.47 on those three
+   drums. So what training aims for is fine. The problem is getting there.
+
+WHY TRAINING STALLS
+The signals the loudness part reads are nearly the same size all the time,
+with only tiny wobbles on top. The steady part is about 50 to 80 times
+bigger than the wobbles, and the loudness information is in the wobbles.
+A learner taking small steps spends its effort matching the steady part and
+barely inches along the wobbles. The same thing is happening to the timing
+guess, which also barely left its starting point.
+
+This also explains why A1 (loudness counts 5x) could not help. The learning
+method used here adjusts its step sizes automatically, so making the
+loudness grade count five times as much barely changes how the loudness part
+itself learns. It mostly just pulls harder on the rest of the model.
+
+A PREDICTION THE SEED-2 RUNS CAN TEST
+If the loudness part mostly stays where it started, the second-seed runs,
+which start from different random settings, should give different
+drum-by-drum verdicts, and those verdicts should be about as much a matter of
+luck as of the change being tested. Crash being "right" in every arm may be
+partly luck of this kind too: the exact fit above does worse on crash than
+the trained guess does.
+
+WHAT WOULD FIX IT (Andrew's call; nothing has been changed)
+  a. Quickest, no retraining: refit just the loudness part of each saved
+     model with the exact calculation above, and rescore. Minutes on CPU.
+  b. Proper fix: even out the signals before the loudness part reads them
+     (subtract their usual level and scale their wobbles up). It is still
+     one simple straight-line readout, measured once before training starts,
+     the same way the input side is already calibrated. Then retrain.
+  c. Also possible: give the two final readouts their own, larger step size.

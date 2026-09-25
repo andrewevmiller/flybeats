@@ -160,6 +160,9 @@ def check_bf16(model, batch, cfg, device) -> bool | None:
         c["train"]["grad_checkpoint"] = False
         opt = torch.optim.SGD(model.parameters(), lr=0.0)   # grads only, no step
         torch.manual_seed(0)
+        # Both runs must see the same clips. Without this the drift below is
+        # data variation, not dtype error: two fp32 runs measured 1.53 apart.
+        T.reseed_loader(batch, 0)
         T.run_epoch(model, batch, opt, c, device, train=True)
         return {n: p.grad.detach().float().clone()
                 for n, p in model.named_parameters() if p.grad is not None}

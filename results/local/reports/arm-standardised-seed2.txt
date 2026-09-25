@@ -1,0 +1,72 @@
+STANDARDISED READOUTS, SECOND SEED - "even out the signals", run again   (config: velocity_std_s1_cpu)
+Finished 18:57 on 24 September 2026
+==========================================================================
+
+WHAT THIS RUN CHANGED
+Nothing about the recipe. It is the standardisation run exactly, started
+from different random settings, to see whether its big result holds on a
+second try: loudness learned during training itself, and the best timing
+score of any local run. Same test songs as every other run.
+
+DID IT RUN CLEANLY?
+Yes, in three sittings on this laptop, as planned: rounds 1-6 (14:45 to
+15:25), round 7 (18:10 to 18:19, paused on request) and rounds 8-12 (18:26
+to 18:56). Each restart picked up exactly where the last one stopped. On
+the same machine that gives the same result as one unbroken run, which was
+tested earlier today. About 5.5 to 7 minutes a round (one took 9.6 while
+another session was busy). The loudness guess was refitted automatically
+(53 seconds), and both versions were checked. No errors.
+
+LOUDNESS, DRUM BY DRUM   as trained                      after the refit
+  kick          can't tell  [-0.03]                    can't tell  [-0.12]
+  snare         RIGHT       [+0.11, +0.01 to +0.20]   RIGHT       [+0.23, +0.14 to +0.32]
+  closed hat    can't tell  [-0.05]                    can't tell  [-0.05]
+  open hat      can't tell  [+0.23, -0.02 to +0.46]   can't tell  [+0.16]
+  low tom       RIGHT       [+0.22, +0.05 to +0.40]   RIGHT       [+0.26, +0.11 to +0.41]
+  mid tom       RIGHT       [+0.35, +0.19 to +0.49]   RIGHT       [+0.31, +0.14 to +0.46]
+  high tom      too few hits                           too few hits
+  crash         can't tell  [-0.05]                    can't tell  [-0.15]
+  Right / backwards    3 / 0                              3 / 0
+
+SIDE BY SIDE: drums RIGHT
+                        As trained             After the refit        Timing
+  Standardised, seed 1  snare, low+mid tom     the same, plus crash   0.321
+  Standardised, seed 2  snare, low+mid tom     the same three         0.297
+  Baseline, seed 1      crash                  snare, low+mid tom     0.283
+  Baseline, seed 2      low+mid tom, crash     snare, low+mid tom     0.267
+  (Nothing backwards anywhere. High tom: too few hits to judge.)
+
+WHAT THE SECOND SEED SHOWS
+1. Training now learns loudness, and repeatably. Both seeds' trained
+   guesses get exactly the same three drums right, with nothing backwards.
+   Without standardisation the two baseline seeds agreed on almost nothing
+   as trained: which drums came out right was luck of the random start.
+   With it, the trained verdicts repeat. The snare here only just clears
+   the line (+0.01), so that one is the weakest of the six.
+2. The refit adds almost nothing now. On this seed it leaves the same three
+   drums right at similar strength (snare +0.11 to +0.23, low tom +0.22 to
+   +0.26, mid tom +0.35 to +0.31). Training got the guess close to where
+   the exact calculation puts it, which is what the change was for. Seed
+   1's extra crash after the refit did not repeat (here -0.15, can't tell),
+   so treat that as noise: crash is in only 35 test songs.
+3. Timing: 0.297, lower than seed 1's 0.321, but the baseline dropped by a
+   similar amount between its seeds (0.283 to 0.267). Seed for seed,
+   standardising beats the baseline by 0.037 and 0.029. Both seeds scored
+   best in their last round, so both were still improving.
+
+HOW FAR ALONG
+The automatic estimate says timing was still rising at the end, towards
+roughly 0.36, with a wide margin (anywhere from a fifth of the way there
+to nearly all of it). Seed 1's estimate was similar (about 0.35). More
+rounds would probably help, especially on the full data.
+
+BOTTOM LINE
+It held. On both seeds, evening out the signals lets training learn
+loudness on its own (the same three drums right, nothing backwards, in
+line with the exact refit), and timing improves by about 0.03 over the
+baseline started from the same random settings. The first seed's report
+said that if a second seed held up, this should be the default for the
+full-data run (Phase B'). It did. That is Andrew's call.
+Caveats: two seeds, one drummer's playing (256 of drummer 1's songs), and
+kick, hats and crash are still "can't tell". Not yet tried: standardising
+together with A2's straight-line output.

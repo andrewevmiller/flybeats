@@ -1,0 +1,15 @@
+# A'2 again with a second seed. Under the fixed probe (24 Sep) A'2 was the only
+# arm to clear the bar, and only just: snare's interval starts at +0.005 and
+# tom_mid's at +0.04. One seed at that margin is not a result, so this repeats
+# it with only the seed changed -- initialisation, calibration draw, batch order
+# and training windows.
+#
+# window_seed is pinned to 0. train.py defaults it to train.seed, and it fixes
+# the validation windows, so leaving it to follow the seed would score this run
+# on different audio from every other A' arm, and checkpoint selection with it.
+_base_: velocity_lin_cpu.yaml
+name: velocity_lin_s1_cpu
+data:
+  window_seed: 0
+train:
+  seed: 1

@@ -128,3 +128,26 @@ def test_an_unknown_future_bundle_version_is_still_refused(tmp_path):
     torch.save(b, path)
     with pytest.raises(ValueError, match="bundle format"):
         load_bundle(path)
+
+
+def test_a_checkpoint_plays_at_its_scored_threshold_like_its_bundle(tmp_path):
+    """``realtime.py --checkpoint`` and a bundle of the same checkpoint must pick
+    hits at the same threshold. The checkpoint path used to hand back the
+    config's fixed eval.threshold, so the same model rendered a wall of notes
+    from one entry point and a handful from the other.
+    """
+    from realtime import drummer_for, load_checkpoint
+
+    cfg, sg, model, ck = _tiny_model()
+    ck["best_threshold"] = 0.5
+    assert cfg.get("eval", {}).get("threshold", 0.3) != 0.5, "test needs a different default"
+    ckpt, fb = tmp_path / "best.pt", tmp_path / "m.fb"
+    torch.save(ck, ckpt)
+    torch.save(build_bundle(ck, sg, model), fb)
+
+    m, kit, ccfg = load_checkpoint(ckpt, torch.device("cpu"))
+    assert drummer_for(m, kit, ccfg).threshold == 0.5
+    b, bkit, bcfg, _ = load_bundle(fb)
+    assert drummer_for(b, bkit, bcfg).threshold == 0.5
+    # an explicit --threshold still wins over the scored one
+    assert drummer_for(m, kit, ccfg, threshold=0.2).threshold == 0.2

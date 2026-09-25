@@ -84,6 +84,18 @@ class MotorToDrums(nn.Module):
 
     ``velocity_head=False`` builds the detection half alone, which is what a
     checkpoint trained before this head existed contains.
+
+    ``standardize_motor`` puts a fixed per-unit affine in front of both
+    readouts, measured once on the untrained network (:meth:`calibrate`) the
+    way the encoder's feature standardisation is. The motor rates are mostly a
+    shared level with a small wobble on top -- at hits the summed mean^2 is
+    50-80x the summed variance -- and the dynamics live in the wobble. SGD on
+    the raw rates spends its steps on the level: on every Phase A' checkpoint
+    the velocity head ended within a cosine of 0.99 of its initialisation,
+    while a least-squares fit of the same head on the same features read snare
+    and both toms at r +0.30 to +0.39. The readouts stay single linear layers;
+    this only changes the coordinates they are learned in. Off by default, so
+    a checkpoint without the buffers loads unchanged.
     """
 
     def __init__(
@@ -94,9 +106,17 @@ class MotorToDrums(nn.Module):
         bilateral: bool = False,
         velocity_head: bool = True,
         velocity_activation: str = "sigmoid",
+        standardize_motor: bool = False,
     ):
         super().__init__()
         self.kit = kit
+        self.standardize_motor = bool(standardize_motor)
+        if self.standardize_motor:
+            # Identity until calibrated, so an uncalibrated model behaves
+            # exactly as one built without the flag.
+            self.register_buffer("motor_mean", torch.zeros(n_motor))
+            self.register_buffer("motor_scale", torch.ones(n_motor))
+            self.register_buffer("motor_calibrated", torch.zeros((), dtype=torch.bool))
         self.readout = nn.Linear(n_motor, kit.n, bias=True)
         nn.init.normal_(self.readout.weight, std=1.0 / max(n_motor, 1) ** 0.5)
         nn.init.constant_(self.readout.bias, -2.0)   # onsets are sparse; start quiet
@@ -136,10 +156,45 @@ class MotorToDrums(nn.Module):
     def has_velocity(self) -> bool:
         return self.vel_readout is not None
 
+    def _inputs(self, rates: torch.Tensor) -> torch.Tensor:
+        if not self.standardize_motor:
+            return rates
+        return (rates - self.motor_mean) / self.motor_scale
+
+    @torch.no_grad()
+    def calibrate(self, rates) -> dict:
+        """Fix the motor standardisation from untrained-network rates.
+
+        ``rates`` is one ``(batch, steps, n_motor)`` tensor or a list of them.
+        Every step counts, not only hits: both readouts are applied at every
+        step, and the onset readout's job is mostly telling hits from gaps.
+        A unit that never moves keeps scale 1 rather than being divided by
+        nothing.
+        """
+        if not self.standardize_motor:
+            return {"calibrated": False}
+        if isinstance(rates, torch.Tensor):
+            rates = [rates]
+        dev = self.motor_mean.device
+        flat = torch.cat([r.detach().to(dev).float().reshape(-1, r.shape[-1]) for r in rates])
+        if flat.shape[0] < 2:
+            raise ValueError("calibrate needs at least two motor frames")
+        mean = flat.mean(0)
+        std = flat.std(0)
+        flat_units = int((std < 1e-6).sum())
+        scale = torch.where(std < 1e-6, torch.ones_like(std), std)
+        self.motor_mean.copy_(mean)
+        self.motor_scale.copy_(scale)
+        self.motor_calibrated.fill_(True)
+        return {"calibrated": True, "frames": int(flat.shape[0]),
+                "mean_level": float(mean.mean()), "mean_sd": float(std.mean()),
+                "level_to_sd": float((mean.pow(2).sum() / std.pow(2).sum().clamp_min(1e-12)).item()),
+                "flat_units": flat_units}
+
     def forward(self, rates: torch.Tensor) -> torch.Tensor:
         """``(batch, steps, n_motor)`` -> ``(batch, steps, n_classes)`` logits."""
         w = self.readout.weight * self.mask
-        return torch.nn.functional.linear(rates, w, self.readout.bias)
+        return torch.nn.functional.linear(self._inputs(rates), w, self.readout.bias)
 
     def velocity(self, rates: torch.Tensor) -> torch.Tensor | None:
         """How hard each class is struck, in 0..1. ``None`` without the head.
@@ -158,7 +213,7 @@ class MotorToDrums(nn.Module):
         if self.vel_readout is None:
             return None
         w = self.vel_readout.weight * self.mask
-        out = torch.nn.functional.linear(rates, w, self.vel_readout.bias)
+        out = torch.nn.functional.linear(self._inputs(rates), w, self.vel_readout.bias)
         return torch.sigmoid(out) if self.velocity_activation == "sigmoid" else out
 
 

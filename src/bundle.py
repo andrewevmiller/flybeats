@@ -141,7 +141,8 @@ def load_bundle(path: str | Path, device=None):
                        bilateral=cfg["kit"].get("bilateral", False),
                        velocity_head=has_vel,
                        velocity_activation=cfg["kit"].get("velocity_activation",
-                                                          "sigmoid"))
+                                                          "sigmoid"),
+                       standardize_motor="decoder.motor_mean" in b["state"])
     genre = None
     n_styles = int(b.get("n_styles", 1) or 1)
     if any(k.startswith("genre.") for k in b["state"]):

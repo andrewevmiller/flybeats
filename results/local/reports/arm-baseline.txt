@@ -1,0 +1,47 @@
+BASELINE - "no change, the yardstick"                (config: velocity_probe_cpu)
+Finished 04:31 on 24 September 2026
+==========================================================================
+
+WHAT THIS ARM CHANGED
+Nothing. This is the model as it stood before any of tonight's loudness
+fixes, trained the same way on the same machine, so the three fixes can be
+judged against it fairly. Until now the arms were compared with an older
+baseline run on the cloud machine.
+
+DID IT RUN CLEANLY?
+Yes. All 12 training rounds finished (03:21 to 04:31, about 6 minutes a
+round), then the loudness check ran in 39 seconds. No errors. The whole
+queue finished at 04:32.
+
+LOUDNESS, DRUM BY DRUM  (does the model hit harder when the drummer did?)
+  kick         gets it BACKWARDS (confident)   [-0.18, sure-range -0.33 to -0.02]
+  snare        gets it RIGHT (confident)       [+0.14, +0.05 to +0.23]
+  closed hat   can't tell yet                   [+0.02, -0.09 to +0.13]
+  open hat     can't tell yet                   [+0.14, -0.24 to +0.42]
+  low tom      gets it BACKWARDS (confident)   [-0.26, -0.36 to -0.16]
+  mid tom      can't tell yet                   [+0.00, -0.15 to +0.14]
+  high tom     too few hits to judge
+  crash        gets it RIGHT (confident)       [+0.29, +0.13 to +0.44]
+
+Its guesses spread only about a third as much as the real hits
+[0.105 vs 0.279].
+
+HOW IT DIFFERS FROM THE OLD CLOUD BASELINE
+The snare is RIGHT here. On the cloud it was backwards. The earlier A1 and
+A3 reports counted "snare flipped to right" as progress, but that was
+measured against the cloud. On this machine the snare was right before any
+fix, so that progress was not real. Kick and low tom are backwards here too,
+so no fix caused them. They were already backwards.
+
+TIMING SCORE
+0.283 (cloud baseline 0.301). As with A2 and A3, the best round was
+round 3 of 12. The rough loudness score kept rising after that (+0.07 at
+round 3, +0.11 to +0.14 in rounds 9-12).
+
+BOTTOM LINE
+This is the yardstick, and it changes how the other three read:
+  - Kick and low tom were ALREADY backwards. The fixes did not cause that,
+    and none of them repaired it.
+  - Snare and crash were ALREADY right.
+  - No fix turned a single drum from wrong or can't-tell into right, so
+    none passes the project's bar. See 00-overview.txt for the side-by-side.

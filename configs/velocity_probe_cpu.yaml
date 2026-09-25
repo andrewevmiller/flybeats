@@ -11,6 +11,13 @@
 # on 64 clips ending with the loss still falling and onset F flat, which is a
 # model limited by data, and a data-limited model is a poor place to ask
 # whether a signal exists.
+#
+# The 256 are drummer1 only. max_files keeps the first N usable rows in
+# info.csv order, and GMD's info.csv is ordered by drummer, so this is 256
+# drummer1 clips -- 227 fills, 29 beats, 10 styles, 1.24 h -- out of a training
+# split of 846 covering 9 drummers, 17 styles and 8.4 h. Every velocity_*_cpu
+# config inherits it, and the Phase A' arms are compared on it, so it stays.
+# A new config that wants the spread sets `data.subset: stratified`.
 _base_: v1_8piece_cpu.yaml
 name: velocity_probe_cpu
 data:

@@ -31,6 +31,15 @@ Three things follow from having real hardware, in the order they pay off:
 
 ## Start here: one command
 
+> **Read the current handoff first.**
+> [results/local/handoff-2026-09-24.md](results/local/handoff-2026-09-24.md)
+> says what the last session on this machine did — Phase A′ ran overnight —
+> and what comes next. The two decisions in
+> [handoff-2026-09-21.md](results/local/handoff-2026-09-21.md) are still open
+> and should be taken before any expensive run starts, because both change
+> what the campaign measures.
+> The `results/local/` index lists the dated notes behind it.
+
 From the clone — including the one at
 `C:\Users\ricos\Documents\AI Databases\flybeats\git`, which may be behind:
 
@@ -249,12 +258,49 @@ download.)
 ```bash
 python src/train.py --config configs/v1_8piece.yaml
 python scripts/diagnose.py --checkpoint runs/v1_8piece/best.pt
-python scripts/export_bundle.py --checkpoint runs/v1_8piece/best.pt
+python scripts/export_bundle.py --checkpoint runs/v1_8piece/best_refit.pt
 ```
+
+Since 24 September, `train.py` finishes by writing **`best_refit.pt`** beside
+`best.pt`: the same network with its velocity head solved in closed form on
+the train split (`src/refit.py`), because the SGD head does not converge in a
+run this length. `best.pt` stays exactly as trained. Bundle, play and
+velocity-probe `best_refit.pt`; timing is identical in both. Turn the step off
+with `train.refit_velocity_head: false`. For older checkpoints, run
+`python scripts/refit_velocity_head.py --checkpoint <best.pt> --out <best_refit.pt>`.
 
 Cost on CPU is 15–20 min/epoch, 3–4 h for 12 — an extrapolation from Phase A′
 runs, not a measurement. On a GPU, time the first epoch and scale from that;
 do not trust any projection in this repository for your hardware.
+
+### Splitting a long run, or surviving a restart
+
+A run does not have to happen in one sitting. After every epoch `train.py`
+writes **`last.pt`** beside `best.pt`: the weights, AdamW's state, the history
+so far, and every random stream including the loader's shuffle order.
+`--resume` carries on from it, and the result is **bit-identical** to a run
+that was never stopped (`tests/test_resume.py` checks exactly that).
+
+To stop cleanly, create a `STOP` file in the run's directory. The run finishes
+the epoch it is on, saves, and exits; the file is consumed, so it cannot stop
+the resume too:
+
+```bash
+touch runs/v1_8piece/STOP          # PowerShell: New-Item runs\v1_8piece\STOP
+python src/train.py --config configs/v1_8piece.yaml --resume
+```
+
+`--resume` with no `last.pt` simply starts fresh, so it is safe to always pass.
+A shutdown, a crash or a Windows Update restart loses at most the epoch in
+progress: rerun the same command with `--resume`. It refuses a `last.pt`
+written under a different config — including a different `device` — because
+that would be neither run. The one exception is `train.epochs`: raise it and
+resume to extend a finished run.
+
+The Phase A′ queue (`scripts/run_velocity_queue.ps1`) always passes `--resume`.
+An arm that ends short is not probed or marked done; the queue logs `queue
+paused` and exits, `runstat.ps1` shows **PAUSED**, and running the same queue
+command again picks it up.
 
 Note this config is the **30k-node tier, which has never been trained at any
 size**. Every run so far was at 10k. If it will not fit, `configs/v1_8piece_cpu.yaml`
@@ -340,4 +386,6 @@ whether the project is usable, and it needs a trained model and about an hour.
 | bf16 errors or looks wrong | `torch.cuda.is_bf16_supported()` is False on older cards. Set `train.bf16: false`; it is a speed option, not a correctness one. |
 | Live path misses the 20 ms budget | Threads, nearly always. `OMP_NUM_THREADS=1` first, `--speed` second. Offline `--render` has no budget and is unaffected. |
 | An epoch is 20× slower than expected | Two jobs on one box, or thread oversubscription. Never run two. |
+| The machine restarted mid-run | Rerun the same command with `--resume` (or rerun the queue); it continues from the last finished epoch. Check the Windows System log for event 1074 to see what restarted it. |
+| `--resume` says "different config" | The `last.pt` in that run directory came from other settings. Resume under the original config, or move `last.pt` aside to start over. |
 | A metric moved and nothing else did | Check the seed before the science. `train.seed` now pins batch order, training windows and calibration; validation windows are fixed regardless. |

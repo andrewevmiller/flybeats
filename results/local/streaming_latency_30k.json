@@ -1,0 +1,91 @@
+{
+  "tier": 30000,
+  "block_ms": 20.0,
+  "n_blocks": 50,
+  "rows": [
+    {
+      "device": "cpu",
+      "threads": 1,
+      "speed": 1.0,
+      "mean_ms": 50.63,
+      "p95_ms": 70.58,
+      "realtime_x": 0.39,
+      "meets_budget": false
+    },
+    {
+      "device": "cpu",
+      "threads": 1,
+      "speed": 2.0,
+      "mean_ms": 72.35,
+      "p95_ms": 77.89,
+      "realtime_x": 0.28,
+      "meets_budget": false
+    },
+    {
+      "device": "cpu",
+      "threads": 1,
+      "speed": 4.0,
+      "mean_ms": 132.38,
+      "p95_ms": 148.35,
+      "realtime_x": 0.15,
+      "meets_budget": false
+    },
+    {
+      "device": "cpu",
+      "threads": 8,
+      "speed": 1.0,
+      "mean_ms": 24.83,
+      "p95_ms": 27.16,
+      "realtime_x": 0.81,
+      "meets_budget": false
+    },
+    {
+      "device": "cpu",
+      "threads": 8,
+      "speed": 2.0,
+      "mean_ms": 41.96,
+      "p95_ms": 47.6,
+      "realtime_x": 0.48,
+      "meets_budget": false
+    },
+    {
+      "device": "cpu",
+      "threads": 8,
+      "speed": 4.0,
+      "mean_ms": 93.46,
+      "p95_ms": 130.27,
+      "realtime_x": 0.21,
+      "meets_budget": false
+    },
+    {
+      "device": "cuda",
+      "threads": 1,
+      "speed": 1.0,
+      "mean_ms": 4.56,
+      "p95_ms": 5.38,
+      "realtime_x": 4.38,
+      "meets_budget": true
+    },
+    {
+      "device": "cuda",
+      "threads": 1,
+      "speed": 2.0,
+      "mean_ms": 7.12,
+      "p95_ms": 9.42,
+      "realtime_x": 2.81,
+      "meets_budget": true
+    },
+    {
+      "device": "cuda",
+      "threads": 1,
+      "speed": 4.0,
+      "mean_ms": 10.24,
+      "p95_ms": 12.65,
+      "realtime_x": 1.95,
+      "meets_budget": true
+    }
+  ],
+  "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+  "torch": "2.14.0+cu126",
+  "when": "2026-09-22 22:13"
+}
