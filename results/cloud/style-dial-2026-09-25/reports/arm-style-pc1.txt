@@ -1,0 +1,16 @@
+ARM: style_pc1_cpu  (style push moved from octopamine neurons to pC1, cap 0.5 -> 5.0)
+Compared with the cloud baseline (velocity_probe_cpu), trained on the same machine, same data, seed and 12 epochs.
+
+Does the style dial now change what it plays?
+Yes. Switching style now changes 20% of the hits (baseline: 0%). To a style it trained on, 24% change; to one it never saw, 17%. The largest shift any style gives any drum's signal is 0.51, on a 0-1 scale where a hit needs 0.5 (baseline: 0.002). So a style can now switch a drum on or off by itself.
+
+Which drums play?
+More of the kit. Kick, snare, closed hat, low tom and mid tom all play (baseline: snare only). The snare is still most of it (79%), then low tom (10%) and closed hat (9%). The human plays mostly hats (45%).
+
+Timing score (best val onset F): 0.2804 (baseline 0.2834, so 0.003 lower, which is within noise for one seed).
+
+Groove and busyness: groove match to the human is 0.31 (baseline 0.29). It plays 8.5 hits a second, the human 8.6 (baseline 10.1). Bars vary much more: two random bars differ in 45% of their hits (baseline 17%, human 32%). That may be more variety than a drummer would use.
+
+Sliders: all three now do something. Drive changes 10-11% of hits (baseline under 1%). Tightness 1.5 no longer silences it: it keeps 22% of its hits (baseline 1%). Pocket is about the same (13-15%).
+
+Other kits (kit check): holds on the other E-GMD kits (0.269 vs 0.279 on its own kit, not a clear difference). On held-out kits it drops 0.017 (0.262), about the same as the baseline's 0.015 drop.

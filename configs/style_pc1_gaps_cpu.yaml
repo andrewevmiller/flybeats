@@ -1,0 +1,19 @@
+# Style dial, path fix plus a reason to use it. Asks whether style matters
+# more once the audio stops handing the model the answer.
+#
+#   python src/train.py --config configs/style_pc1_gaps_cpu.yaml
+#   python scripts/measure_variety.py --checkpoint runs/style_pc1_gaps_cpu/best.pt
+#
+# Compare against style_pc1_cpu (the path fix alone) and velocity_probe_cpu
+# (the baseline), all trained on the same machine. The model marks hits in
+# audio it can hear, so style is nearly redundant. Here about half of every
+# training window is silenced in 250-1000 ms spans while the drum targets
+# stay, so the groove has to be carried through the gaps from memory and
+# style. Training only: validation and playback hear the full audio.
+_base_: style_pc1_cpu.yaml
+name: style_pc1_gaps_cpu
+train:
+  audio_gaps:
+    fraction: 0.5
+    min_ms: 250
+    max_ms: 1000

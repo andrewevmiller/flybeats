@@ -1,0 +1,37 @@
+How varied is the fly's drumming? (style_pc1_cpu)
+6 test songs the fly never trained on, first 20 s of each, played the way a finished model file would play them.
+
+SAME INPUT, SAME OUTPUT
+  Playing a song twice gives exactly the same drums.
+
+WHICH DRUMS IT PLAYS
+  A drum plays when its signal crosses 0.5. Drums that ever did: kick, snare, hat_closed, tom_low, tom_mid.
+  Highest signal each drum reached: kick 0.59, snare 0.89, hat_closed 0.58, hat_open 0.09, tom_low 0.75, tom_mid 0.60, tom_high 0.01, crash 0.37.
+
+HOW BUSY
+  The fly plays 8.5 hits a second; the human drummer on the same songs played 8.6.
+  Fly's most-used drums: snare 79%, tom_low 10%, hat_closed 9%.
+  Human's most-used drums: hat_closed 45%, snare 26%, kick 21%.
+
+VARIETY WITHIN A SONG
+  Of the fly's bars, 100% are different from each other (human: 74%).
+  Two bars picked at random differ in 45% of their hits (human: 32%).
+
+HOW CLOSE TO THE DRUMMER IT IS HEARING
+  Groove match with the human part: 0.31 on a 0-1 scale (1 = same groove). Hit by hit, 87% of hits differ.
+
+THE STYLE DIAL
+  This model was trained on 10 of the 18 styles.
+  Switching style changes 20% of the hits on average.
+  To a style it trained on: 24% of hits change. To one it never trained on: 17%.
+  The most any style moved any drum's signal: 0.5100 (on a 0-1 scale, where a hit needs the signal to cross 0.5).
+
+THE SLIDERS (each against the default)
+  drive=0.5        changes 11% of hits, plays 0.97x as many, and moves the signal by up to 0.154.
+  drive=1.5        changes 10% of hits, plays 1.15x as many, and moves the signal by up to 0.242.
+  tightness=0.5    changes 66% of hits, plays 4.82x as many, and moves the signal by up to 0.753.
+  tightness=1.5    changes 65% of hits, plays 0.22x as many, and moves the signal by up to 0.376.
+  pocket=0.8       changes 13% of hits, plays 1.24x as many, and moves the signal by up to 0.239.
+  pocket=1.25      changes 15% of hits, plays 0.91x as many, and moves the signal by up to 0.232.
+
+(threshold 0.5, 10.3 min to measure, 2026-09-25T05:35:59+0000)

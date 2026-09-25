@@ -1,0 +1,15 @@
+STYLE DIAL VERDICT (cloud run, 25 Sep; one seed each)
+
+                          baseline   pC1      pC1+gaps
+hits changed by style     0%         20%      9%
+largest style shift       0.002      0.51     0.24
+timing score (val F)      0.2834     0.2804   0.2765
+drums that play           snare      5 drums  snare+hat
+hits/s (human 8.6)        10.1       8.5      9.8
+groove match to human     0.29       0.31     0.30
+
+Is a working path enough? Yes. Moving the style push onto pC1 makes the dial WORKING: switching style changes 20% of hits, and the timing score drops only 0.003 (the limit was 0.01). It also brought more drums in and made the drive slider work.
+
+Does training also need a reason? Not by this test. Silencing half the audio did not make style matter more. It halved the style effect (9%, just under the 10% bar), cost 0.007 of timing, and went back to mostly snare. Gaps are not worth keeping in this form.
+
+These are cloud numbers. Timing scores compare only within this run, not with the laptop's (the laptop baseline also scored 0.2834, but that match is not evidence). A second seed of the pC1 arm would confirm it.

@@ -1,0 +1,23 @@
+[02:32:05] runner started (pid 1519), OMP_NUM_THREADS=4
+[02:32:05] training velocity_probe_cpu
+[03:22:56] velocity_probe_cpu exit 0 (best: best val onset F: 0.2834)
+[03:23:05] training style_pc1_cpu
+[04:12:45] style_pc1_cpu exit 0 (best: best val onset F: 0.2804)
+[04:12:56] training style_pc1_gaps_cpu
+[05:01:41] style_pc1_gaps_cpu exit 0 (best: best val onset F: 0.2765)
+[05:01:53] fetching E-GMD subset (skips files already present)
+[05:12:14] E-GMD fetch exit 0 (2.6G)
+[05:12:21] measuring variety velocity_probe_cpu
+[05:22:46] variety velocity_probe_cpu exit 0
+[05:22:46] kit check velocity_probe_cpu
+[05:25:29] kit check velocity_probe_cpu exit 0
+[05:25:36] measuring variety style_pc1_cpu
+[05:35:59] variety style_pc1_cpu exit 0
+[05:35:59] kit check style_pc1_cpu
+[05:38:41] kit check style_pc1_cpu exit 0
+[05:38:48] measuring variety style_pc1_gaps_cpu
+[05:50:08] variety style_pc1_gaps_cpu exit 0
+[05:50:08] kit check style_pc1_gaps_cpu
+[05:53:07] kit check style_pc1_gaps_cpu exit 0
+[05:53:16] compare exit 0 -> runs/style/COMPARE.txt
+[05:53:16] queue done

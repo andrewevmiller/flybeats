@@ -1,0 +1,16 @@
+ARM: style_pc1_gaps_cpu  (the pC1 style push, plus about half of every training clip silenced in 0.25-1 s gaps, with the drum targets kept)
+Compared with the cloud baseline (velocity_probe_cpu), trained on the same machine, same data, seed and 12 epochs.
+
+Does the style dial now change what it plays?
+Somewhat, but less than the pC1 arm without gaps. Switching style changes 9% of the hits (baseline: 0%; pC1 alone: 20%). To a trained style, 11% change; to an unseen one, 7%. The largest signal shift from a style is 0.24 (baseline 0.002; pC1 alone 0.51). The gaps did not push the model to rely on style more. They roughly halved the effect.
+
+Which drums play?
+Snare and closed hat only, and the snare is 99% of the hits. That is close to the baseline's snare-only playing, and a step back from pC1 alone (five drums). Note that this model plays at a threshold of 0.4, not 0.5, because training picked that as its best.
+
+Timing score (best val onset F): 0.2765 (baseline 0.2834, so 0.007 lower; pC1 alone 0.2804).
+
+Groove and busyness: groove match to the human is 0.30 (baseline 0.29). It plays 9.8 hits a second, the human 8.6 (baseline 10.1). Bar-to-bar variety is back near the baseline: two random bars differ in 18% of their hits (baseline 17%, human 32%).
+
+Sliders: drive now changes only 4% of hits (pC1 alone: 10-11%). Tightness 1.5 silences it again: 98% of hits change and it keeps 1% of them, as in the baseline. Pocket changes 11-12%.
+
+Other kits (kit check): holds on the other E-GMD kits (0.284 vs 0.285 on its own kit). On held-out kits it drops 0.011 (0.274), a little less than the baseline's 0.015 drop.

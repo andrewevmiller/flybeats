@@ -221,9 +221,54 @@ def resolve_bf16(setting, device) -> bool:
     return bool(setting)
 
 
-def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bool = True):
+def audio_gap_mask(n_samples: int, sample_rate: int, gaps: dict,
+                   gen: torch.Generator) -> torch.Tensor:
+    """Boolean ``(n_samples,)`` mask, True where the audio is to be silenced.
+
+    Random spans of ``min_ms``..``max_ms`` are laid down until about
+    ``fraction`` of the window is covered. Spans may overlap; the loop stops
+    once coverage reaches the fraction (or after a bounded number of draws).
+    """
+    frac = float(gaps.get("fraction", 0.5))
+    mask = torch.zeros(n_samples, dtype=torch.bool)
+    if frac <= 0.0 or n_samples == 0:
+        return mask
+    lo = max(1, int(round(float(gaps.get("min_ms", 250)) * sample_rate / 1000)))
+    hi = max(lo, int(round(float(gaps.get("max_ms", 1000)) * sample_rate / 1000)))
+    lo, hi = min(lo, n_samples), min(hi, n_samples)
+    goal = min(frac, 1.0) * n_samples
+    for _ in range(1000):
+        if int(mask.sum()) >= goal:
+            break
+        span = int(torch.randint(lo, hi + 1, (1,), generator=gen))
+        start = int(torch.randint(0, n_samples - span + 1, (1,), generator=gen))
+        mask[start: start + span] = True
+    return mask
+
+
+def apply_audio_gaps(wav: torch.Tensor, cfg: dict, gen: torch.Generator) -> torch.Tensor:
+    """Zero random spans of each clip in a ``(B, samples)`` batch. Training
+    only: the drum targets are left as they are, so the model has to carry the
+    groove through the silence from its own state and the style drive."""
+    gaps = cfg["train"]["audio_gaps"]
+    sr = int(cfg["audio"]["sample_rate"])
+    keep = torch.stack([~audio_gap_mask(wav.shape[-1], sr, gaps, gen)
+                        for _ in range(wav.shape[0])])
+    return wav * keep.to(device=wav.device, dtype=wav.dtype)
+
+
+def audio_gap_generator(cfg: dict, epoch: int) -> torch.Generator:
+    """One generator per epoch, from ``train.seed`` and the epoch number, so a
+    resumed run silences the same spans an uninterrupted one would have."""
+    seed = int(cfg["train"].get("seed", 0))
+    return torch.Generator().manual_seed(seed * 1_000_003 + int(epoch) + 7919)
+
+
+def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bool = True,
+              epoch: int = 0):
     model.train(train)
     tb = cfg["train"]
+    gap_gen = audio_gap_generator(cfg, epoch) if (train and tb.get("audio_gaps")) else None
     chunk = int(tb.get("tbptt_steps", 150))
     amp = resolve_bf16(tb.get("bf16", False), device)
     ckpt = bool(tb.get("grad_checkpoint", False)) and train
@@ -237,6 +282,8 @@ def run_epoch(model, loader, opt, cfg, device, train: bool = True, use_genre: bo
         )
 
     for wav, y, vel_y, style, _tempo in loader:
+        if gap_gen is not None:
+            wav = apply_audio_gaps(wav, cfg, gap_gen)
         wav, y, vel_y = wav.to(device), y.to(device), vel_y.to(device)
         style = style.to(device) if (use_genre and model.genre is not None) else None
 
@@ -546,7 +593,7 @@ def main(argv=None) -> int:
 
     for ep in range(start, n_epochs):
         t0 = time.time()
-        tr = run_epoch(model, train_loader, opt, cfg, device, train=True)
+        tr = run_epoch(model, train_loader, opt, cfg, device, train=True, epoch=ep)
         ev = evaluate(model, val_loader, cfg, device)
         rec = {"epoch": ep, **{f"train_{k}": v for k, v in tr.items()}, **ev,
                "seconds": round(time.time() - t0, 1)}

@@ -95,6 +95,7 @@ def load_bundle(path: str | Path, device=None):
     from decoder import DrumKit, MotorToDrums
     from encoder import AudioToJO
     from model import ConnectomeRNN, FlyBeats, GenreModulation, ModelConfig
+    from build import genre_target_index
 
     device = device or torch.device("cpu")
     b = torch.load(Path(path), map_location="cpu", weights_only=False)
@@ -146,7 +147,7 @@ def load_bundle(path: str | Path, device=None):
     genre = None
     n_styles = int(b.get("n_styles", 1) or 1)
     if any(k.startswith("genre.") for k in b["state"]):
-        oa = np.asarray(b["roles"]["octopaminergic"], dtype=np.int64)
+        oa = genre_target_index(cfg, b["roles"])
         genre = GenreModulation(n_styles=n_styles, target_idx=oa, n_nodes=int(b["n_nodes"]),
                                 dim=cfg["genre"].get("dim", 8),
                                 max_current=cfg["genre"].get("max_current", 0.5))

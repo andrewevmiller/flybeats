@@ -145,7 +145,7 @@ def build_model(cfg: dict, sg: SubGraph, n_styles: int = 1, verified: dict | Non
     )
 
     genre = None
-    oa = sg.role("octopaminergic").astype(np.int64)
+    oa = genre_target_index(cfg, role_index(sg))
     if cfg.get("genre", {}).get("enabled", True) and len(oa) and n_styles > 1:
         genre = GenreModulation(
             n_styles=n_styles, target_idx=oa, n_nodes=sg.n_nodes,
@@ -153,6 +153,27 @@ def build_model(cfg: dict, sg: SubGraph, n_styles: int = 1, verified: dict | Non
             max_current=cfg["genre"].get("max_current", 0.5),
         )
     return FlyBeats(enc, rnn, dec, genre), kit
+
+
+def genre_target_index(cfg: dict, roles: dict) -> np.ndarray:
+    """Nodes the genre tonic lands on: the union of the ``genre.targets`` roles.
+
+    Defaults to ``["octopaminergic"]``, which is what every config and
+    checkpoint before this key used. A single role keeps its own node order, so
+    that default builds exactly the index it always did; several roles are
+    joined in listed order with repeats dropped.
+    """
+    names = (cfg.get("genre") or {}).get("targets", ["octopaminergic"])
+    if isinstance(names, str):
+        names = [names]
+    missing = [n for n in names if n not in roles]
+    if missing:
+        raise SystemExit(f"genre.targets names unknown roles {missing}; "
+                         f"known: {sorted(roles)}")
+    parts = [np.asarray(roles[n], dtype=np.int64) for n in names]
+    if len(parts) == 1:
+        return parts[0]
+    return np.asarray(list(dict.fromkeys(np.concatenate(parts).tolist())), dtype=np.int64)
 
 
 def role_index(sg: SubGraph) -> dict[str, np.ndarray]:
