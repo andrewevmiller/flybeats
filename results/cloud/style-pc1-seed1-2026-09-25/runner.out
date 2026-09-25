@@ -13,3 +13,5 @@
 [22:47:29] variety style_pc1_s1_cpu exit 0
 [22:47:29] kit check style_pc1_s1_cpu
 [22:51:09] kit check style_pc1_s1_cpu exit 0
+[22:51:16] compare exit 0 -> runs/style_s1/COMPARE.txt
+[22:51:16] queue done

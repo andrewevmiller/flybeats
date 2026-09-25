@@ -1,0 +1,18 @@
+                                    velocity_probe_cpu           style_pc1_cpu   velocity_probe_s1_cpu        style_pc1_s1_cpu
+same output twice                                 True                    True                    True                    True
+fly hits/s                                       10.07                    8.46                    9.03                   10.52
+human hits/s                                      8.56                    8.56                    8.56                    8.56
+fly distinct bars                                 0.70                    1.00                    0.89                    0.97
+fly bar-to-bar difference                         0.17                    0.45                    0.19                    0.25
+groove match to human                             0.29                    0.31                    0.32                    0.32
+hits differing from human                         0.83                    0.87                    0.80                    0.84
+style dial: hits changed                        0.0018                    0.20                  0.0017                    0.11
+  ...to a trained style                         0.0026                    0.24                  0.0017                    0.13
+  ...to an untrained style                      0.0020                    0.17                  0.0009                    0.09
+style dial: max signal shift                    0.0018                    0.51                  0.0065                    0.33
+slider drive=0.5 change                         0.0045                    0.11                  0.0014                    0.06
+slider drive=1.5 change                         0.0051                    0.10                  0.0019                    0.06
+slider tightness=0.5 change                       0.43                    0.66                    0.29                    0.48
+slider tightness=1.5 change                       0.99                    0.65                    0.32                    0.27
+slider pocket=0.8 change                          0.11                    0.13                    0.09                    0.11
+slider pocket=1.25 change                         0.14                    0.15                    0.12                    0.13
