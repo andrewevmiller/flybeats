@@ -25,3 +25,17 @@ of hits changed, timing drop at most 0.01 vs the baseline on the same seed.
 
 ## Run
 - 19:17 UTC runner started (scripts/run_style_s1_queue.sh), one python job at a time
+- Epochs took ~415 s here vs ~245 s on the seed-0 machine: a slower host. There
+  was one python job at a time throughout, and it stayed steady from epoch 0.
+- velocity_probe_s1_cpu: 19:17-20:42, 12 epochs, best val onset F 0.2668
+- style_pc1_s1_cpu: 20:42-22:04, 12 epochs, best val onset F 0.2851
+- E-GMD subset: 22:04-22:16, 2.6 GB, exit 0
+- measure_variety ~13.7 min per run, kit_check ~3.7 min per run, all exit 0
+- compare (four columns, seed-0 variety.json from style-dial-2026-09-25) and
+  DONE_all at 22:51
+- Nothing skipped, nothing failed, no relaunch.
+
+## Result
+See reports/00-seed1-verdict.txt. The style dial effect holds in direction on
+seed 1 (baseline 0%, pC1 11%, just over the ~10% bar) but is about half the
+seed-0 size (20%). Timing: pC1 +0.018 over its seed-1 baseline.

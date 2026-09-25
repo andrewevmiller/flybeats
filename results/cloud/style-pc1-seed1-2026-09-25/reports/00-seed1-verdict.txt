@@ -1,0 +1,44 @@
+STYLE DIAL, SECOND SEED: VERDICT (cloud run, 25 Sep; one run per cell)
+
+                            baseline s0  pC1 s0   baseline s1  pC1 s1
+hits changed by style       0%           20%      0%           11%
+  to a trained style        0%           24%      0%           13%
+  to an untrained style     0%           17%      0%           9%
+largest style shift (0-1)   0.002        0.51     0.007        0.33
+timing score (best val F)   0.2834       0.2804   0.2668       0.2851
+  pC1 minus its baseline                 -0.003                +0.018
+drive slider, hits changed  <1%          10-11%   <1%          6%
+drums that play             snare        5 drums  snare(100%)  kick, snare,
+                                                  +2 toms rare  hat, tom_low
+hits/s (human 8.6)          10.1         8.5      9.0          10.5
+groove match to human       0.29         0.31     0.32         0.32
+held-out kits, timing chg   -0.015       -0.017   -0.011       -0.023
+
+Does the effect hold on a second seed? Yes, in direction; not in size.
+On both seeds the baseline's style dial does nothing (0%) and pC1's works.
+On seed 1 it changes 11% of hits, about half of seed 0's 20%. That clears
+the ~10% bar, but only just (a style never trained on: 9%). Timing held:
+pC1 scored 0.018 above its own baseline on seed 1 (limit: at most 0.01 below).
+
+What held on both seeds:
+- The dial works only with the push on pC1 (0% vs 11-20%).
+- Timing costs nothing measurable.
+- The drive slider comes alive (6-11% of hits vs under 1%).
+- More drums come in than the baseline plays.
+
+What did not hold:
+- The size: 20% on seed 0, 11% on seed 1. Treat "about 10-20%" as the
+  range, not 20%.
+- Seed 0's pC1 played at nearly the human's rate (8.5 hits/s). Seed 1's plays
+  10.5, busier than its baseline.
+- Tightness 1.5 no longer silencing the model was a seed-0 observation. On
+  seed 1 the baseline was not silenced either (0.54x hits), so this run cannot
+  test it.
+
+Worth watching: on held-out kits pC1 lost a little more timing than its
+baseline on both seeds (-0.017 vs -0.015, -0.023 vs -0.011). Small, and only
+the seed-1 gap is outside noise, but it points the same way twice.
+
+These are cloud numbers. Each seed's arms were trained on the same machine,
+so compare within a seed. Seed 1 ran on a slower host (~415 s/epoch vs ~245 s),
+which changes speed only, not results.
