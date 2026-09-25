@@ -92,6 +92,7 @@ RESOLVED = {
     "velocity_std_s1_cpu.yaml": ("cpu", "auto", 10000,    5,          256),
     "style_pc1_cpu.yaml":     ("cpu",  "auto", 10000,     5,          256),
     "style_pc1_gaps_cpu.yaml": ("cpu", "auto", 10000,     5,          256),
+    "style_pc1_s1_cpu.yaml":  ("cpu",  "auto", 10000,     5,          256),
 }
 
 
@@ -182,3 +183,29 @@ def test_each_style_arm_carries_exactly_its_own_change():
         return c
     assert strip(pc1) == strip(base)
     assert strip(gaps) == strip(base)
+
+
+def test_the_seed1_style_pair_differs_from_seed0_only_in_seed():
+    """The seed-1 confirmation: each seed-1 arm is its seed-0 twin with train.seed
+    set to 1 and the validation windows pinned to 0, and the two seed-1 arms
+    differ from each other only in the genre tonic, as the seed-0 pair does."""
+    def load(n):
+        return load_config(CONFIGS / f"{n}.yaml")
+
+    def unseed(c):
+        c = {k: dict(v) if isinstance(v, dict) else v for k, v in c.items()}
+        c.pop("name")
+        c["train"].pop("seed", None)
+        c["data"].pop("window_seed", None)
+        return c
+
+    for s0, s1 in (("velocity_probe_cpu", "velocity_probe_s1_cpu"),
+                   ("style_pc1_cpu", "style_pc1_s1_cpu")):
+        a, b = load(s0), load(s1)
+        assert a["train"].get("seed", 0) == 0 and b["train"]["seed"] == 1
+        assert b["data"]["window_seed"] == 0
+        assert unseed(a) == unseed(b), f"{s1} changes more than the seed"
+
+    base, pc1 = load("velocity_probe_s1_cpu"), load("style_pc1_s1_cpu")
+    assert pc1["genre"]["targets"] == ["pC1"] and pc1["genre"]["max_current"] == 5.0
+    assert "targets" not in base["genre"]

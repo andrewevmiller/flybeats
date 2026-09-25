@@ -1,0 +1,13 @@
+# style_pc1_cpu with a second seed, the partner of velocity_probe_s1_cpu. The
+# seed-0 pC1 arm made the style dial work (20% of hits changed against the
+# baseline's 0%, timing down only 0.003), but that is one run on each side;
+# repeating both on seed 1 asks whether the effect survives a change of seed.
+#
+# window_seed is pinned to 0 as in the other *_s1 configs: it fixes the
+# validation windows, which would otherwise follow train.seed.
+_base_: style_pc1_cpu.yaml
+name: style_pc1_s1_cpu
+data:
+  window_seed: 0
+train:
+  seed: 1

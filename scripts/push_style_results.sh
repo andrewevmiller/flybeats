@@ -10,13 +10,18 @@
 # holds one lock, so the runner's heartbeat loop and a session editing NOTES.md
 # never commit over each other. Pushes only to claude/style-dial-2026-09-25,
 # and never forces.
+#
+# STYLE_BRANCH, STYLE_DIR, STYLE_Q, STYLE_RUNS and STYLE_SESSION override the
+# defaults below for another queue (see scripts/run_style_s1_queue.sh).
 cd "$(dirname "$0")/.."
 MODE=${1:-results}
-BRANCH=claude/style-dial-2026-09-25
-D=results/cloud/style-dial-2026-09-25
-Q=runs/style
-RUNS="velocity_probe_cpu style_pc1_cpu style_pc1_gaps_cpu"
+BRANCH=${STYLE_BRANCH:-claude/style-dial-2026-09-25}
+D=${STYLE_DIR:-results/cloud/style-dial-2026-09-25}
+Q=${STYLE_Q:-runs/style}
+RUNS=${STYLE_RUNS:-"velocity_probe_cpu style_pc1_cpu style_pc1_gaps_cpu"}
 LOCK=/tmp/style-push.lock
+SESSION=${STYLE_SESSION:-https://claude.ai/code/session_01FSVuPhRocno6vLJuTLPxPG}
+LABEL=${STYLE_LABEL:-Style dial}
 
 current_step() { cat "$Q/CURRENT_STEP" 2>/dev/null || echo "idle"; }
 current_run()  { cat "$Q/CURRENT_RUN" 2>/dev/null; }
@@ -81,7 +86,7 @@ commit_and_push() {   # $1 = message
     git commit -q -m "$1
 
 Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
-Claude-Session: https://claude.ai/code/session_01FSVuPhRocno6vLJuTLPxPG" || exit 1
+Claude-Session: $SESSION" || exit 1
     for i in 1 2 3 4; do
       git push -q origin "HEAD:$BRANCH" 2>&1 && exit 0
       [ "$i" = 4 ] && break
@@ -101,7 +106,7 @@ case "$MODE" in
     if [ -n "$run" ] && [ -f "runs/$run/history.json" ]; then
       mkdir -p "$D/progress/$run"; cp "runs/$run/history.json" "$D/progress/$run/history.json"
     fi
-    commit_and_push "Style dial: heartbeat ($(current_step))"
+    commit_and_push "$LABEL: heartbeat ($(current_step))"
     ;;
   restore)
     mkdir -p "$Q"
@@ -121,13 +126,13 @@ case "$MODE" in
   results)
     copy_results
     write_heartbeat
-    commit_and_push "Style dial: results so far ($(current_step))"
+    commit_and_push "$LABEL: results so far ($(current_step))"
     ;;
   commit)
     # For a session's own edits (NOTES.md, reports, or code fixes named in
     # EXTRA_PATHS="src/x.py ..."): same lock.
     write_heartbeat
-    commit_and_push "${2:-Style dial: notes}"
+    commit_and_push "${2:-$LABEL: notes}"
     ;;
   *) echo "usage: $0 [heartbeat|restore|commit MSG]" >&2; exit 2 ;;
 esac

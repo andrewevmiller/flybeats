@@ -18,13 +18,20 @@
 # train.py --resume carries on a run cut short on the same machine. After each
 # step scripts/push_style_results.sh puts the results on the branch, and a
 # side loop pushes a heartbeat every 30 minutes.
+#
+# STYLE_Q, STYLE_RUNS, STYLE_COMPARE_BEFORE (variety.json files from an earlier
+# run, put ahead of this queue's in COMPARE.txt) and the push script's own
+# STYLE_* variables let another queue reuse this one, e.g. the seed-1
+# confirmation (scripts/run_style_s1_queue.sh). Unset, it runs as before.
 cd "$(dirname "$0")/.."
-Q=runs/style
+Q=${STYLE_Q:-runs/style}
+export STYLE_Q="$Q"
 mkdir -p "$Q"
 echo $$ > "$Q/runner.pid"
 PY=.venv/bin/python
 NP=$(nproc)
-RUNS="velocity_probe_cpu style_pc1_cpu style_pc1_gaps_cpu"
+RUNS=${STYLE_RUNS:-"velocity_probe_cpu style_pc1_cpu style_pc1_gaps_cpu"}
+export STYLE_RUNS="$RUNS"
 
 say() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$Q/queue.log"; }
 step() { echo "$1" > "$Q/CURRENT_STEP"; echo "${2:-}" > "$Q/CURRENT_RUN"; }
@@ -112,7 +119,7 @@ done
 # --- 4. comparison ------------------------------------------------------
 if [ ! -f "$Q/DONE_compare" ]; then
   step "compare" ""
-  files=""
+  files="${STYLE_COMPARE_BEFORE:-}"
   for r in $RUNS; do [ -f "runs/variety/$r/variety.json" ] && files="$files runs/variety/$r/variety.json"; done
   $PY scripts/measure_variety.py --compare $files > "$Q/COMPARE.txt" 2>"$Q/compare.err"
   rc=$?; say "compare exit $rc -> $Q/COMPARE.txt"
