@@ -25,3 +25,19 @@ A second check (scratch script) with every pC1 neuron held at the full cap:
 - -5: rates finite, drum shift 0.010, nothing pinned.
 - The network's max rate is 20.0 (the state clip) with or without tonic, so something already sits at the clip at rest; the pC1 push does not add saturation of its own. Judged safe to train.
 - Full suite after the changes (-m "not gpu", 02:35 UTC): 264 passed, 4 deselected (the 2 earlier skips ran now that data is present; 10 new tests in tests/test_style_dial.py plus 7 new config rows/tests).
+
+## Run timeline (UTC, 25 Sep; runner scripts/run_style_queue.sh, OMP_NUM_THREADS=4)
+- 02:32 runner started; one python job at a time throughout
+- velocity_probe_cpu: 02:32-03:23, 12 epochs, mean 251 s/epoch, best val onset F 0.2834 (threshold 0.5)
+- style_pc1_cpu: 03:23-04:12, mean 245 s/epoch, best 0.2804 (threshold 0.5)
+- style_pc1_gaps_cpu: 04:13-05:01, mean 240 s/epoch, best 0.2765 (threshold 0.4)
+- E-GMD subset: 05:02-05:12, 3756/3756 files, 2.6 GB on disk, exit 0
+- measure_variety about 10-11 min per run, kit_check about 3 min per run, all exit 0
+- compare and DONE_all at 05:53
+- Epochs took about half the ~495 s the prompt expected.
+
+## Nothing skipped, nothing failed, no takeover
+- Every step ran once and exited 0. No relaunch.
+- The heartbeat side loop pushed every 30 min. The first heartbeat read "idle" because it ran before the runner wrote its first step. Harmless.
+- The kit check writes to runs/kit_check/<run>-validation/ (--out passed by the runner), mirrored on the branch as kit_check/<run>-validation/.
+- progress/<run>/history.json holds heartbeat copies of mid-run history; checkpoints/<run>/ holds the final best.pt and history.json.
