@@ -1,0 +1,37 @@
+How varied is the fly's drumming? (velocity_probe_s1_cpu)
+6 test songs the fly never trained on, first 20 s of each, played the way a finished model file would play them.
+
+SAME INPUT, SAME OUTPUT
+  Playing a song twice gives exactly the same drums.
+
+WHICH DRUMS IT PLAYS
+  A drum plays when its signal crosses 0.6. Drums that ever did: snare, tom_low, tom_mid.
+  Highest signal each drum reached: kick 0.42, snare 0.90, hat_closed 0.57, hat_open 0.09, tom_low 0.72, tom_mid 0.62, tom_high 0.01, crash 0.16.
+
+HOW BUSY
+  The fly plays 9.0 hits a second; the human drummer on the same songs played 8.6.
+  Fly's most-used drums: snare 100%, tom_low 0%, tom_mid 0%.
+  Human's most-used drums: hat_closed 45%, snare 26%, kick 21%.
+
+VARIETY WITHIN A SONG
+  Of the fly's bars, 89% are different from each other (human: 74%).
+  Two bars picked at random differ in 19% of their hits (human: 32%).
+
+HOW CLOSE TO THE DRUMMER IT IS HEARING
+  Groove match with the human part: 0.32 on a 0-1 scale (1 = same groove). Hit by hit, 80% of hits differ.
+
+THE STYLE DIAL
+  This model was trained on 10 of the 18 styles.
+  Switching style changes 0% of the hits on average.
+  To a style it trained on: 0% of hits change. To one it never trained on: 0%.
+  The most any style moved any drum's signal: 0.0065 (on a 0-1 scale, where a hit needs the signal to cross 0.6).
+
+THE SLIDERS (each against the default)
+  drive=0.5        changes 0% of hits, plays 1.00x as many, and moves the signal by up to 0.002.
+  drive=1.5        changes 0% of hits, plays 1.00x as many, and moves the signal by up to 0.002.
+  tightness=0.5    changes 29% of hits, plays 1.57x as many, and moves the signal by up to 0.739.
+  tightness=1.5    changes 32% of hits, plays 0.54x as many, and moves the signal by up to 0.342.
+  pocket=0.8       changes 9% of hits, plays 1.15x as many, and moves the signal by up to 0.208.
+  pocket=1.25      changes 12% of hits, plays 0.87x as many, and moves the signal by up to 0.191.
+
+(threshold 0.6, 13.6 min to measure, 2026-09-25T22:29:50+0000)

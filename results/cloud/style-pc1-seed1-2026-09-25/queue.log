@@ -5,3 +5,7 @@
 [22:04:18] style_pc1_s1_cpu exit 0 (best: best val onset F: 0.2851)
 [22:04:30] fetching E-GMD subset (skips files already present)
 [22:16:02] E-GMD fetch exit 0 (2.6G)
+[22:16:10] measuring variety velocity_probe_s1_cpu
+[22:29:51] variety velocity_probe_s1_cpu exit 0
+[22:29:51] kit check velocity_probe_s1_cpu
+[22:33:43] kit check velocity_probe_s1_cpu exit 0
