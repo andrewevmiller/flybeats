@@ -9,3 +9,7 @@
 [22:29:51] variety velocity_probe_s1_cpu exit 0
 [22:29:51] kit check velocity_probe_s1_cpu
 [22:33:43] kit check velocity_probe_s1_cpu exit 0
+[22:33:50] measuring variety style_pc1_s1_cpu
+[22:47:29] variety style_pc1_s1_cpu exit 0
+[22:47:29] kit check style_pc1_s1_cpu
+[22:51:09] kit check style_pc1_s1_cpu exit 0

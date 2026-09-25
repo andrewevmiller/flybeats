@@ -1,0 +1,21 @@
+Does the fly keep time on drum kits it has never heard? (style_pc1_s1_cpu)
+The same 117 validation performances, cut into the same 412 two-second passages, heard three ways. The notes are identical; only the drum sound changes.
+
+TIMING SCORE (0-1, higher is better), at the threshold the model plays at (0.5):
+  GMD's own kit, the one it trained on:   0.284
+  other kits (E-GMD 'validation'):          0.273  -> no clear difference [-0.011, 95% range -0.023 to +0.001]
+  held-out kits:                          0.261  -> WORSE (confident) [-0.023, 95% range -0.037 to -0.011]
+
+IF EACH KIT GOT ITS OWN BEST THRESHOLD (is the loss just a volume shift?):
+  gmd     0.284 at threshold 0.5
+  seen    0.273 at threshold 0.5
+  unseen  0.261 at threshold 0.5
+
+HELD-OUT KITS ONE BY ONE (timing score; change against the same performances on GMD's kit; how many performances):
+  808 Simple                   0.250  [-0.046]  (28)
+  Bigga Bop (Jazz)             0.315  [+0.006]  (19)
+  Cassette (Lo-Fi Compress)    0.262  [-0.021]  (27)
+  Speed Metal                  0.273  [-0.005]  (24)
+  Unplugged                    0.205  [-0.043]  (19)
+
+(3.6 min to measure)
