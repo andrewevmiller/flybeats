@@ -28,7 +28,9 @@ Getting this backwards costs the run, not the fix.
 One number frames the next phase: the last run trained on **256 of the 897
 available GMD training clips**, and the README already records this model as
 limited by data rather than by epochs. Three and a half times the corpus is
-sitting unused.
+sitting unused. The 256 are also all drummer1, 227 of them fills, because
+`max_files` keeps the first rows of an info.csv ordered by drummer; opt-in
+`data.subset: stratified` draws across all nine drummers instead.
 
 | | |
 |---|---|
@@ -96,8 +98,9 @@ went from 76 s to 1,415 s. Sequential, or set `OMP_NUM_THREADS`.
 It waits out anything already training, trains and probes each arm in turn, and
 refuses to start if the venv cannot import torch or if any arm resolves to a
 device other than CPU — A′1's intervals were measured on CPU, and an arm
-measured elsewhere is not a comparison. **Budget ~4 h per arm on the local
-machine**, not the 100 min above: that estimate came off cloud cores.
+measured elsewhere is not a comparison. **Budget ~1.5 h per arm on the local
+machine** at 8 threads — measured 22 Sep, replacing an unmeasured ~4 h. The
+queue ran overnight 22–23 Sep; see `results/local/handoff-2026-09-23.md`.
 
 ---
 

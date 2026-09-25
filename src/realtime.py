@@ -87,7 +87,13 @@ class StreamingDrummer:
         default_ms = refractory_ms / max(self.speed, 1e-6)
         self.refractory_ms = {c: float((class_refractory_ms or {}).get(c, default_ms))
                               for c in kit.classes}
-        self.device = device or torch.device("cpu")
+        # The model's own device unless told otherwise. A CPU default put the
+        # numpy-built blocks beside CUDA weights, so nothing that streams --
+        # benchmark, drummer_for, the live path -- could run on a GPU at all.
+        if device is None:
+            p = next(model.parameters(), None)
+            device = p.device if p is not None else torch.device("cpu")
+        self.device = device
 
         self.hop = model.encoder.hop
         # Ring buffer holding the causal context the encoder needs, so the

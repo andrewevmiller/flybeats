@@ -210,6 +210,70 @@ class SyntheticDrums(Dataset):
                 torch.tensor(c.tempo))
 
 
+#: How ``max_files`` picks its rows. See :func:`subset_rows`.
+SUBSETS = ("first", "stratified")
+
+
+def _allocate(sizes: dict, n: int) -> dict:
+    """Split ``n`` slots across groups in proportion to their sizes.
+
+    Every group gets one slot first when ``n`` allows it, so no group is
+    dropped just for being small; the rest go out by largest remainder. No
+    group is given more slots than it has rows. Ties break on the key, so the
+    allocation itself is deterministic and only the draw inside each group
+    depends on the seed.
+    """
+    total = sum(sizes.values())
+    if n >= total:
+        return dict(sizes)
+    floor = 1 if n >= len(sizes) else 0
+    spare = {k: v - floor for k, v in sizes.items()}
+    left, pool = n - floor * len(sizes), sum(spare.values())
+    share = {k: divmod(left * v, pool) for k, v in spare.items()}   # exact, no floats
+    out = {k: floor + q for k, (q, _) in share.items()}
+    short = n - sum(out.values())
+    for k in sorted(share, key=lambda k: (-share[k][1], str(k)))[:short]:
+        out[k] += 1
+    return out
+
+
+def subset_rows(rows: list[dict], n: int | None, how: str = "first",
+                seed: int = 0) -> list[dict]:
+    """The ``n`` rows a capped run trains on.
+
+    ``first`` is the historical behaviour: the first ``n`` in info.csv order.
+    GMD's info.csv is ordered by drummer, so on GMD's training split that is
+    one drummer -- ``max_files: 256`` is 256 drummer1 clips, 227 of them
+    fills. It stays the default so existing configs and checkpoints reproduce.
+
+    ``stratified`` draws a seeded sample spread across drummers, and within
+    each drummer across beat and fill, in proportion to the full list -- so the
+    subset is a scaled-down copy of the split rather than one corner of it.
+    Every drummer gets at least one clip when ``n`` is at least the number of
+    drummers. The chosen rows keep their info.csv order, so ``n`` at or above
+    the row count returns exactly what ``first`` does.
+    """
+    if how not in SUBSETS:
+        raise ValueError(f"unknown data.subset {how!r}; have {', '.join(SUBSETS)}")
+    if not n or n >= len(rows):
+        return list(rows)
+    if how == "first":
+        return rows[:n]
+
+    groups: dict[str, dict[str, list[int]]] = {}
+    for i, r in enumerate(rows):
+        groups.setdefault(r.get("drummer", ""), {}).setdefault(r.get("beat_type", ""), []).append(i)
+    rng = np.random.default_rng(seed)
+    keep: list[int] = []
+    per_drummer = _allocate({d: sum(map(len, g.values())) for d, g in groups.items()}, n)
+    for d in sorted(groups):
+        per_type = _allocate({t: len(ix) for t, ix in groups[d].items()}, per_drummer[d])
+        for t in sorted(groups[d]):
+            ix = groups[d][t]
+            keep.extend(rng.choice(ix, size=per_type[t], replace=False).tolist())
+    return [rows[i] for i in sorted(keep)]
+
+
 class GrooveDataset(Dataset):
     """Magenta GMD / E-GMD: real drum audio with sample-aligned MIDI.
 
@@ -223,6 +287,7 @@ class GrooveDataset(Dataset):
         seconds: float = 4.0, sample_rate: int = 22_050, step_ms: float = 5.0,
         sigma_ms: float = 20.0, max_files: int | None = None,
         random_windows: bool = True, window_seed: int = 0,
+        subset: str = "first", subset_seed: int = 0,
     ):
         import soundfile  # noqa: F401  (fail early with a clear message)
 
@@ -252,8 +317,7 @@ class GrooveDataset(Dataset):
         rows = [r for r in all_rows if r.get("split") == split]
         rows = [r for r in rows
                 if r.get("audio_filename") and (self.root / r["audio_filename"]).exists()]
-        if max_files:
-            rows = rows[:max_files]
+        rows = subset_rows(rows, max_files, subset, subset_seed)
         if not rows:
             raise RuntimeError(f"no usable {split} rows under {self.root}")
         self.rows = rows
@@ -380,6 +444,11 @@ def build_dataset(cfg: dict, classes: list[str], split: str = "train"):
         step_ms=cfg.get("step_ms", 5.0),
         sigma_ms=cfg.get("sigma_ms", 20.0),
         max_files=cfg.get("max_files"),
+        # Which max_files rows: `first` (default) or `stratified`. The seed is
+        # its own key, not train.seed -- a seed run must not also change which
+        # clips it trains on.
+        subset=cfg.get("subset", "first"),
+        subset_seed=int(cfg.get("subset_seed", 0)),
         # Augment the training split; hold every other split still, so a
         # metric read twice on one checkpoint reads the same both times.
         random_windows=(split == "train"),

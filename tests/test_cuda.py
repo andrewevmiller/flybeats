@@ -190,3 +190,25 @@ def test_model_runs_on_device_and_agrees_with_cpu(trained_bits, device):
     assert on_gpu.shape == on_cpu.shape
     diff = float((on_gpu.cpu() - on_cpu).abs().max())
     assert diff < 1e-3, f"GPU and CPU forward passes differ by {diff:.3e}"
+
+
+def test_streaming_runs_on_the_models_device(trained_bits, device):
+    """The live path, on the card.
+
+    ``StreamingDrummer`` defaulted to CPU whatever the model was on, so the
+    numpy-built audio block met CUDA weights and every streaming caller --
+    ``benchmark``, ``drummer_for``, the live loop -- raised on a GPU. Found by
+    ``cuda_smoke.py`` on 15 September; nothing in the suite reached it.
+    """
+    from realtime import drummer_for
+
+    model, _loader, cfg = trained_bits
+    kit = DrumKit.from_tier(cfg["kit"]["tier"])
+    d = drummer_for(model, kit, cfg)
+    assert d.device.type == "cuda"
+
+    rng = np.random.default_rng(0)
+    block = int(cfg["audio"]["sample_rate"] * 0.02)
+    for _ in range(5):
+        d.push((rng.standard_normal(block) * 0.1).astype(np.float32))
+    assert d.step > 0, "five 20 ms blocks produced no core steps"
