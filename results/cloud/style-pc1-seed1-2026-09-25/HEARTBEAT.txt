@@ -1,4 +1,4 @@
-1790372841
-2026-09-25 21:47:21 UTC
-train style_pc1_s1_cpu
-ep  8 loss 0.6216 (bce 0.5760) | val onset_F 0.2851 @thr 0.50 (fixed 0.2600) groove 0.348 vel mae 0.212 r +0.147 (pooled +0.425) | 406.4s
+1790373865
+2026-09-25 22:04:25 UTC
+trained style_pc1_s1_cpu
+

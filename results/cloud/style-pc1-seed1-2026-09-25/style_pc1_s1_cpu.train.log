@@ -1,0 +1,26 @@
+SubGraph: 10,000 neurons, 642,569 edges (density 6.43e-03, mean in-degree 64.3)
+  signs: 385,173 excitatory / 257,396 inhibitory
+  roles: aPN1=24, motor=66, octopaminergic=25, pC1=155, pC2=140, pIP10=2, sensory=405, vPN1=11
+/home/user/flybeats/src/model.py:243: UserWarning: Sparse invariant checks are implicitly disabled. Memory errors (e.g. SEGFAULT) will occur when operating on a sparse tensor which violates the invariants, but checks incur performance overhead. To silence this warning, explicitly opt in or out. See `torch.sparse.check_sparse_tensor_invariants.__doc__` for guidance.  (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/Context.cpp:848.)
+  a = torch.sparse_csr_tensor(self.crow, self.edge_col, vals,
+/home/user/flybeats/src/model.py:243: UserWarning: Sparse CSR tensor support is in beta state. If you miss a functionality in the sparse tensor support, please submit a feature request to https://github.com/pytorch/pytorch/issues. (Triggered internally at /__w/pytorch/pytorch/aten/src/ATen/SparseCsrTensorImpl.cpp:49.)
+  a = torch.sparse_csr_tensor(self.crow, self.edge_col, vals,
+device=cpu | styles=18 | kit=['kick', 'snare', 'hat_closed', 'hat_open', 'tom_low', 'tom_mid', 'tom_high', 'crash']
+params: {'edge_gain': 642569, 'tau': 10000, 'threshold': 10000, 'bias': 10000, 'total': 672569}
+encoder calibration: {'calibrated': True, 'frames': 6400, 'mean_abs': 1.0347702503204346, 'scale_mean': 0.7043922543525696, 'flat_channels': 0}
+  [rate] ceiling = 5.0221 activation (4.0x this model's initial mean)
+ep  0 loss 0.7263 (bce 0.6648) | val onset_F 0.1990 @thr 0.40 (fixed 0.1896) groove 0.288 vel mae 0.226 r +0.022 (pooled +0.330) | 415.3s
+ep  1 loss 0.6804 (bce 0.6274) | val onset_F 0.2494 @thr 0.40 (fixed 0.2447) groove 0.282 vel mae 0.219 r +0.034 (pooled +0.374) | 411.1s
+ep  2 loss 0.6723 (bce 0.6236) | val onset_F 0.2599 @thr 0.50 (fixed 0.2437) groove 0.304 vel mae 0.218 r +0.112 (pooled +0.382) | 426.2s
+ep  3 loss 0.6668 (bce 0.6186) | val onset_F 0.2545 @thr 0.50 (fixed 0.2415) groove 0.301 vel mae 0.216 r +0.132 (pooled +0.440) | 410.7s
+ep  4 loss 0.6541 (bce 0.6083) | val onset_F 0.2591 @thr 0.40 (fixed 0.2357) groove 0.306 vel mae 0.213 r +0.116 (pooled +0.447) | 395.6s
+ep  5 loss 0.6523 (bce 0.6054) | val onset_F 0.2524 @thr 0.40 (fixed 0.2492) groove 0.328 vel mae 0.214 r +0.106 (pooled +0.419) | 396.3s
+ep  6 loss 0.6413 (bce 0.5946) | val onset_F 0.2710 @thr 0.40 (fixed 0.2517) groove 0.342 vel mae 0.211 r +0.116 (pooled +0.436) | 393.0s
+ep  7 loss 0.6284 (bce 0.5824) | val onset_F 0.2764 @thr 0.50 (fixed 0.2595) groove 0.323 vel mae 0.207 r +0.126 (pooled +0.436) | 400.0s
+ep  8 loss 0.6216 (bce 0.5760) | val onset_F 0.2851 @thr 0.50 (fixed 0.2600) groove 0.348 vel mae 0.212 r +0.147 (pooled +0.425) | 406.4s
+ep  9 loss 0.6194 (bce 0.5732) | val onset_F 0.2802 @thr 0.50 (fixed 0.2577) groove 0.361 vel mae 0.213 r +0.170 (pooled +0.426) | 404.6s
+ep 10 loss 0.6203 (bce 0.5755) | val onset_F 0.2835 @thr 0.50 (fixed 0.2721) groove 0.358 vel mae 0.212 r +0.166 (pooled +0.452) | 395.3s
+ep 11 loss 0.6154 (bce 0.5707) | val onset_F 0.2838 @thr 0.40 (fixed 0.2702) groove 0.356 vel mae 0.212 r +0.175 (pooled +0.419) | 384.9s
+best val onset F: 0.2851 -> /home/user/flybeats/runs/style_pc1_s1_cpu
+training progress: ~99% of the way to its plateau (likely 95%-100%); levelled off by about epoch 8 -- more epochs would not help much
+velocity head refit on 256 train clips (45.2s), train r {'kick': 0.4185, 'snare': 0.5135, 'hat_closed': 0.2292, 'hat_open': 0.6249, 'tom_low': 0.5629, 'tom_mid': 0.5016, 'crash': 0.5848} -> /home/user/flybeats/runs/style_pc1_s1_cpu/best_refit.pt
