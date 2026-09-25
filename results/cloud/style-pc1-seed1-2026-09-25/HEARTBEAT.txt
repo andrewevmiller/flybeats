@@ -1,4 +1,4 @@
-1790369236
-2026-09-25 20:47:16 UTC
+1790371038
+2026-09-25 21:17:18 UTC
 train style_pc1_s1_cpu
-
+ep  4 loss 0.6541 (bce 0.6083) | val onset_F 0.2591 @thr 0.40 (fixed 0.2357) groove 0.306 vel mae 0.213 r +0.116 (pooled +0.447) | 395.6s
