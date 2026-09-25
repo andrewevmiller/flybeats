@@ -1,3 +1,5 @@
 [02:32:05] runner started (pid 1519), OMP_NUM_THREADS=4
 [02:32:05] training velocity_probe_cpu
 [03:22:56] velocity_probe_cpu exit 0 (best: best val onset F: 0.2834)
+[03:23:05] training style_pc1_cpu
+[04:12:45] style_pc1_cpu exit 0 (best: best val onset F: 0.2804)
