@@ -1,0 +1,1464 @@
+{
+  "checkpoint": "runs/style_pc1_cpu/best.pt",
+  "threshold": 0.5,
+  "seconds": 20.0,
+  "seed": 0,
+  "styles_vocab": [
+    "afrobeat",
+    "afrocuban",
+    "blues",
+    "country",
+    "dance",
+    "funk",
+    "gospel",
+    "highlife",
+    "hiphop",
+    "jazz",
+    "latin",
+    "middleeastern",
+    "neworleans",
+    "pop",
+    "punk",
+    "reggae",
+    "rock",
+    "soul"
+  ],
+  "trained_files_per_style": {
+    "funk": 71,
+    "jazz": 44,
+    "neworleans": 16,
+    "dance": 3,
+    "latin": 37,
+    "afrocuban": 32,
+    "reggae": 15,
+    "rock": 31,
+    "country": 4,
+    "gospel": 3
+  },
+  "songs": [
+    {
+      "song": "35_punk_128_beat_4-4",
+      "style": "punk",
+      "drummer": "drummer1",
+      "bpm": 128.0,
+      "seconds": 20.0,
+      "repeat_identical": true,
+      "fly": {
+        "hits_per_s": 8.35,
+        "share": {
+          "kick": 0.0,
+          "snare": 0.8562874251497006,
+          "hat_closed": 0.0658682634730539,
+          "hat_open": 0.0,
+          "tom_low": 0.07784431137724551,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "max_output": {
+          "kick": 0.43479853868484497,
+          "snare": 0.8596081137657166,
+          "hat_closed": 0.5410794615745544,
+          "hat_open": 0.08309247344732285,
+          "tom_low": 0.6700781583786011,
+          "tom_mid": 0.3721899092197418,
+          "tom_high": 0.005975824780762196,
+          "crash": 0.26842930912971497
+        },
+        "share_over_threshold": {
+          "kick": 0.0,
+          "snare": 0.79175,
+          "hat_closed": 0.01125,
+          "hat_open": 0.0,
+          "tom_low": 0.02225,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 10,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.4299686335867742
+      },
+      "styles": {
+        "afrobeat": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.027692307692307683,
+          "change_vs_no_style": 0.03947368421052633,
+          "max_output_shift": 0.014119639992713928,
+          "hits_per_s": 7.9
+        },
+        "afrocuban": {
+          "trained_files": 32,
+          "change_vs_own_style": 0.12080536912751683,
+          "change_vs_no_style": 0.054151624548736454,
+          "max_output_shift": 0.07205432653427124,
+          "hits_per_s": 6.55
+        },
+        "blues": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.043227665706051854,
+          "change_vs_no_style": 0.11042944785276076,
+          "max_output_shift": 0.0274694561958313,
+          "hits_per_s": 9.0
+        },
+        "country": {
+          "trained_files": 4,
+          "change_vs_own_style": 0.1361256544502618,
+          "change_vs_no_style": 0.20221606648199442,
+          "max_output_shift": 0.11191192269325256,
+          "hits_per_s": 10.75
+        },
+        "dance": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.3804971319311663,
+          "change_vs_no_style": 0.43426294820717126,
+          "max_output_shift": 0.41617777943611145,
+          "hits_per_s": 17.8
+        },
+        "funk": {
+          "trained_files": 71,
+          "change_vs_own_style": 0.1322033898305085,
+          "change_vs_no_style": 0.06569343065693434,
+          "max_output_shift": 0.09892299771308899,
+          "hits_per_s": 6.4
+        },
+        "gospel": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.19572953736654808,
+          "change_vs_no_style": 0.13076923076923075,
+          "max_output_shift": 0.16017460823059082,
+          "hits_per_s": 5.7
+        },
+        "highlife": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.11051212938005395,
+          "change_vs_no_style": 0.17714285714285716,
+          "max_output_shift": 0.0754404067993164,
+          "hits_per_s": 10.2
+        },
+        "hiphop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.0029850746268657025,
+          "change_vs_no_style": 0.07006369426751591,
+          "max_output_shift": 0.0006492137908935547,
+          "hits_per_s": 8.4
+        },
+        "jazz": {
+          "trained_files": 44,
+          "change_vs_own_style": 0.18024691358024691,
+          "change_vs_no_style": 0.24479166666666663,
+          "max_output_shift": 0.18436256051063538,
+          "hits_per_s": 11.9
+        },
+        "latin": {
+          "trained_files": 37,
+          "change_vs_own_style": 0.27069351230425054,
+          "change_vs_no_style": 0.32863849765258213,
+          "max_output_shift": 0.27476319670677185,
+          "hits_per_s": 14.0
+        },
+        "middleeastern": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.005952380952380931,
+          "change_vs_no_style": 0.07301587301587298,
+          "max_output_shift": 0.0012732744216918945,
+          "hits_per_s": 8.45
+        },
+        "neworleans": {
+          "trained_files": 16,
+          "change_vs_own_style": 0.021406727828746197,
+          "change_vs_no_style": 0.04575163398692805,
+          "max_output_shift": 0.012382745742797852,
+          "hits_per_s": 8.0
+        },
+        "pop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.047021943573667735,
+          "change_vs_no_style": 0.020134228187919434,
+          "max_output_shift": 0.026447921991348267,
+          "hits_per_s": 7.6
+        },
+        "punk": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.0,
+          "change_vs_no_style": 0.06709265175718848,
+          "max_output_shift": 0.0,
+          "hits_per_s": 8.35
+        },
+        "reggae": {
+          "trained_files": 15,
+          "change_vs_own_style": 0.20143884892086328,
+          "change_vs_no_style": 0.13618677042801552,
+          "max_output_shift": 0.1636509895324707,
+          "hits_per_s": 5.55
+        },
+        "rock": {
+          "trained_files": 31,
+          "change_vs_own_style": 0.20430107526881724,
+          "change_vs_no_style": 0.13953488372093026,
+          "max_output_shift": 0.1629524976015091,
+          "hits_per_s": 5.6
+        },
+        "soul": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.018292682926829285,
+          "change_vs_no_style": 0.04885993485342022,
+          "max_output_shift": 0.007706165313720703,
+          "hits_per_s": 8.05
+        }
+      },
+      "sliders": {
+        "drive=0.5": {
+          "change_vs_default": 0.10963455149501666,
+          "max_output_shift": 0.05796942114830017,
+          "hits_per_s": 6.7
+        },
+        "drive=1.5": {
+          "change_vs_default": 0.10569105691056913,
+          "max_output_shift": 0.058513522148132324,
+          "hits_per_s": 10.1
+        },
+        "tightness=0.5": {
+          "change_vs_default": 0.6548672566371682,
+          "max_output_shift": 0.7156056761741638,
+          "hits_per_s": 36.85
+        },
+        "tightness=1.5": {
+          "change_vs_default": 0.4910714285714286,
+          "max_output_shift": 0.3280216157436371,
+          "hits_per_s": 2.85
+        },
+        "pocket=0.8": {
+          "change_vs_default": 0.1701030927835051,
+          "max_output_shift": 0.2059939205646515,
+          "hits_per_s": 11.05
+        },
+        "pocket=1.25": {
+          "change_vs_default": 0.1906354515050167,
+          "max_output_shift": 0.21586039662361145,
+          "hits_per_s": 6.6
+        }
+      },
+      "human": {
+        "hits_per_s": 10.3,
+        "share": {
+          "kick": 0.24757281553398058,
+          "snare": 0.34951456310679613,
+          "hat_closed": 0.4029126213592233,
+          "hat_open": 0.0,
+          "tom_low": 0.0,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 10,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.2422142994728807
+      },
+      "groove_similarity_to_human": 0.44761537647113986,
+      "change_vs_human": 0.7587131367292226,
+      "style_pairwise_change": 0.17952385114863653
+    },
+    {
+      "song": "4_jazz-funk_116_beat_4-4",
+      "style": "jazz",
+      "drummer": "drummer1",
+      "bpm": 116.0,
+      "seconds": 20.0,
+      "repeat_identical": true,
+      "fly": {
+        "hits_per_s": 15.45,
+        "share": {
+          "kick": 0.11650485436893204,
+          "snare": 0.6343042071197411,
+          "hat_closed": 0.12944983818770225,
+          "hat_open": 0.0,
+          "tom_low": 0.11003236245954692,
+          "tom_mid": 0.009708737864077669,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "max_output": {
+          "kick": 0.585610568523407,
+          "snare": 0.8911471962928772,
+          "hat_closed": 0.5849992036819458,
+          "hat_open": 0.08847954869270325,
+          "tom_low": 0.7247231602668762,
+          "tom_mid": 0.6005067825317383,
+          "tom_high": 0.006292364094406366,
+          "crash": 0.3660121560096741
+        },
+        "share_over_threshold": {
+          "kick": 0.0505,
+          "snare": 0.86725,
+          "hat_closed": 0.0655,
+          "hat_open": 0.0,
+          "tom_low": 0.0795,
+          "tom_mid": 0.0075,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 9,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.5074432248215055
+      },
+      "styles": {
+        "afrobeat": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.18867924528301883,
+          "change_vs_no_style": 0.04225352112676062,
+          "max_output_shift": 0.17948365211486816,
+          "hits_per_s": 11.05
+        },
+        "afrocuban": {
+          "trained_files": 32,
+          "change_vs_own_style": 0.2594059405940594,
+          "change_vs_no_style": 0.052369077306733125,
+          "max_output_shift": 0.20439350605010986,
+          "hits_per_s": 9.8
+        },
+        "blues": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.147005444646098,
+          "change_vs_no_style": 0.10067114093959728,
+          "max_output_shift": 0.14551931619644165,
+          "hits_per_s": 12.1
+        },
+        "country": {
+          "trained_files": 4,
+          "change_vs_own_style": 0.07032590051457976,
+          "change_vs_no_style": 0.16910229645093944,
+          "max_output_shift": 0.07236829400062561,
+          "hits_per_s": 13.7
+        },
+        "dance": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.17567567567567566,
+          "change_vs_no_style": 0.37735849056603776,
+          "max_output_shift": 0.2500995993614197,
+          "hits_per_s": 21.55
+        },
+        "funk": {
+          "trained_files": 71,
+          "change_vs_own_style": 0.2756539235412475,
+          "change_vs_no_style": 0.07379134860050895,
+          "max_output_shift": 0.22421438992023468,
+          "hits_per_s": 9.4
+        },
+        "gospel": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.31666666666666665,
+          "change_vs_no_style": 0.12234042553191493,
+          "max_output_shift": 0.2726637125015259,
+          "hits_per_s": 8.55
+        },
+        "highlife": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.1036906854130053,
+          "change_vs_no_style": 0.1440860215053763,
+          "max_output_shift": 0.10385584831237793,
+          "hits_per_s": 13.0
+        },
+        "hiphop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17100371747211895,
+          "change_vs_no_style": 0.06912442396313367,
+          "max_output_shift": 0.16921114921569824,
+          "hits_per_s": 11.45
+        },
+        "jazz": {
+          "trained_files": 44,
+          "change_vs_own_style": 0.0,
+          "change_vs_no_style": 0.22178988326848248,
+          "max_output_shift": 0.0,
+          "hits_per_s": 15.45
+        },
+        "latin": {
+          "trained_files": 37,
+          "change_vs_own_style": 0.07507507507507505,
+          "change_vs_no_style": 0.29181494661921703,
+          "max_output_shift": 0.09165912866592407,
+          "hits_per_s": 17.85
+        },
+        "middleeastern": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17100371747211895,
+          "change_vs_no_style": 0.06912442396313367,
+          "max_output_shift": 0.16798996925354004,
+          "hits_per_s": 11.45
+        },
+        "neworleans": {
+          "trained_files": 16,
+          "change_vs_own_style": 0.1842105263157895,
+          "change_vs_no_style": 0.04672897196261683,
+          "max_output_shift": 0.17683207988739014,
+          "hits_per_s": 11.15
+        },
+        "pop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.20458891013384317,
+          "change_vs_no_style": 0.026252983293556076,
+          "max_output_shift": 0.1842607855796814,
+          "hits_per_s": 10.7
+        },
+        "punk": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17100371747211895,
+          "change_vs_no_style": 0.06912442396313367,
+          "max_output_shift": 0.16921621561050415,
+          "hits_per_s": 11.45
+        },
+        "reggae": {
+          "trained_files": 15,
+          "change_vs_own_style": 0.3207547169811321,
+          "change_vs_no_style": 0.13136729222520105,
+          "max_output_shift": 0.2787706255912781,
+          "hits_per_s": 8.4
+        },
+        "rock": {
+          "trained_files": 31,
+          "change_vs_own_style": 0.32217573221757323,
+          "change_vs_no_style": 0.12834224598930477,
+          "max_output_shift": 0.2772928774356842,
+          "hits_per_s": 8.45
+        },
+        "soul": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17164179104477617,
+          "change_vs_no_style": 0.06018518518518523,
+          "max_output_shift": 0.17400407791137695,
+          "hits_per_s": 11.35
+        }
+      },
+      "sliders": {
+        "drive=0.5": {
+          "change_vs_default": 0.1592592592592592,
+          "max_output_shift": 0.15404456853866577,
+          "hits_per_s": 11.55
+        },
+        "drive=1.5": {
+          "change_vs_default": 0.1767881241565452,
+          "max_output_shift": 0.24200859665870667,
+          "hits_per_s": 21.6
+        },
+        "tightness=0.5": {
+          "change_vs_default": 0.553307392996109,
+          "max_output_shift": 0.7527509331703186,
+          "hits_per_s": 48.8
+        },
+        "tightness=1.5": {
+          "change_vs_default": 0.6747967479674797,
+          "max_output_shift": 0.37557318806648254,
+          "hits_per_s": 3.0
+        },
+        "pocket=0.8": {
+          "change_vs_default": 0.15107913669064743,
+          "max_output_shift": 0.23901844024658203,
+          "hits_per_s": 19.3
+        },
+        "pocket=1.25": {
+          "change_vs_default": 0.2208258527827648,
+          "max_output_shift": 0.23245027661323547,
+          "hits_per_s": 12.4
+        }
+      },
+      "human": {
+        "hits_per_s": 12.45,
+        "share": {
+          "kick": 0.1606425702811245,
+          "snare": 0.2971887550200803,
+          "hat_closed": 0.14859437751004015,
+          "hat_open": 0.0,
+          "tom_low": 0.01606425702811245,
+          "tom_mid": 0.004016064257028112,
+          "tom_high": 0.0,
+          "crash": 0.37349397590361444
+        },
+        "bars": 9,
+        "distinct_share": 0.8888888888888888,
+        "mean_bar_difference": 0.4498792992270222
+      },
+      "groove_similarity_to_human": 0.44403840831175956,
+      "change_vs_human": 0.7813620071684588,
+      "style_pairwise_change": 0.1598640131550445
+    },
+    {
+      "song": "19_funk_108_beat_4-4",
+      "style": "funk",
+      "drummer": "drummer8",
+      "bpm": 108.0,
+      "seconds": 20.0,
+      "repeat_identical": true,
+      "fly": {
+        "hits_per_s": 6.25,
+        "share": {
+          "kick": 0.0,
+          "snare": 0.96,
+          "hat_closed": 0.016,
+          "hat_open": 0.0,
+          "tom_low": 0.024,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "max_output": {
+          "kick": 0.41263726353645325,
+          "snare": 0.8298615217208862,
+          "hat_closed": 0.5325241684913635,
+          "hat_open": 0.08504786342382431,
+          "tom_low": 0.6582930088043213,
+          "tom_mid": 0.4200839698314667,
+          "tom_high": 0.005583564750850201,
+          "crash": 0.16845253109931946
+        },
+        "share_over_threshold": {
+          "kick": 0.0,
+          "snare": 0.85475,
+          "hat_closed": 0.00125,
+          "hat_open": 0.0,
+          "tom_low": 0.0055,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 8,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.4868530745631586
+      },
+      "styles": {
+        "afrobeat": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.13011152416356875,
+          "change_vs_no_style": 0.042857142857142816,
+          "max_output_shift": 0.07697701454162598,
+          "hits_per_s": 7.2
+        },
+        "afrocuban": {
+          "trained_files": 32,
+          "change_vs_own_style": 0.04313725490196074,
+          "change_vs_no_style": 0.06015037593984962,
+          "max_output_shift": 0.02665218710899353,
+          "hits_per_s": 6.5
+        },
+        "blues": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.24161073825503354,
+          "change_vs_no_style": 0.15210355987055013,
+          "max_output_shift": 0.11379361152648926,
+          "hits_per_s": 8.65
+        },
+        "country": {
+          "trained_files": 4,
+          "change_vs_own_style": 0.28125,
+          "change_vs_no_style": 0.21450151057401812,
+          "max_output_shift": 0.18751206994056702,
+          "hits_per_s": 9.75
+        },
+        "dance": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.489841986455982,
+          "change_vs_no_style": 0.41409691629955947,
+          "max_output_shift": 0.46042874455451965,
+          "hits_per_s": 15.9
+        },
+        "funk": {
+          "trained_files": 71,
+          "change_vs_own_style": 0.0,
+          "change_vs_no_style": 0.11111111111111116,
+          "max_output_shift": 0.0,
+          "hits_per_s": 6.25
+        },
+        "gospel": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.10917030567685593,
+          "change_vs_no_style": 0.16666666666666663,
+          "max_output_shift": 0.08536821603775024,
+          "hits_per_s": 5.2
+        },
+        "highlife": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.2564102564102564,
+          "change_vs_no_style": 0.18885448916408665,
+          "max_output_shift": 0.1599469780921936,
+          "hits_per_s": 9.35
+        },
+        "hiphop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17562724014336917,
+          "change_vs_no_style": 0.07586206896551728,
+          "max_output_shift": 0.08918841183185577,
+          "hits_per_s": 7.7
+        },
+        "jazz": {
+          "trained_files": 44,
+          "change_vs_own_style": 0.33717579250720464,
+          "change_vs_no_style": 0.26256983240223464,
+          "max_output_shift": 0.2473025918006897,
+          "hits_per_s": 11.1
+        },
+        "latin": {
+          "trained_files": 37,
+          "change_vs_own_style": 0.3817204301075269,
+          "change_vs_no_style": 0.31070496083550914,
+          "max_output_shift": 0.3298421800136566,
+          "hits_per_s": 12.35
+        },
+        "middleeastern": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17562724014336917,
+          "change_vs_no_style": 0.07586206896551728,
+          "max_output_shift": 0.08975617587566376,
+          "hits_per_s": 7.7
+        },
+        "neworleans": {
+          "trained_files": 16,
+          "change_vs_own_style": 0.13653136531365317,
+          "change_vs_no_style": 0.049645390070921946,
+          "max_output_shift": 0.07830947637557983,
+          "hits_per_s": 7.3
+        },
+        "pop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.11698113207547167,
+          "change_vs_no_style": 0.021739130434782594,
+          "max_output_shift": 0.06701457500457764,
+          "hits_per_s": 7.0
+        },
+        "punk": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17266187050359716,
+          "change_vs_no_style": 0.0726643598615917,
+          "max_output_shift": 0.08868463337421417,
+          "hits_per_s": 7.65
+        },
+        "reggae": {
+          "trained_files": 15,
+          "change_vs_own_style": 0.14027149321266963,
+          "change_vs_no_style": 0.18965517241379315,
+          "max_output_shift": 0.09404522180557251,
+          "hits_per_s": 4.8
+        },
+        "rock": {
+          "trained_files": 31,
+          "change_vs_own_style": 0.1351351351351351,
+          "change_vs_no_style": 0.18454935622317592,
+          "max_output_shift": 0.09168815612792969,
+          "hits_per_s": 4.85
+        },
+        "soul": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.15328467153284675,
+          "change_vs_no_style": 0.05964912280701751,
+          "max_output_shift": 0.08208779990673065,
+          "hits_per_s": 7.45
+        }
+      },
+      "sliders": {
+        "drive=0.5": {
+          "change_vs_default": 0.016000000000000014,
+          "max_output_shift": 0.009091377258300781,
+          "hits_per_s": 6.25
+        },
+        "drive=1.5": {
+          "change_vs_default": 0.03125,
+          "max_output_shift": 0.024784237146377563,
+          "hits_per_s": 6.55
+        },
+        "tightness=0.5": {
+          "change_vs_default": 0.6964980544747081,
+          "max_output_shift": 0.6409989595413208,
+          "hits_per_s": 32.3
+        },
+        "tightness=1.5": {
+          "change_vs_default": 0.5822784810126582,
+          "max_output_shift": 0.30985236167907715,
+          "hits_per_s": 1.65
+        },
+        "pocket=0.8": {
+          "change_vs_default": 0.11111111111111116,
+          "max_output_shift": 0.1739620566368103,
+          "hits_per_s": 7.7
+        },
+        "pocket=1.25": {
+          "change_vs_default": 0.13580246913580252,
+          "max_output_shift": 0.1845293939113617,
+          "hits_per_s": 5.9
+        }
+      },
+      "human": {
+        "hits_per_s": 10.15,
+        "share": {
+          "kick": 0.10344827586206896,
+          "snare": 0.47783251231527096,
+          "hat_closed": 0.35467980295566504,
+          "hat_open": 0.06403940886699508,
+          "tom_low": 0.0,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 8,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.514851759736982
+      },
+      "groove_similarity_to_human": 0.5429976788884346,
+      "change_vs_human": 0.7926829268292683,
+      "style_pairwise_change": 0.19706122217740632
+    },
+    {
+      "song": "8_rock-groove8_65_beat_4-4",
+      "style": "rock",
+      "drummer": "drummer1",
+      "bpm": 65.0,
+      "seconds": 20.0,
+      "repeat_identical": true,
+      "fly": {
+        "hits_per_s": 3.5,
+        "share": {
+          "kick": 0.0,
+          "snare": 0.8285714285714286,
+          "hat_closed": 0.04285714285714286,
+          "hat_open": 0.0,
+          "tom_low": 0.11428571428571428,
+          "tom_mid": 0.014285714285714285,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "max_output": {
+          "kick": 0.39069420099258423,
+          "snare": 0.7613837718963623,
+          "hat_closed": 0.5171571373939514,
+          "hat_open": 0.08835913240909576,
+          "tom_low": 0.6935836672782898,
+          "tom_mid": 0.563748300075531,
+          "tom_high": 0.0056357113644480705,
+          "crash": 0.1500549167394638
+        },
+        "share_over_threshold": {
+          "kick": 0.0,
+          "snare": 0.46325,
+          "hat_closed": 0.00225,
+          "hat_open": 0.0,
+          "tom_low": 0.0155,
+          "tom_mid": 0.00125,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 5,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.37638439991381173
+      },
+      "styles": {
+        "afrobeat": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.4061135371179039,
+          "change_vs_no_style": 0.035598705501618144,
+          "max_output_shift": 0.14743167161941528,
+          "hits_per_s": 7.95
+        },
+        "afrocuban": {
+          "trained_files": 32,
+          "change_vs_own_style": 0.26086956521739135,
+          "change_vs_no_style": 0.18939393939393945,
+          "max_output_shift": 0.10374796390533447,
+          "hits_per_s": 5.7
+        },
+        "blues": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.47528517110266155,
+          "change_vs_no_style": 0.13119533527696792,
+          "max_output_shift": 0.18768227100372314,
+          "hits_per_s": 9.65
+        },
+        "country": {
+          "trained_files": 4,
+          "change_vs_own_style": 0.5445544554455446,
+          "change_vs_no_style": 0.2323759791122716,
+          "max_output_shift": 0.254373162984848,
+          "hits_per_s": 11.65
+        },
+        "dance": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.6501305483028721,
+          "change_vs_no_style": 0.3779697624190065,
+          "max_output_shift": 0.5100002288818359,
+          "hits_per_s": 15.65
+        },
+        "funk": {
+          "trained_files": 71,
+          "change_vs_own_style": 0.22905027932960897,
+          "change_vs_no_style": 0.22007722007722008,
+          "max_output_shift": 0.09293168783187866,
+          "hits_per_s": 5.45
+        },
+        "gospel": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.0,
+          "change_vs_no_style": 0.38181818181818183,
+          "max_output_shift": 0.008410096168518066,
+          "hits_per_s": 3.5
+        },
+        "highlife": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.5140845070422535,
+          "change_vs_no_style": 0.1923076923076923,
+          "max_output_shift": 0.22959518432617188,
+          "hits_per_s": 10.7
+        },
+        "hiphop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.4457831325301205,
+          "change_vs_no_style": 0.08814589665653494,
+          "max_output_shift": 0.16182753443717957,
+          "hits_per_s": 8.95
+        },
+        "jazz": {
+          "trained_files": 44,
+          "change_vs_own_style": 0.5779816513761468,
+          "change_vs_no_style": 0.2825552825552825,
+          "max_output_shift": 0.30909624695777893,
+          "hits_per_s": 12.85
+        },
+        "latin": {
+          "trained_files": 37,
+          "change_vs_own_style": 0.6112676056338029,
+          "change_vs_no_style": 0.33793103448275863,
+          "max_output_shift": 0.389846533536911,
+          "hits_per_s": 14.25
+        },
+        "middleeastern": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.4457831325301205,
+          "change_vs_no_style": 0.08814589665653494,
+          "max_output_shift": 0.16248923540115356,
+          "hits_per_s": 8.95
+        },
+        "neworleans": {
+          "trained_files": 16,
+          "change_vs_own_style": 0.4112554112554112,
+          "change_vs_no_style": 0.04180064308681675,
+          "max_output_shift": 0.14918434619903564,
+          "hits_per_s": 8.05
+        },
+        "pop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.3901345291479821,
+          "change_vs_no_style": 0.00990099009900991,
+          "max_output_shift": 0.1353834569454193,
+          "hits_per_s": 7.65
+        },
+        "punk": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.4457831325301205,
+          "change_vs_no_style": 0.08814589665653494,
+          "max_output_shift": 0.16125339269638062,
+          "hits_per_s": 8.95
+        },
+        "reggae": {
+          "trained_files": 15,
+          "change_vs_own_style": 0.02941176470588236,
+          "change_vs_no_style": 0.39814814814814814,
+          "max_output_shift": 0.0027422308921813965,
+          "hits_per_s": 3.3
+        },
+        "rock": {
+          "trained_files": 31,
+          "change_vs_own_style": 0.0,
+          "change_vs_no_style": 0.38181818181818183,
+          "max_output_shift": 0.0,
+          "hits_per_s": 3.5
+        },
+        "soul": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.423728813559322,
+          "change_vs_no_style": 0.05696202531645567,
+          "max_output_shift": 0.15376323461532593,
+          "hits_per_s": 8.3
+        }
+      },
+      "sliders": {
+        "drive=0.5": {
+          "change_vs_default": 0.2068965517241379,
+          "max_output_shift": 0.06937927007675171,
+          "hits_per_s": 5.2
+        },
+        "drive=1.5": {
+          "change_vs_default": 0.06870229007633588,
+          "max_output_shift": 0.08528238534927368,
+          "hits_per_s": 3.05
+        },
+        "tightness=0.5": {
+          "change_vs_default": 0.7799352750809061,
+          "max_output_shift": 0.6029329299926758,
+          "hits_per_s": 27.4
+        },
+        "tightness=1.5": {
+          "change_vs_default": 0.8666666666666667,
+          "max_output_shift": 0.2901383638381958,
+          "hits_per_s": 0.25
+        },
+        "pocket=0.8": {
+          "change_vs_default": 0.06206896551724139,
+          "max_output_shift": 0.1708083152770996,
+          "hits_per_s": 3.75
+        },
+        "pocket=1.25": {
+          "change_vs_default": 0.052631578947368474,
+          "max_output_shift": 0.19973307847976685,
+          "hits_per_s": 3.15
+        }
+      },
+      "human": {
+        "hits_per_s": 3.8,
+        "share": {
+          "kick": 0.23684210526315788,
+          "snare": 0.17105263157894737,
+          "hat_closed": 0.5526315789473685,
+          "hat_open": 0.039473684210526314,
+          "tom_low": 0.0,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 5,
+        "distinct_share": 0.6,
+        "mean_bar_difference": 0.2098739495798319
+      },
+      "groove_similarity_to_human": 0.15491113461014394,
+      "change_vs_human": 0.9863013698630136,
+      "style_pairwise_change": 0.2626031335682488
+    },
+    {
+      "song": "7_pop-groove7_138_beat_4-4",
+      "style": "pop",
+      "drummer": "drummer8",
+      "bpm": 138.0,
+      "seconds": 20.0,
+      "repeat_identical": true,
+      "fly": {
+        "hits_per_s": 7.75,
+        "share": {
+          "kick": 0.0,
+          "snare": 0.6774193548387096,
+          "hat_closed": 0.1870967741935484,
+          "hat_open": 0.0,
+          "tom_low": 0.13548387096774195,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "max_output": {
+          "kick": 0.43506479263305664,
+          "snare": 0.8595309853553772,
+          "hat_closed": 0.5422772169113159,
+          "hat_open": 0.08401543647050858,
+          "tom_low": 0.6644812822341919,
+          "tom_mid": 0.3672958314418793,
+          "tom_high": 0.004937451332807541,
+          "crash": 0.23848101496696472
+        },
+        "share_over_threshold": {
+          "kick": 0.0,
+          "snare": 0.8245,
+          "hat_closed": 0.03475,
+          "hat_open": 0.0,
+          "tom_low": 0.0335,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 11,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.49718485067485924
+      },
+      "styles": {
+        "afrobeat": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.02208201892744477,
+          "change_vs_no_style": 0.038461538461538436,
+          "max_output_shift": 0.012820601463317871,
+          "hits_per_s": 8.1
+        },
+        "afrocuban": {
+          "trained_files": 32,
+          "change_vs_own_style": 0.06484641638225253,
+          "change_vs_no_style": 0.04861111111111116,
+          "max_output_shift": 0.046854183077812195,
+          "hits_per_s": 6.9
+        },
+        "blues": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.10662824207492794,
+          "change_vs_no_style": 0.1228070175438597,
+          "max_output_shift": 0.056854382157325745,
+          "hits_per_s": 9.6
+        },
+        "country": {
+          "trained_files": 4,
+          "change_vs_own_style": 0.2284263959390863,
+          "change_vs_no_style": 0.2339331619537275,
+          "max_output_shift": 0.15229195356369019,
+          "hits_per_s": 11.95
+        },
+        "dance": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.3925619834710744,
+          "change_vs_no_style": 0.40292275574112735,
+          "max_output_shift": 0.4506511688232422,
+          "hits_per_s": 16.45
+        },
+        "funk": {
+          "trained_files": 71,
+          "change_vs_own_style": 0.10104529616724733,
+          "change_vs_no_style": 0.08510638297872342,
+          "max_output_shift": 0.07398021221160889,
+          "hits_per_s": 6.6
+        },
+        "gospel": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.21705426356589153,
+          "change_vs_no_style": 0.20158102766798414,
+          "max_output_shift": 0.1334790736436844,
+          "hits_per_s": 5.15
+        },
+        "highlife": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.17297297297297298,
+          "change_vs_no_style": 0.18356164383561646,
+          "max_output_shift": 0.1113506555557251,
+          "hits_per_s": 10.75
+        },
+        "hiphop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.07185628742514971,
+          "change_vs_no_style": 0.08814589665653494,
+          "max_output_shift": 0.02834075689315796,
+          "hits_per_s": 8.95
+        },
+        "jazz": {
+          "trained_files": 44,
+          "change_vs_own_style": 0.25728155339805825,
+          "change_vs_no_style": 0.26781326781326786,
+          "max_output_shift": 0.2368711233139038,
+          "hits_per_s": 12.85
+        },
+        "latin": {
+          "trained_files": 37,
+          "change_vs_own_style": 0.295774647887324,
+          "change_vs_no_style": 0.30641330166270786,
+          "max_output_shift": 0.32885485887527466,
+          "hits_per_s": 13.55
+        },
+        "middleeastern": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.07185628742514971,
+          "change_vs_no_style": 0.08814589665653494,
+          "max_output_shift": 0.02903914451599121,
+          "hits_per_s": 8.95
+        },
+        "neworleans": {
+          "trained_files": 16,
+          "change_vs_own_style": 0.02515723270440251,
+          "change_vs_no_style": 0.04153354632587858,
+          "max_output_shift": 0.014666393399238586,
+          "hits_per_s": 8.15
+        },
+        "pop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.0,
+          "change_vs_no_style": 0.016393442622950838,
+          "max_output_shift": 0.0,
+          "hits_per_s": 7.75
+        },
+        "punk": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.06906906906906907,
+          "change_vs_no_style": 0.08536585365853655,
+          "max_output_shift": 0.027695655822753906,
+          "hits_per_s": 8.9
+        },
+        "reggae": {
+          "trained_files": 15,
+          "change_vs_own_style": 0.2265625,
+          "change_vs_no_style": 0.2111553784860558,
+          "max_output_shift": 0.13669773936271667,
+          "hits_per_s": 5.05
+        },
+        "rock": {
+          "trained_files": 31,
+          "change_vs_own_style": 0.22178988326848248,
+          "change_vs_no_style": 0.2063492063492064,
+          "max_output_shift": 0.13605041801929474,
+          "hits_per_s": 5.1
+        },
+        "soul": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.037267080745341574,
+          "change_vs_no_style": 0.05362776025236593,
+          "max_output_shift": 0.019583359360694885,
+          "hits_per_s": 8.35
+        }
+      },
+      "sliders": {
+        "drive=0.5": {
+          "change_vs_default": 0.06484641638225253,
+          "max_output_shift": 0.044109269976615906,
+          "hits_per_s": 6.9
+        },
+        "drive=1.5": {
+          "change_vs_default": 0.10144927536231885,
+          "max_output_shift": 0.04891422390937805,
+          "hits_per_s": 9.5
+        },
+        "tightness=0.5": {
+          "change_vs_default": 0.6229712858926342,
+          "max_output_shift": 0.7104723453521729,
+          "hits_per_s": 32.3
+        },
+        "tightness=1.5": {
+          "change_vs_default": 0.5577889447236181,
+          "max_output_shift": 0.3364276885986328,
+          "hits_per_s": 2.2
+        },
+        "pocket=0.8": {
+          "change_vs_default": 0.15616438356164386,
+          "max_output_shift": 0.19047820568084717,
+          "hits_per_s": 10.5
+        },
+        "pocket=1.25": {
+          "change_vs_default": 0.11821086261980829,
+          "max_output_shift": 0.21758148074150085,
+          "hits_per_s": 7.9
+        }
+      },
+      "human": {
+        "hits_per_s": 7.15,
+        "share": {
+          "kick": 0.20279720279720279,
+          "snare": 0.16083916083916083,
+          "hat_closed": 0.6363636363636364,
+          "hat_open": 0.0,
+          "tom_low": 0.0,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 11,
+        "distinct_share": 0.36363636363636365,
+        "mean_bar_difference": 0.14385614385614384
+      },
+      "groove_similarity_to_human": 0.030230248859078074,
+      "change_vs_human": 1.0,
+      "style_pairwise_change": 0.19994984741703706
+    },
+    {
+      "song": "6_hiphop-groove6_87_beat_4-4",
+      "style": "hiphop",
+      "drummer": "drummer7",
+      "bpm": 87.0,
+      "seconds": 20.0,
+      "repeat_identical": true,
+      "fly": {
+        "hits_per_s": 9.45,
+        "share": {
+          "kick": 0.0,
+          "snare": 0.7777777777777778,
+          "hat_closed": 0.09523809523809523,
+          "hat_open": 0.0,
+          "tom_low": 0.1164021164021164,
+          "tom_mid": 0.010582010582010581,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "max_output": {
+          "kick": 0.4541143774986267,
+          "snare": 0.8550565242767334,
+          "hat_closed": 0.5419139266014099,
+          "hat_open": 0.08104889839887619,
+          "tom_low": 0.7533356547355652,
+          "tom_mid": 0.5225669145584106,
+          "tom_high": 0.005939577240496874,
+          "crash": 0.27690139412879944
+        },
+        "share_over_threshold": {
+          "kick": 0.0,
+          "snare": 0.8025,
+          "hat_closed": 0.02225,
+          "hat_open": 0.0,
+          "tom_low": 0.06275,
+          "tom_mid": 0.00125,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 7,
+        "distinct_share": 1.0,
+        "mean_bar_difference": 0.4135300442259865
+      },
+      "styles": {
+        "afrobeat": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.040000000000000036,
+          "change_vs_no_style": 0.0494505494505495,
+          "max_output_shift": 0.015416711568832397,
+          "hits_per_s": 9.3
+        },
+        "afrocuban": {
+          "trained_files": 32,
+          "change_vs_own_style": 0.1166666666666667,
+          "change_vs_no_style": 0.04297994269340977,
+          "max_output_shift": 0.07383440434932709,
+          "hits_per_s": 8.55
+        },
+        "blues": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.05128205128205132,
+          "change_vs_no_style": 0.12401055408970973,
+          "max_output_shift": 0.03029853105545044,
+          "hits_per_s": 10.05
+        },
+        "country": {
+          "trained_files": 4,
+          "change_vs_own_style": 0.15261958997722092,
+          "change_vs_no_style": 0.21028037383177567,
+          "max_output_shift": 0.12414377927780151,
+          "hits_per_s": 12.5
+        },
+        "dance": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.3680555555555556,
+          "change_vs_no_style": 0.40176991150442476,
+          "max_output_shift": 0.4227457046508789,
+          "hits_per_s": 19.35
+        },
+        "funk": {
+          "trained_files": 71,
+          "change_vs_own_style": 0.13559322033898302,
+          "change_vs_no_style": 0.061224489795918324,
+          "max_output_shift": 0.10135400295257568,
+          "hits_per_s": 8.25
+        },
+        "gospel": {
+          "trained_files": 3,
+          "change_vs_own_style": 0.28903654485049834,
+          "change_vs_no_style": 0.2551724137931034,
+          "max_output_shift": 0.16845327615737915,
+          "hits_per_s": 5.6
+        },
+        "highlife": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.10411622276029053,
+          "change_vs_no_style": 0.1691542288557214,
+          "max_output_shift": 0.0840335488319397,
+          "hits_per_s": 11.2
+        },
+        "hiphop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.0,
+          "change_vs_no_style": 0.08446866485013627,
+          "max_output_shift": 0.0,
+          "hits_per_s": 9.45
+        },
+        "jazz": {
+          "trained_files": 44,
+          "change_vs_own_style": 0.24845995893223816,
+          "change_vs_no_style": 0.2899159663865546,
+          "max_output_shift": 0.2019239068031311,
+          "hits_per_s": 14.9
+        },
+        "latin": {
+          "trained_files": 37,
+          "change_vs_own_style": 0.2870905587668593,
+          "change_vs_no_style": 0.3307086614173228,
+          "max_output_shift": 0.2903403043746948,
+          "hits_per_s": 16.5
+        },
+        "middleeastern": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.010638297872340385,
+          "change_vs_no_style": 0.08493150684931505,
+          "max_output_shift": 0.03107208013534546,
+          "hits_per_s": 9.35
+        },
+        "neworleans": {
+          "trained_files": 16,
+          "change_vs_own_style": 0.04582210242587603,
+          "change_vs_no_style": 0.050000000000000044,
+          "max_output_shift": 0.03205600380897522,
+          "hits_per_s": 9.1
+        },
+        "pop": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.07608695652173914,
+          "change_vs_no_style": 0.025210084033613467,
+          "max_output_shift": 0.03933712840080261,
+          "hits_per_s": 8.95
+        },
+        "punk": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.007957559681697646,
+          "change_vs_no_style": 0.08196721311475408,
+          "max_output_shift": 0.03100249171257019,
+          "hits_per_s": 9.4
+        },
+        "reggae": {
+          "trained_files": 15,
+          "change_vs_own_style": 0.29931972789115646,
+          "change_vs_no_style": 0.2791519434628975,
+          "max_output_shift": 0.17187601327896118,
+          "hits_per_s": 5.25
+        },
+        "rock": {
+          "trained_files": 31,
+          "change_vs_own_style": 0.28428093645484953,
+          "change_vs_no_style": 0.2569444444444444,
+          "max_output_shift": 0.1711890548467636,
+          "hits_per_s": 5.5
+        },
+        "soul": {
+          "trained_files": 0,
+          "change_vs_own_style": 0.032432432432432434,
+          "change_vs_no_style": 0.06406685236768805,
+          "max_output_shift": 0.031711429357528687,
+          "hits_per_s": 9.05
+        }
+      },
+      "sliders": {
+        "drive=0.5": {
+          "change_vs_default": 0.11602209944751385,
+          "max_output_shift": 0.06931568682193756,
+          "hits_per_s": 8.65
+        },
+        "drive=1.5": {
+          "change_vs_default": 0.08823529411764708,
+          "max_output_shift": 0.0650472342967987,
+          "hits_per_s": 10.95
+        },
+        "tightness=0.5": {
+          "change_vs_default": 0.6408163265306123,
+          "max_output_shift": 0.738787829875946,
+          "hits_per_s": 39.55
+        },
+        "tightness=1.5": {
+          "change_vs_default": 0.7339449541284404,
+          "max_output_shift": 0.3504084646701813,
+          "hits_per_s": 1.45
+        },
+        "pocket=0.8": {
+          "change_vs_default": 0.15914489311163893,
+          "max_output_shift": 0.20559436082839966,
+          "hits_per_s": 11.6
+        },
+        "pocket=1.25": {
+          "change_vs_default": 0.20316622691292874,
+          "max_output_shift": 0.21496596932411194,
+          "hits_per_s": 9.5
+        }
+      },
+      "human": {
+        "hits_per_s": 7.5,
+        "share": {
+          "kick": 0.30666666666666664,
+          "snare": 0.10666666666666667,
+          "hat_closed": 0.5866666666666667,
+          "hat_open": 0.0,
+          "tom_low": 0.0,
+          "tom_mid": 0.0,
+          "tom_high": 0.0,
+          "crash": 0.0
+        },
+        "bars": 7,
+        "distinct_share": 0.5714285714285714,
+        "mean_bar_difference": 0.33089543188065357
+      },
+      "groove_similarity_to_human": 0.21221408913394546,
+      "change_vs_human": 0.9233038348082596,
+      "style_pairwise_change": 0.21474699650501736
+    }
+  ],
+  "summary": {
+    "repeat_identical": true,
+    "fly_hits_per_s": 8.458333333333334,
+    "human_hits_per_s": 8.558333333333332,
+    "fly_share": {
+      "kick": 0.01941747572815534,
+      "snare": 0.7890600322428929,
+      "hat_closed": 0.08941835232492377,
+      "hat_open": 0.0,
+      "tom_low": 0.09634139591539419,
+      "tom_mid": 0.005762743788633756,
+      "tom_high": 0.0,
+      "crash": 0.0
+    },
+    "human_share": {
+      "kick": 0.20966160606736692,
+      "snare": 0.2605157149211537,
+      "hat_closed": 0.44697478063376667,
+      "hat_open": 0.0172521821795869,
+      "tom_low": 0.002677376171352075,
+      "tom_mid": 0.0006693440428380187,
+      "tom_high": 0.0,
+      "crash": 0.06224899598393574
+    },
+    "fly_distinct_bar_share": 1.0,
+    "human_distinct_bar_share": 0.7373256373256374,
+    "fly_mean_bar_difference": 0.4518940379643493,
+    "human_mean_bar_difference": 0.315261813958919,
+    "groove_similarity_to_human": 0.30533448937908353,
+    "change_vs_human": 0.8737272125663705,
+    "style_pairwise_change": 0.20229151066189843,
+    "style_change_trained": 0.2363086385510894,
+    "style_change_untrained": 0.16505683381719688,
+    "style_max_output_shift": 0.5100002288818359,
+    "drums_that_play": [
+      "kick",
+      "snare",
+      "hat_closed",
+      "tom_low",
+      "tom_mid"
+    ],
+    "max_output": {
+      "kick": 0.585610568523407,
+      "snare": 0.8911471962928772,
+      "hat_closed": 0.5849992036819458,
+      "hat_open": 0.08847954869270325,
+      "tom_low": 0.7533356547355652,
+      "tom_mid": 0.6005067825317383,
+      "tom_high": 0.006292364094406366,
+      "crash": 0.3660121560096741
+    },
+    "sliders": {
+      "drive=0.5": {
+        "max_output_shift": 0.15404456853866577,
+        "change_vs_default": 0.11210981305136336,
+        "hits_per_s_ratio": 0.973558134469697
+      },
+      "drive=1.5": {
+        "max_output_shift": 0.24200859665870667,
+        "change_vs_default": 0.09535267343723602,
+        "hits_per_s_ratio": 1.1519340454203617
+      },
+      "tightness=0.5": {
+        "max_output_shift": 0.7527509331703186,
+        "change_vs_default": 0.6580659319353563,
+        "hits_per_s_ratio": 4.820208042285838
+      },
+      "tightness=1.5": {
+        "max_output_shift": 0.37557318806648254,
+        "change_vs_default": 0.6510912038450486,
+        "hits_per_s_ratio": 0.21803846919344583
+      },
+      "pocket=0.8": {
+        "max_output_shift": 0.23901844024658203,
+        "change_vs_default": 0.13494526379596464,
+        "hits_per_s_ratio": 1.2430541234239532
+      },
+      "pocket=1.25": {
+        "max_output_shift": 0.23245027661323547,
+        "change_vs_default": 0.15354540698394825,
+        "hits_per_s_ratio": 0.910275667073514
+      }
+    }
+  },
+  "measured": "2026-09-25T05:35:59+0000",
+  "wall_minutes": 10.3
+}
