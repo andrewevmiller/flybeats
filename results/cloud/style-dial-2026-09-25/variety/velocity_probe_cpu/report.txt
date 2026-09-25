@@ -1,0 +1,37 @@
+How varied is the fly's drumming? (velocity_probe_cpu)
+6 test songs the fly never trained on, first 20 s of each, played the way a finished model file would play them.
+
+SAME INPUT, SAME OUTPUT
+  Playing a song twice gives exactly the same drums.
+
+WHICH DRUMS IT PLAYS
+  A drum plays when its signal crosses 0.5. Drums that ever did: snare.
+  Highest signal each drum reached: kick 0.37, snare 0.70, hat_closed 0.36, hat_open 0.06, tom_low 0.45, tom_mid 0.35, tom_high 0.01, crash 0.16.
+
+HOW BUSY
+  The fly plays 10.1 hits a second; the human drummer on the same songs played 8.6.
+  Fly's most-used drums: snare 100%, kick 0%, hat_closed 0%.
+  Human's most-used drums: hat_closed 45%, snare 26%, kick 21%.
+
+VARIETY WITHIN A SONG
+  Of the fly's bars, 70% are different from each other (human: 74%).
+  Two bars picked at random differ in 17% of their hits (human: 32%).
+
+HOW CLOSE TO THE DRUMMER IT IS HEARING
+  Groove match with the human part: 0.29 on a 0-1 scale (1 = same groove). Hit by hit, 83% of hits differ.
+
+THE STYLE DIAL
+  This model was trained on 10 of the 18 styles.
+  Switching style changes 0% of the hits on average.
+  To a style it trained on: 0% of hits change. To one it never trained on: 0%.
+  The most any style moved any drum's signal: 0.0018 (on a 0-1 scale, where a hit needs the signal to cross 0.5).
+
+THE SLIDERS (each against the default)
+  drive=0.5        changes 0% of hits, plays 1.00x as many, and moves the signal by up to 0.002.
+  drive=1.5        changes 1% of hits, plays 1.00x as many, and moves the signal by up to 0.003.
+  tightness=0.5    changes 43% of hits, plays 1.91x as many, and moves the signal by up to 0.398.
+  tightness=1.5    changes 99% of hits, plays 0.01x as many, and moves the signal by up to 0.161.
+  pocket=0.8       changes 11% of hits, plays 1.09x as many, and moves the signal by up to 0.057.
+  pocket=1.25      changes 14% of hits, plays 1.04x as many, and moves the signal by up to 0.054.
+
+(threshold 0.5, 10.4 min to measure, 2026-09-25T05:22:45+0000)
