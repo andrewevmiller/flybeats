@@ -21,6 +21,7 @@ of the model alone.
 5. `arm-A2-seed2.txt`, `arm-baseline-seed2.txt`, `00-seed2-verdict.txt`: second
    seeds, and whether A2 beats the baseline.
 6. `arm-standardised-readouts.txt`: standardised motor rates, first seed.
+7. `arm-standardised-seed2.txt`: the same, second seed. The result held.
 
 ## Superseded: kept as written, not to be quoted
 
