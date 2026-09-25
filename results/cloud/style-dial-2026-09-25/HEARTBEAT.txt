@@ -1,4 +1,4 @@
-1790313934
-2026-09-25 05:25:34 UTC
-kit check velocity_probe_cpu
+1790314333
+2026-09-25 05:32:13 UTC
+measure variety style_pc1_cpu
 
