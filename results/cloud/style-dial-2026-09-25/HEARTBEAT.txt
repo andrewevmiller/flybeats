@@ -1,4 +1,4 @@
-1790310729
-2026-09-25 04:32:09 UTC
-train style_pc1_gaps_cpu
-ep  3 loss 0.6807 (bce 0.6267) | val onset_F 0.2765 @thr 0.40 (fixed 0.2665) groove 0.311 vel mae 0.219 r +0.078 (pooled +0.420) | 239.2s
+1790312508
+2026-09-25 05:01:48 UTC
+trained style_pc1_gaps_cpu
+

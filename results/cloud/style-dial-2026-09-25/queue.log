@@ -3,3 +3,5 @@
 [03:22:56] velocity_probe_cpu exit 0 (best: best val onset F: 0.2834)
 [03:23:05] training style_pc1_cpu
 [04:12:45] style_pc1_cpu exit 0 (best: best val onset F: 0.2804)
+[04:12:56] training style_pc1_gaps_cpu
+[05:01:41] style_pc1_gaps_cpu exit 0 (best: best val onset F: 0.2765)
