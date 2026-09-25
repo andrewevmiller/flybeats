@@ -1,0 +1,18 @@
+# Style dial, path fix. Asks whether the genre embedding can change what the
+# model plays once its tonic lands somewhere that reaches the drums.
+#
+#   python src/train.py --config configs/style_pc1_cpu.yaml
+#   python scripts/measure_variety.py --checkpoint runs/style_pc1_cpu/best.pt
+#
+# Compare against velocity_probe_cpu trained on the same machine: same data,
+# seed and epochs, one change. The default target, the 25 octopaminergic
+# neurons, barely reaches the drums (100x the cap moves them 0.036; see
+# results/local/diag-2026-09-24/style_pathway.py). pC1 moves them 0.19 at a
+# push of 5, so the tonic goes there, with the cap raised from 0.5 to 5.0.
+# The 0.5 cap was set because an earlier model saturated pC1/pIP10: check the
+# untrained model with style_pathway.py before trusting a run of this.
+_base_: velocity_probe_cpu.yaml
+name: style_pc1_cpu
+genre:
+  targets: [pC1]
+  max_current: 5.0

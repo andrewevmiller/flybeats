@@ -90,6 +90,8 @@ RESOLVED = {
     "velocity_peak_cpu.yaml": ("cpu",  "auto", 10000,     5,          256),
     "velocity_std_cpu.yaml":  ("cpu",  "auto", 10000,     5,          256),
     "velocity_std_s1_cpu.yaml": ("cpu", "auto", 10000,    5,          256),
+    "style_pc1_cpu.yaml":     ("cpu",  "auto", 10000,     5,          256),
+    "style_pc1_gaps_cpu.yaml": ("cpu", "auto", 10000,     5,          256),
 }
 
 
@@ -157,3 +159,26 @@ def test_each_velocity_arm_carries_exactly_its_own_change():
     for other in ("probe", "w5", "lin"):
         assert "velocity_peak_only" not in arms[other]["train"], (
             f"{other} changes where velocity is scored as well")
+
+
+def test_each_style_arm_carries_exactly_its_own_change():
+    """The style-dial arms: the pC1 arm moves the genre tonic and nothing else;
+    the gaps arm adds audio gaps to that and nothing else."""
+    base = load_config(CONFIGS / "velocity_probe_cpu.yaml")
+    pc1 = load_config(CONFIGS / "style_pc1_cpu.yaml")
+    gaps = load_config(CONFIGS / "style_pc1_gaps_cpu.yaml")
+
+    assert "targets" not in base["genre"] and base["genre"]["max_current"] == 0.5
+    assert pc1["genre"]["targets"] == ["pC1"] and pc1["genre"]["max_current"] == 5.0
+    assert gaps["genre"] == pc1["genre"]
+    assert gaps["train"]["audio_gaps"] == {"fraction": 0.5, "min_ms": 250, "max_ms": 1000}
+    assert "audio_gaps" not in pc1["train"] and "audio_gaps" not in base["train"]
+
+    def strip(c):
+        c = {k: dict(v) if isinstance(v, dict) else v for k, v in c.items()}
+        c.pop("name")
+        c["genre"] = {k: v for k, v in c["genre"].items() if k not in ("targets", "max_current")}
+        c["train"].pop("audio_gaps", None)
+        return c
+    assert strip(pc1) == strip(base)
+    assert strip(gaps) == strip(base)
