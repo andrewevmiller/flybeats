@@ -1,4 +1,4 @@
-1790305322
-2026-09-25 03:02:02 UTC
-train velocity_probe_cpu
-ep  6 loss 0.6503 (bce 0.5951) | val onset_F 0.2731 @thr 0.50 (fixed 0.2538) groove 0.349 vel mae 0.223 r +0.100 (pooled +0.347) | 251.1s
+1790306580
+2026-09-25 03:23:00 UTC
+trained velocity_probe_cpu
+
