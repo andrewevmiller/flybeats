@@ -15,3 +15,7 @@
 [05:35:59] variety style_pc1_cpu exit 0
 [05:35:59] kit check style_pc1_cpu
 [05:38:41] kit check style_pc1_cpu exit 0
+[05:38:48] measuring variety style_pc1_gaps_cpu
+[05:50:08] variety style_pc1_gaps_cpu exit 0
+[05:50:08] kit check style_pc1_gaps_cpu
+[05:53:07] kit check style_pc1_gaps_cpu exit 0
