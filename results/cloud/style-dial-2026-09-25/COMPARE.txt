@@ -1,0 +1,18 @@
+                                    velocity_probe_cpu           style_pc1_cpu      style_pc1_gaps_cpu
+same output twice                                 True                    True                    True
+fly hits/s                                       10.07                    8.46                    9.78
+human hits/s                                      8.56                    8.56                    8.56
+fly distinct bars                                 0.70                    1.00                    0.81
+fly bar-to-bar difference                         0.17                    0.45                    0.18
+groove match to human                             0.29                    0.31                    0.30
+hits differing from human                         0.83                    0.87                    0.82
+style dial: hits changed                        0.0018                    0.20                    0.09
+  ...to a trained style                         0.0026                    0.24                    0.11
+  ...to an untrained style                      0.0020                    0.17                    0.07
+style dial: max signal shift                    0.0018                    0.51                    0.24
+slider drive=0.5 change                         0.0045                    0.11                    0.04
+slider drive=1.5 change                         0.0051                    0.10                    0.04
+slider tightness=0.5 change                       0.43                    0.66                    0.56
+slider tightness=1.5 change                       0.99                    0.65                    0.98
+slider pocket=0.8 change                          0.11                    0.13                    0.12
+slider pocket=1.25 change                         0.14                    0.15                    0.11

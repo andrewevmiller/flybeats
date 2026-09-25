@@ -19,3 +19,5 @@
 [05:50:08] variety style_pc1_gaps_cpu exit 0
 [05:50:08] kit check style_pc1_gaps_cpu
 [05:53:07] kit check style_pc1_gaps_cpu exit 0
+[05:53:16] compare exit 0 -> runs/style/COMPARE.txt
+[05:53:16] queue done
