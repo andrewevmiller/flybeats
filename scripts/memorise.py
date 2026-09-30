@@ -16,6 +16,8 @@ every minute and once more at the end, however the run ends. --no-chart turns al
 Each step is the recorded one (a CUDA graph, training.GraphedStep) once scripts/check_cuda_graph.py has shown on
 this exact code that it trains like the ordinary one; until then, or with --no-graph, the ordinary step. The
 first line of the log says which.
+Every 250 steps it checks hit F1 on the clips, and with it each drum's precision (share of predicted hits that are
+real), recall (share of real hits found) and the counts behind them (found, extra, missed), in the log and the report.
 
     .venv\\Scripts\\python.exe scripts\\memorise.py [--pair [N] | --control N] [--name NAME] [--steps 3000] [--no-chart] [--no-graph]
 Uses the GPU.
@@ -31,7 +33,8 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import load_locked, reports_dir  # noqa: E402
-from flybeats.model.training import (GraphedStep, audio_blind_loss, evaluate, graph_checked, make_optimiser,  # noqa: E402
+from flybeats.model.loss import f1_from_counts, hit_counts  # noqa: E402
+from flybeats.model.training import (GraphedStep, audio_blind_loss, graph_checked, make_optimiser,  # noqa: E402
                                      setup, to_tensors, train_step)
 from live_chart import LiveChart  # noqa: E402
 from tqdm import tqdm  # noqa: E402
@@ -118,6 +121,24 @@ log.write(json.dumps({"meta": {"script": "memorise", "name": name, "steps": args
                                "cuda_graph": use_graph}}) + "\n")
 log.flush()
 
+@torch.no_grad()
+def score(model, clips):
+    """training.evaluate's hit F1 (the same counts, so the same numbers), plus each drum's precision (share of
+    predicted hits that match a real one), recall (share of real hits found) and the counts behind them. Kept here,
+    not in training.py, because training.py is part of the code the CUDA graph check vouches for."""
+    frame_s = cfg["training_data"]["frame_ms"] / 1000
+    fraction = cfg["scorecard"]["onset_tolerance"]["fraction_of_local_beat"]
+    b = to_tensors(clips, args.device)
+    out, _ = model(b["audio"])
+    counts = hit_counts(out["hit_logits"], b["hits"], b["mask"], b["beats"], frame_s, fraction,
+                        cfg["training"]["hit_threshold"])
+    tp, fp, fn = counts.T.astype(float)
+    ratio = lambda a, n: {p: round(float(x / y), 3) if y > 0 else None for p, x, y in zip(model.pieces, a, n)}  # None: nothing to count
+    return {"f1": dict(zip(model.pieces, np.round(f1_from_counts(counts), 3).tolist())),
+            "precision": ratio(tp, tp + fp), "recall": ratio(tp, tp + fn),
+            "hits": {p: {"found": int(t), "extra": int(f), "missed": int(m)} for p, (t, f, m) in zip(model.pieces, counts)}}
+
+
 result = None
 chart = None if args.no_chart else LiveChart(memorise=name, own_process=True, say=tqdm.write)   # shows this run's log
 try:
@@ -129,10 +150,12 @@ try:
         rec = {"step": step, **stats, "elapsed_s": round(time.time() - t0, 1), "t": round(time.time(), 1)}
         if step % 250 == 0 or step == args.steps:
             model.eval()
-            result = evaluate(model, clips, loss_of, cfg)
+            result = score(model, clips)
             model.train()
-            rec["f1"] = result["f1"]
+            rec |= {k: result[k] for k in ("f1", "precision", "recall", "hits")}
             bar.write(f"step {step}: loss {stats['loss']:.4f}  F1 {result['f1']}")
+            bar.write("  precision / recall: " + ", ".join(f"{p} {result['precision'][p]} / {result['recall'][p]}"
+                                                          for p in MUST_PASS))
         log.write(json.dumps(rec) + "\n")
         log.flush()
         if "f1" in rec and all(result["f1"][p] >= 0.9 for p in MUST_PASS):
@@ -140,7 +163,8 @@ try:
     bar.close()
     log.close()
     passed = all(result["f1"][p] >= 0.9 for p in MUST_PASS)
-    report = {"songs": songs, "steps": step, "f1": result["f1"], "passes": passed, "control": args.control,
+    report = {"songs": songs, "steps": step, "f1": result["f1"], "precision": result["precision"],
+              "recall": result["recall"], "hits": result["hits"], "passes": passed, "control": args.control,
               "audio_blind_floor": floor, "final_loss": stats["loss"], "cuda_graph": use_graph}
     (out_dir / "memorise.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 finally:                        # finished, failed, crashed or Ctrl+C: the website shows how it ended
