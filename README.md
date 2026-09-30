@@ -166,9 +166,15 @@ Data paths are set in `config/paths.local.yaml`, which is not committed. Every t
 - The memorisation check is the open item. An earlier attempt plateaued at the audio-blind loss, which led to the readout normalisation added in `prereg-v3`. The rerun's loss was below the audio-blind floor at step 171, and the check is still running.
 - Not started: full-set training, the scorecard (Phase 4) and the control comparison.
 
-## Credits and licences
+## Licence
+
+The code in this repository is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0). Copyright (C) 2026 Andrew Miller. The full licence text (`LICENSE`) is still to be added.
+
+The datasets are not part of this repository and keep their own licences (below).
+
+## Credits and data licences
 
 - **MaleCNS v1.0**: Janelia FlyEM, CC BY 4.0. Berg et al., "Sexual dimorphism in the complete connectome of the Drosophila male central nervous system", Cell (2026).
 - **Slakh2100 / BabySlakh**: Manilow, Wichern, Seetharaman and Le Roux, WASPAA 2019, CC BY 4.0.
 
-Full sources and checksums are in `SOURCES.md`. No licence has been set for this repository's own code yet.
+Full sources and checksums are in `SOURCES.md`.
