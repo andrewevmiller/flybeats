@@ -10,22 +10,103 @@ The project is a pre-registered experiment. The real connectome has to beat five
 
 ## How it works
 
-1. **Connectome slice** (`src/flybeats/connectome/`). Builds one graph from three MaleCNS files: annotations, neurotransmitters and synapse weights.
-   - It keeps neurons on any ear-to-motor path of at most 3 hops.
-   - The ears are the usable JO-A/B neurons, with left ears mirrored to the right.
-   - The motor targets are wing and hind-leg motor neurons.
-   - Signs come from neurotransmitter: acetylcholine excites, GABA and glutamate inhibit, and modulators are silenced.
-   - `controls.py` makes five random rewirings. Each neuron keeps its in and out degree, sign and synapse counts.
-2. **Data** (`src/flybeats/data/`). Slakh2100 (redux, 16 kHz) gives a manifest, drum events, beat grids and a clip sampler.
-   - Splits are per song.
-   - Stem dropout is applied.
-   - 127 training songs are excluded, either because their drum part duplicates a validation or test song's or because they have no kit hits. The list is in `config/excluded_songs.txt`.
-3. **Model** (`src/flybeats/model/`).
-   - `ear.py` is a fixed causal front end: 16 log-spaced bands from 40 Hz to 4 kHz, one frame per 5 ms.
-   - `network.py` holds a per-type time constant and bias, one strength dial per (sending type, receiving type) pair (about 41,000 in total), and a hit and loudness readout per motor neuron.
-   - Each of the 8 kit pieces reads only its own disjoint motor-neuron group: kick, hi-hat (closed, open and pedal), snare, tom, crash and ride.
-   - `loss.py` is a weighted BCE for hits plus a velocity loss, with a hit F1 used for checkpoints.
-   - `training.py` runs the training step, validation, the silence and stability test, and an optional recorded CUDA-graph step (1.45x faster, verified identical).
+```
+Slakh mix (mono, 16 kHz)
+  -> ear: 16 log-spaced bands, one frame per 5 ms
+  -> 150 Johnston's-organ ear neurons (one fixed band each)
+  -> 3,302-neuron fly network, wiring fixed by the connectome
+  -> 182 wing / hind-leg motor neurons, split into 8 disjoint groups
+  -> per drum: hit probability + velocity, every 5 ms
+```
+
+### The connectome slice (`src/flybeats/connectome/`)
+
+`build_slice.py` turns three MaleCNS v1.0 files (annotations, neurotransmitter predictions, and about 152 million synapse-weight rows) into one saved slice. Everything is sorted, so the same `locked.yaml` always gives byte-identical output.
+
+| Step | Rule | Result |
+| --- | --- | --- |
+| Neurons | Annotated neurons that have a superclass | 166,700 |
+| Connections | Neuron pairs with at least 5 synapses (confidence at least 0.5) | 6,242,118 |
+| Ears | Johnston's organ neurons of type `JO-A*` / `JO-B*` with at least one outgoing connection that passes the filter | 93 usable (75 left, 18 right) |
+| Mirroring | The 75 usable left ears are copied to the right side and all real right ears are dropped, so the ears are symmetric. Targets of a mirrored ear are the same-type neurons on the opposite side (midline targets keep the same neuron and the synapses are split evenly) | 150 ears; 0.5% of synapses lost |
+| Motor targets | MaleCNS subclasses `wm` (wing) and `hl` (hind leg) | 67 wing, 120 hind-leg |
+| Cut | Keep every neuron on some ear-to-motor path of at most 3 hops (ear distance + distance back from the motor group) | **3,302 neurons, 108,593 connections** |
+
+A few things about the slice:
+
+- **Sides:** 1,595 left, 1,645 right and 62 midline neurons.
+- **Signs:** acetylcholine is excitatory, and GABA and glutamate are inhibitory. Motor neurons are set to glutamate because the predictor is unreliable on them. Modulators (consensus serotonin, octopamine or dopamine) and neurons with an unknown transmitter stay in the graph but are silenced.
+- **Roles in the slice:** 1,863 excitatory, 1,228 inhibitory, 189 motor, 8 modulatory and 14 unknown.
+- **Cell types:** 1,224. Each of the 22 untyped neurons is its own type. This gives **41,186 (sending type, receiving type) pairs**.
+- **Leftover motor neurons:** 2 middle-leg motor neurons are in the slice but are not read out. One wing and four hind-leg motor neurons have no type and are left out of the readout.
+- **Scale:** the largest eigenvalue of the signed weight matrix is 730.6. The model divides its weights by it, so at the initial gain of 1.0 the network starts at the edge of stability.
+
+**Random controls.** `controls.py` makes five rewired copies (seeds 1 to 5) by degree-preserving edge swaps, about 10 attempted swaps per edge and about 1.0 million accepted. Each neuron keeps its in and out degree and its sign, and the synapse counts travel with the edges. Only about 3.4% of the real connections survive in a control. Every drum's motor neurons are still reachable from the ears in each control, but at shorter distances (median 1 to 2 hops, against 2 to 3 in the real slice), which makes the real wiring's longer paths part of what is being tested.
+
+### The model (`src/flybeats/model/`)
+
+**Ear (`ear.py`).** This is fixed and causal: each frame's window ends at the frame, so it never sees the future.
+
+- Front end: 512-point FFT with a Hann window and a hop of 80 samples (5 ms).
+- Bands: energy is summed into 16 log-spaced bands from 40 Hz to 4 kHz, then passed through `log(1 + energy)` and standardised per band with fixed statistics from a random sample of training clips.
+- Ear neurons: `JO-B` neurons take the 8 low bands and `JO-A` neurons the 8 high bands, round-robin by body ID. A mirrored ear takes its original's band. Each ear neuron's input current is its band's value, times a learned gain and plus a learned offset.
+
+**Dynamics (`network.py`).** This is a rate network in 5 ms steps:
+
+```
+v[t+1] = v[t] + (dt / tau_type) * ( -v[t] + W r[t] + bias_type + ear_drive[t] )
+r      = relu(v), zero for silenced neurons
+W[post, pre] = sign[pre] * synapses * (gain / largest_eigenvalue) * softplus(theta[type_pre, type_post])
+```
+
+The wiring (which neurons connect), the signs and the synapse counts are fixed. Only the parameters below are trained. The real slice and each random control use the same class, and only the edge table differs.
+
+**Readout.** Each of the 8 drums reads only its own motor neurons, and the groups do not overlap. Each readout neuron's rate is standardised first, with a mean and spread measured once on 16 training clips through the untrained network. Then, per drum, the hit logit is a weighted sum of these neurons plus a bias, and the velocity is a sigmoid of a second weighted sum plus a bias.
+
+| Drum | Motor neurons | Types | Limb and muscle family |
+| --- | --- | --- | --- |
+| kick | 59 | 26 | right hind leg, all |
+| hihat_pedal | 57 | 24 | left hind leg, all |
+| snare | 12 | 5 | left wing, power |
+| hihat_closed | 12 | 5 | right wing, power |
+| tom | 13 | 13 | left wing, steering |
+| ride | 13 | 13 | right wing, steering |
+| crash | 8 | 7 | left wing, tergal / pleural / other |
+| hihat_open | 8 | 7 | right wing, tergal / pleural / other |
+
+The wing families are defined by MaleCNS type strings in `locked.yaml`. Power muscles are the DLMn and DVMn types, steering muscles are the b, i, iii, hg and ps types, and tergal / pleural / other are the tp, TTMn and STTMm types.
+
+**Learned parameters.** About 44,000 in total. The counts below come from the slice report, not from instantiating the model.
+
+| Parameter | Count | Initial value / range |
+| --- | --- | --- |
+| Strength dial `theta`, one per type pair | 41,186 | `softplus(theta) = 1`, so untrained dials change nothing |
+| Time constant `tau`, one per cell type | 1,224 | 20 ms, clamped to 10 to 200 ms |
+| Bias, one per cell type | 1,224 | 0 |
+| Ear band gain and offset | 16 + 16 | 1 and 0 |
+| Hit and velocity weights, per readout neuron | 182 + 182 | random, std 0.01 (zero would block every gradient) |
+| Hit bias and velocity bias, per drum | 8 + 8 | -4 (each drum starts near "no hit") and 0 |
+
+### The data (`src/flybeats/data/`)
+
+Slakh2100 (redux, 16 kHz) is a set of synthesised multitrack songs with aligned MIDI. `BabySlakh` is a small subset used for gates and quick checks.
+
+- **Splits:** the official Slakh redux splits, by song: 1,162 train (79.9 h), 270 validation (18.3 h) and 151 test (11.0 h), which is 1,583 songs. The training songs exclude 127 listed in `config/excluded_songs.txt`, either because their drum part is note-for-note identical to a validation or test song's or because they have only auxiliary percussion. Eight drum parts shared between validation and test are left alone.
+- **Input:** the mono sum of the song's non-drum stems, with the drums left out. Each stem is dropped with probability 0.2, keeping at least one.
+- **Targets:** MIDI drum notes are mapped to 8 kit pieces (General MIDI notes in `locked.yaml`; note 39, hand clap, counts as snare) on a 5 ms grid, with the velocity divided by 127. Auxiliary percussion (tambourine, cabasa, maracas, congas and the like) is dropped, which is 28.4% of all drum notes.
+- **Hits in the full set:** hihat_closed 846,180; kick 492,966; snare 370,490; ride 119,171; hihat_open 97,191; hihat_pedal 92,549; tom 64,305; crash 45,286.
+- **Timing:** 69.3% of hits fall on the 16th-note grid within 1 ms, and 468 of 1,583 songs have tempo changes. Beat grids come from the MIDI and are used for the tempo-scaled tolerance in the score.
+- **Clips:** each training batch is 8 clips of 16 s (3,200 frames), each from a different song, chosen with probability proportional to duration, at a random start. The first 2 s of every clip is a warm-up and is not scored. Validation uses fixed clips (4 per song, seed 1234).
+
+### Loss and training
+
+- **Hit loss:** binary cross-entropy per frame. The target is 1 on a hit frame and 0.5 on the frame either side. Frames with a target above zero are weighted per drum by (non-hit frames / hit frames) over the training split, capped at 50.
+- **Velocity loss:** squared error on hit frames only, at weight 0.5.
+- **Optimiser:** Adam at 1e-3, cosine-decayed to zero over the run, gradient norm clipped at 1.0. Backpropagation runs through the whole 16 s clip, with no truncation.
+- **Steps:** 1,000 on BabySlakh. The full-set count is open until it is set from the measured cost (about 2.2 h per 1,000 batches on the development GPU).
+- **Validation:** every 500 steps, with the checkpoint kept on the best mean hit F1. A hit is a local peak of hit probability at or above 0.5. It counts as correct within 10% of the local beat (50 ms at 120 BPM).
+- **Stability:** a silence test runs music followed by 4 s of silence. Activity must stay finite and below 50 times the music level, and must fall below 5% of it within 1 s. At least half the readout motor neurons must respond, and every drum must have one. Training stops if activity is unbounded or does not settle.
+- **Same for all arms:** the real network and every control train with identical settings, and there are no command-line overrides.
 
 ## Pre-registration
 
