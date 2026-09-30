@@ -1,0 +1,134 @@
+# Songs left out of every split. One id per line; '#' starts a comment.
+# Each change gets a dated line in config/CHANGELOG.md.
+
+# 2026-09-29: 125 training songs whose drum part is note-for-note identical to a validation or
+# test song's (same drum_hash). The training copies go, so validation and test stay the official splits.
+Track00004  # same drums as Track01509
+Track00006  # same drums as Track02024
+Track00007  # same drums as Track01526
+Track00021  # same drums as Track01730
+Track00023  # same drums as Track01504, Track01705, Track01902
+Track00045  # same drums as Track01950
+Track00046  # same drums as Track01614
+Track00051  # same drums as Track01803
+Track00054  # same drums as Track01563
+Track00065  # same drums as Track01900
+Track00075  # same drums as Track01904
+Track00078  # same drums as Track01803
+Track00084  # same drums as Track01887
+Track00085  # same drums as Track02048
+Track00088  # same drums as Track01509
+Track00107  # same drums as Track02008
+Track00118  # same drums as Track01797
+Track00123  # same drums as Track01754, Track01886, Track01981, Track02029
+Track00128  # same drums as Track01695
+Track00135  # same drums as Track01713
+Track00141  # same drums as Track02081
+Track00147  # same drums as Track02074
+Track00159  # same drums as Track01646
+Track00163  # same drums as Track01561
+Track00168  # same drums as Track01891
+Track00188  # same drums as Track01642
+Track00215  # same drums as Track02070
+Track00219  # same drums as Track01647
+Track00231  # same drums as Track01628
+Track00284  # same drums as Track01884, Track01993
+Track00288  # same drums as Track01940
+Track00304  # same drums as Track01595
+Track00341  # same drums as Track01599
+Track00368  # same drums as Track02070
+Track00380  # same drums as Track02048
+Track00407  # same drums as Track01579
+Track00427  # same drums as Track01646
+Track00431  # same drums as Track01561
+Track00451  # same drums as Track01754, Track01886, Track01981, Track02029
+Track00453  # same drums as Track01646
+Track00458  # same drums as Track01645
+Track00465  # same drums as Track01646
+Track00472  # same drums as Track01904
+Track00485  # same drums as Track01646
+Track00494  # same drums as Track01754, Track01886, Track01981, Track02029
+Track00505  # same drums as Track01509
+Track00512  # same drums as Track01642
+Track00517  # same drums as Track01797
+Track00519  # same drums as Track01503, Track01532, Track01559
+Track00537  # same drums as Track02018
+Track00545  # same drums as Track01557
+Track00550  # same drums as Track01646
+Track00553  # same drums as Track01813, Track01951
+Track00560  # same drums as Track01504, Track01705, Track01902
+Track00570  # same drums as Track01695
+Track00572  # same drums as Track01803
+Track00573  # same drums as Track01757
+Track00583  # same drums as Track01579
+Track00585  # same drums as Track02070
+Track00608  # same drums as Track01754, Track01886, Track01981, Track02029
+Track00615  # same drums as Track02023
+Track00638  # same drums as Track01887
+Track00644  # same drums as Track01900
+Track00664  # same drums as Track01604
+Track00671  # same drums as Track01694
+Track00687  # same drums as Track01695
+Track00701  # same drums as Track01744
+Track00738  # same drums as Track01623
+Track00746  # same drums as Track01940
+Track00759  # same drums as Track01501, Track01772
+Track00766  # same drums as Track01583
+Track00771  # same drums as Track01619
+Track00805  # same drums as Track01741
+Track00807  # same drums as Track01574
+Track00808  # same drums as Track01803
+Track00811  # same drums as Track01579
+Track00815  # same drums as Track01813, Track01951
+Track00819  # same drums as Track01940
+Track00823  # same drums as Track01901
+Track00825  # same drums as Track01563
+Track00843  # same drums as Track01754, Track01886, Track01981, Track02029
+Track00890  # same drums as Track01751
+Track00893  # same drums as Track01907
+Track00908  # same drums as Track02019
+Track00909  # same drums as Track01646
+Track00920  # same drums as Track01552
+Track00928  # same drums as Track01940
+Track00932  # same drums as Track01646
+Track00936  # same drums as Track02074
+Track00943  # same drums as Track01887
+Track00953  # same drums as Track01739
+Track00975  # same drums as Track01972
+Track00976  # same drums as Track01563
+Track00980  # same drums as Track01778
+Track00987  # same drums as Track01892
+Track00992  # same drums as Track01889
+Track01038  # same drums as Track01583
+Track01040  # same drums as Track01904
+Track01050  # same drums as Track01812
+Track01082  # same drums as Track01595
+Track01115  # same drums as Track01797
+Track01131  # same drums as Track01730
+Track01135  # same drums as Track01730
+Track01146  # same drums as Track01664
+Track01148  # same drums as Track01566, Track02002
+Track01177  # same drums as Track01845
+Track01229  # same drums as Track02000
+Track01296  # same drums as Track01612
+Track01303  # same drums as Track01625
+Track01323  # same drums as Track01837
+Track01336  # same drums as Track02032
+Track01341  # same drums as Track02018
+Track01349  # same drums as Track01623
+Track01363  # same drums as Track01612
+Track01367  # same drums as Track01511
+Track01398  # same drums as Track01632
+Track01409  # same drums as Track02037
+Track01420  # same drums as Track01795
+Track01426  # same drums as Track01754, Track01886, Track01981, Track02029
+Track01437  # same drums as Track01595
+Track01458  # same drums as Track01812
+Track01461  # same drums as Track01540
+Track01462  # same drums as Track02070
+Track01473  # same drums as Track01664
+Track01474  # same drums as Track01803
+
+# 2026-09-29: training songs whose drum part is only auxiliary percussion, so no kit hits remain.
+Track00358  # 112 dropped notes, 0 kit hits
+Track00739  # 673 dropped notes, 0 kit hits

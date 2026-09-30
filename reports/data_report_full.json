@@ -1,0 +1,71 @@
+{
+  "songs": 1583,
+  "hits_on_16th_grid_within_1ms": 0.693,
+  "grid_offset_ms": {
+    "median": 0.0,
+    "p90": 15.8
+  },
+  "songs_with_tempo_changes": "468 of 1583",
+  "distinct_velocities": 127,
+  "median_velocity": 90.0,
+  "notes_total": 2972972,
+  "dropped_hits_share": 0.284,
+  "dropped_top": {
+    "Tambourine": 246663,
+    "Cabasa": 148255,
+    "Maracas": 128356,
+    "82": 75151,
+    "Open Hi Conga": 40907,
+    "Mute Hi Conga": 36017
+  },
+  "pieces": {
+    "kick": {
+      "hits": 492966,
+      "share_of_all_notes": 0.166
+    },
+    "hihat_pedal": {
+      "hits": 92549,
+      "share_of_all_notes": 0.031
+    },
+    "snare": {
+      "hits": 370490,
+      "share_of_all_notes": 0.125
+    },
+    "hihat_closed": {
+      "hits": 846180,
+      "share_of_all_notes": 0.285
+    },
+    "hihat_open": {
+      "hits": 97191,
+      "share_of_all_notes": 0.033
+    },
+    "tom": {
+      "hits": 64305,
+      "share_of_all_notes": 0.022
+    },
+    "crash": {
+      "hits": 45286,
+      "share_of_all_notes": 0.015
+    },
+    "ride": {
+      "hits": 119171,
+      "share_of_all_notes": 0.04
+    }
+  },
+  "songs_per_split": {
+    "test": 151,
+    "train": 1162,
+    "validation": 270
+  },
+  "hours_per_split": {
+    "test": 11.0,
+    "train": 79.9,
+    "validation": 18.3
+  },
+  "input_stems_per_song": {
+    "min": 4,
+    "median": 9.0,
+    "max": 41
+  },
+  "parts_with_midi_but_no_audio": 121
+}
