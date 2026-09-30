@@ -1,0 +1,87 @@
+version: prereg-v1
+
+data:
+  malecns: {release: v1.0, min_confidence: 0.5}
+  slakh: {release: slakh2100_redux_16k, split: official_redux, exclude: [omitted]}
+
+connectome:
+  neurons: annotated            # annotations rows with a superclass (166,700)
+  min_synapses: 5               # the "loose" filter
+  ears:
+    types: '^JO-[AB]'           # sound-sensing Johnston's organ neurons
+    usable: out_synapses_ge_5   # at least one outgoing connection that passes the filter
+    mirror: left_to_right       # 75 usable left ears copied to the right; all real right ears dropped
+    mirror_rule: same_type_opposite_side_split_evenly   # midline targets keep the same neuron
+    untyped_targets: skip       # L/R targets with no cell type cannot be mirrored (123 synapses)
+    refilter_mirrored: false    # split connections are kept even if they fall below 5 synapses
+  motor_groups: [wing, hind_leg]   # MaleCNS subclasses wm and hl
+  hop_budget: 3                 # keep neurons on any ear-to-motor path of <= 3 hops
+  keep_ids: true
+  signs:
+    acetylcholine: excitatory
+    gaba: inhibitory
+    glutamate: inhibitory
+    motor_neurons: glutamate    # predictor is unreliable on motor neurons
+    modulatory: earmark_silenced   # consensus 5-HT/OA/DA, or unclear with a modulator predicted at >= 0.5
+    unknown: exclude_silenced
+  random_controls:
+    seeds: [1, 2, 3, 4, 5]
+    method: degree_preserving_swaps   # each neuron keeps its in/out counts, sign and synapse counts travel with edges
+    swaps_per_edge: 10
+
+model:
+  weights: synapse_count_x_type_pair_scale   # Option 2, about 41,000 dials
+  signs: fixed
+  causal: true
+  initial_gain: 1.0             # x the critical gain from the largest eigenvalue
+
+kit:
+  pieces: [kick, hihat_pedal, snare, hihat_closed, hihat_open, tom, crash, ride]
+  gm_notes:
+    kick: [35, 36]
+    snare: [37, 38, 39, 40]     # 39 = hand clap, counted as snare
+    hihat_closed: [42]
+    hihat_pedal: [44]
+    hihat_open: [46]
+    tom: [41, 43, 45, 47, 48, 50]
+    crash: [49, 52, 55, 57]
+    ride: [51, 53, 59]
+  other_notes: drop             # auxiliary percussion (tambourine, cabasa, congas...)
+
+readout:                        # disjoint; each drum reads only its own motor neurons
+  kick:         {limb: right_hind_leg, family: all}
+  hihat_pedal:  {limb: left_hind_leg,  family: all}
+  hihat_closed: {limb: right_wing, family: power}
+  ride:         {limb: right_wing, family: steering}
+  hihat_open:   {limb: right_wing, family: tergal_pleural_other}
+  snare:        {limb: left_wing,  family: power}
+  tom:          {limb: left_wing,  family: steering}
+  crash:        {limb: left_wing,  family: tergal_pleural_other}
+  untyped_motor_neurons: exclude   # 1 wing (bodyId 807987) and 4 hind-leg motor neurons
+  wing_families:                # exact MaleCNS type strings
+    power: ['DLMn a, b', 'DLMn c-f', 'DVMn 1a-c', 'DVMn 2a, b', 'DVMn 3a, b']
+    steering: ['b1 MN', 'b2 MN', 'b3 MN', 'i1 MN', 'i2 MN', 'iii1 MN', 'iii3 MN',
+               'hg1 MN', 'hg2 MN', 'hg3 MN', 'hg4 MN', 'ps1 MN', 'ps2 MN']
+    tergal_pleural_other: ['tp1 MN', 'tp2 MN', 'tpn MN', 'TTMn', 'STTMm', 'MNwm35', 'MNwm36']
+
+training_data:
+  clip_seconds: 16
+  warmup_ignored_seconds: 2
+  frame_ms: 5
+  one_clip_per_song_per_batch: true
+  stem_dropout: {p: 0.2, keep_at_least: 1}
+  sampling_seed: 0
+
+scorecard:
+  onset_tolerance: {fraction_of_local_beat: 0.10}   # 50 ms at 120 BPM; scales with tempo
+  floor: other_song_drum_part_same_tempo_offset_3_8_beat
+  ceiling: original_drum_part
+  clip_each_facet: [0, 100]
+  failure_floor: 20
+  musicianship_weights: {beat_alignment: 35, tempo_following: 25, listening: 15, style_fit: 15, groove: 10}
+  automatic_score: rescale_without_listening
+
+win_rule:
+  main: real_beats_all_5_random_on_beat_alignment_by_more_than_seed_spread
+  supporting: real_beats_random_median_on_4_of_6_other_facets
+  evaluated_on: test_split_once
