@@ -1,0 +1,122 @@
+{
+  "set": "full",
+  "control": null,
+  "clips": 20,
+  "gains": {
+    "0.5": {
+      "finite": true,
+      "bounded": true,
+      "music_level": 0.025095386430621147,
+      "peak_level": 0.09912864863872528,
+      "settled_ratio": 2.8472807148516845e-20,
+      "responding_share": 0.23076923076923078,
+      "responding_per_drum": {
+        "kick": 7,
+        "hihat_pedal": 5,
+        "snare": 3,
+        "hihat_closed": 5,
+        "hihat_open": 5,
+        "tom": 7,
+        "crash": 5,
+        "ride": 5
+      },
+      "passes": false
+    },
+    "0.75": {
+      "finite": true,
+      "bounded": true,
+      "music_level": 0.027774443849921227,
+      "peak_level": 0.10819793492555618,
+      "settled_ratio": 3.8076550316936395e-16,
+      "responding_share": 0.45604395604395603,
+      "responding_per_drum": {
+        "kick": 15,
+        "hihat_pedal": 14,
+        "snare": 12,
+        "hihat_closed": 12,
+        "hihat_open": 6,
+        "tom": 10,
+        "crash": 6,
+        "ride": 8
+      },
+      "passes": false
+    },
+    "1.0": {
+      "finite": true,
+      "bounded": true,
+      "music_level": 0.03054853156208992,
+      "peak_level": 0.11690206080675125,
+      "settled_ratio": 7.622391433315112e-12,
+      "responding_share": 0.5659340659340659,
+      "responding_per_drum": {
+        "kick": 23,
+        "hihat_pedal": 20,
+        "snare": 12,
+        "hihat_closed": 12,
+        "hihat_open": 7,
+        "tom": 10,
+        "crash": 7,
+        "ride": 12
+      },
+      "passes": true
+    },
+    "1.25": {
+      "finite": true,
+      "bounded": true,
+      "music_level": 0.03358607366681099,
+      "peak_level": 0.12591026723384857,
+      "settled_ratio": 1.1597010285413489e-07,
+      "responding_share": 0.6263736263736264,
+      "responding_per_drum": {
+        "kick": 27,
+        "hihat_pedal": 26,
+        "snare": 12,
+        "hihat_closed": 12,
+        "hihat_open": 7,
+        "tom": 11,
+        "crash": 7,
+        "ride": 12
+      },
+      "passes": true
+    },
+    "1.5": {
+      "finite": true,
+      "bounded": true,
+      "music_level": 0.037099797278642654,
+      "peak_level": 0.13666975498199463,
+      "settled_ratio": 1.0857234001159668,
+      "responding_share": 0.7032967032967034,
+      "responding_per_drum": {
+        "kick": 35,
+        "hihat_pedal": 31,
+        "snare": 12,
+        "hihat_closed": 12,
+        "hihat_open": 7,
+        "tom": 12,
+        "crash": 7,
+        "ride": 12
+      },
+      "passes": false
+    },
+    "2.0": {
+      "finite": false,
+      "bounded": false,
+      "music_level": NaN,
+      "peak_level": Infinity,
+      "settled_ratio": Infinity,
+      "responding_share": 0.0,
+      "responding_per_drum": {
+        "kick": 0,
+        "hihat_pedal": 0,
+        "snare": 0,
+        "hihat_closed": 0,
+        "hihat_open": 0,
+        "tom": 0,
+        "crash": 0,
+        "ride": 0
+      },
+      "passes": false
+    }
+  },
+  "advice": "1.0x passes: keep initial_gain: 1.0."
+}
