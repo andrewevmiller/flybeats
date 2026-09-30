@@ -37,7 +37,8 @@ def process_song(song_dir, split, pieces_of, pieces):
     """(manifest row, events frame, beats frame, Counter of dropped GM notes)."""
     song_dir = Path(song_dir)
     song = song_dir.name
-    meta = yaml.safe_load((song_dir / "metadata.yaml").read_text(encoding="utf-8"))
+    # lstrip: train/Track00017's file starts with a stray space (" UUID: ..."), which YAML rejects
+    meta = yaml.safe_load((song_dir / "metadata.yaml").read_text(encoding="utf-8").lstrip())
     stems = meta["stems"]
     drum_stems = sorted(s for s, m in stems.items() if m.get("is_drum"))
     # audio_rendered is unreliable (false even when audio exists): a stem is rendered if its file exists
