@@ -1,0 +1,99 @@
+{
+  "frames_per_clip": 3200,
+  "clips": 8,
+  "neurons": 3302,
+  "connections": 108593,
+  "gpu": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+  "recorded_step_s": 5.764426390329997,
+  "profiled_gpu_ms": 6100.603402000448,
+  "groups_ms": {
+    "big multiply (network connections)": 2867.755738000137,
+    "per-frame neuron update (add, multiply, relu, ...)": 2663.9041380003655,
+    "indexing and copying": 374.6107970000628,
+    "sums and means": 174.71146499992747,
+    "other": 19.621263999954568
+  },
+  "top_operations": [
+    {
+      "op": "aten::mm",
+      "gpu_ms": 2867.8,
+      "calls": 22400
+    },
+    {
+      "op": "aten::add_",
+      "gpu_ms": 2383.5,
+      "calls": 38391
+    },
+    {
+      "op": "aten::fill_",
+      "gpu_ms": 212.5,
+      "calls": 9613
+    },
+    {
+      "op": "aten::sum",
+      "gpu_ms": 140.9,
+      "calls": 19206
+    },
+    {
+      "op": "aten::mul",
+      "gpu_ms": 120.5,
+      "calls": 38426
+    },
+    {
+      "op": "aten::_index_put_impl_",
+      "gpu_ms": 68.4,
+      "calls": 3205
+    },
+    {
+      "op": "aten::add",
+      "gpu_ms": 60.4,
+      "calls": 19210
+    },
+    {
+      "op": "aten::mean",
+      "gpu_ms": 33.8,
+      "calls": 3201
+    },
+    {
+      "op": "aten::index",
+      "gpu_ms": 28.6,
+      "calls": 3205
+    },
+    {
+      "op": "aten::gather",
+      "gpu_ms": 27.0,
+      "calls": 3200
+    },
+    {
+      "op": "aten::div",
+      "gpu_ms": 22.4,
+      "calls": 6407
+    },
+    {
+      "op": "aten::copy_",
+      "gpu_ms": 19.6,
+      "calls": 6406
+    },
+    {
+      "op": "aten::neg",
+      "gpu_ms": 19.3,
+      "calls": 6400
+    },
+    {
+      "op": "aten::index_copy",
+      "gpu_ms": 18.2,
+      "calls": 3200
+    },
+    {
+      "op": "aten::remainder",
+      "gpu_ms": 12.6,
+      "calls": 3204
+    }
+  ],
+  "one_frame_forward_multiply_ms": {
+    "dense": 0.3431040048599243,
+    "sparse_csr": 0.15801599621772766,
+    "sparse_coo": 0.28513599932193756,
+    "sparse_matches_dense": true
+  }
+}

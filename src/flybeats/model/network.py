@@ -19,6 +19,39 @@ from .ear import N_BANDS, Bands, check_ear, ear_bands
 THETA_ONE = math.log(math.e - 1)          # softplus(THETA_ONE) == 1, so the untrained dials change nothing
 
 
+class _WeightGradOnce(torch.autograd.Function):
+    """The connection matrix's gradient, formed once per clip instead of once per frame.
+
+    The same matrix is used at every frame, so its gradient is a sum over frames: rates before the frame, times the
+    gradient arriving at that frame's recurrent input. Left to autograd, each frame forms a dense (neurons x
+    neurons) gradient and adds it to a running total: 3,200 full-matrix multiplies and adds per clip, most of a
+    training step (reports/profile_step.json). Here the frames use a detached copy of the matrix, each adds one of
+    these outputs (zeros) to its recurrent input, and the gradients arriving at them are gathered and multiplied
+    by the saved rates, in blocks of CHUNK frames added up in float64. Same quantity, added up in a different order,
+    so it may differ in the last digits: scripts/check_cuda_graph.py checks it is at least as close to a
+    double-precision reference as the per-frame way."""
+
+    @staticmethod
+    def forward(ctx, w_t, rates, t_len, batch):
+        ctx.rates = rates                          # run() appends each frame's rates; complete by the backward pass
+        return tuple(w_t.new_zeros(batch, w_t.shape[1]) for _ in range(t_len))
+
+    @staticmethod
+    def backward(ctx, *grads):
+        r = torch.stack(ctx.rates)                 # (frames, batch, neurons): the rates each frame multiplied
+        ctx.rates = None                           # no longer needed; free them now
+        g = torch.stack([gr if gr is not None else torch.zeros_like(r[0]) for gr in grads])
+        # One multiply over all frames would add each entry's 25,600 terms (3,200 frames x 8 clips) one after
+        # another in float32: on the GPU less accurate than the per-frame way (check of 30 Sep). So: blocks of
+        # CHUNK frames (at most 400 terms in a row), their results added up in float64.
+        total = torch.zeros(r.shape[2], g.shape[2], dtype=torch.float64, device=r.device)
+        for s in range(0, r.shape[0], _WeightGradOnce.CHUNK):
+            total += (r[s:s + _WeightGradOnce.CHUNK].flatten(0, 1).t() @ g[s:s + _WeightGradOnce.CHUNK].flatten(0, 1))
+        return total.to(r.dtype), None, None, None
+
+    CHUNK = 50
+
+
 class FlyNet(nn.Module):
     def __init__(self, neurons, edges, cfg, band_stats=None, sr=16000):
         super().__init__()
@@ -48,6 +81,7 @@ class FlyNet(nn.Module):
         self.eigenvalue = largest_eigenvalue(neurons, edges)
         self.g = cfg["model"]["initial_gain"] / self.eigenvalue
         self.gain_scale = 1.0                     # the stability sweep multiplies the gain by this
+        self.weight_grad_once = True              # False: autograd's per-frame weight gradient (the reference)
         self.register_buffer("alive", torch.from_numpy((~neurons.silenced.to_numpy()).astype(np.float32)))
 
         # Ear: fixed band per ear neuron
@@ -92,8 +126,8 @@ class FlyNet(nn.Module):
     def tau_ms(self):
         return self.log_tau.exp().clamp(self.tau_min, self.tau_max)
 
-    def init_state(self, batch, device):
-        return torch.zeros(batch, self.n, device=device)
+    def init_state(self, batch, device, dtype=torch.float32):
+        return torch.zeros(batch, self.n, device=device, dtype=dtype)
 
     def ear_input(self, audio):
         """(B, samples) -> (B, frames, n_ears) current into each ear neuron."""
@@ -110,15 +144,25 @@ class FlyNet(nn.Module):
         b, t_len, _ = ear_in.shape
         dev = ear_in.device
         if v is None:
-            v = self.init_state(b, dev)
+            v = self.init_state(b, dev, ear_in.dtype)
         w_t = self.weight_matrix().t()
+        once = self.weight_grad_once and torch.is_grad_enabled() and w_t.requires_grad
+        if once:                                   # the weight gradient in one multiply (_WeightGradOnce)
+            used = []
+            zeros = _WeightGradOnce.apply(w_t, used, t_len, b)
+            w_t = w_t.detach()
         alpha = (self.dt_ms / self.tau_ms())[self.type_idx]
         bias = self.bias[self.type_idx]
         r = F.relu(v) * self.alive
         hit, vel, mean_rate, mn_rates, rates = [], [], [], [], []
         for t in range(t_len):
-            drive = torch.zeros(b, self.n, device=dev).index_copy(1, self.ear_idx, ear_in[:, t])
-            v = v + alpha * (-v + r @ w_t + bias + drive)
+            drive = torch.zeros(b, self.n, device=dev, dtype=ear_in.dtype).index_copy(1, self.ear_idx, ear_in[:, t])
+            if once:
+                used.append(r.detach())            # detached: kept with its graph, r would tie the graph to itself
+                recurrent = r @ w_t + zeros[t]     # adding exact zeros: the same numbers as without
+            else:
+                recurrent = r @ w_t
+            v = v + alpha * (-v + recurrent + bias + drive)
             r = F.relu(v) * self.alive
             rm = r[:, self.mn_idx]
             z = (rm - self.mn_mean) / self.mn_std

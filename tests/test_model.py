@@ -164,3 +164,58 @@ def test_train_step_reports_gradient_size_before_clipping(cfg, paths):
     after = torch.sqrt(sum(p.grad.pow(2).sum() for p in model.parameters() if p.grad is not None))
     assert stats["grad_norm"] > clip and np.isfinite(stats["grad_norm"])
     assert float(after) == pytest.approx(clip, rel=1e-3)   # the gradients themselves were clipped to the limit
+
+
+def test_connection_gradient_once_per_clip_matches_per_frame(cfg, paths):
+    """network._WeightGradOnce: the forward pass is unchanged and every gradient is at least as close to a float64
+    per-frame reference as the float32 per-frame one (the rule check_cuda_graph.py applies at full length)."""
+    import copy
+    base = make(cfg, paths)[0]
+    with torch.no_grad():
+        for p in base.parameters():
+            p.add_(0.05 * torch.randn_like(p))
+    frames = 100
+    audio = torch.randn(2, frames * HOP) * 0.1
+    hits = (torch.rand(2, frames, len(base.pieces)) < 0.05).float()
+
+    def grads(dtype, once):
+        m = copy.deepcopy(base).to(dtype)
+        m.weight_grad_once = once
+        out, _ = m(audio.to(dtype))
+        loss, _ = make_loss(cfg, torch.ones(len(m.pieces), dtype=dtype))(
+            out, hits.to(dtype), (hits * 0.7).to(dtype), torch.ones(2, frames, dtype=dtype))
+        loss.backward()
+        return {k: p.grad.double() for k, p in m.named_parameters()}, out["hit_logits"].detach()
+
+    ref, _ = grads(torch.float64, False)
+    old, h_old = grads(torch.float32, False)
+    new, h_new = grads(torch.float32, True)
+    assert torch.equal(h_old, h_new)
+    for k in ref:
+        e_old, e_new = [float((g[k] - ref[k]).norm() / ref[k].norm().clamp_min(1e-30)) for g in (old, new)]
+        assert e_new <= 1.01 * e_old + 1e-12, k
+
+
+def test_connection_gradient_once_per_clip_frees_its_graph(cfg, paths):
+    """_WeightGradOnce keeps each frame's rates for the backward pass. Kept as they are, they would tie the whole
+    step's autograd graph to itself, so no step's graph could ever be freed (a leak of about a gigabyte per step on
+    the GPU, which also stopped the CUDA graph from recording). After a step, nothing of it may stay alive."""
+    import gc
+    import weakref
+    model = make(cfg, paths)[0]
+    out, _ = model(torch.randn(2, 50 * HOP) * 0.1)
+    seen, todo, node = set(), [out["hit_logits"].grad_fn], None
+    while todo and node is None:                      # find the _WeightGradOnce node in the graph
+        f = todo.pop()
+        if f is None or f in seen:
+            continue
+        seen.add(f)
+        if "WeightGradOnce" in type(f).__name__:
+            node = f
+        todo += [g for g, _ in f.next_functions]
+    probe = weakref.ref(node.rates[10])               # one frame's stored rates
+    del node, seen, todo, f
+    out["hit_logits"].sum().backward()
+    del out
+    gc.collect()
+    assert probe() is None
