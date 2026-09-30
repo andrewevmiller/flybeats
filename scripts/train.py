@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import ROOT, load_locked, reports_dir  # noqa: E402
 from flybeats.data.sampler import load_validation_clips  # noqa: E402
 from flybeats.data.manifest import set_dir  # noqa: E402
-from flybeats.model.training import (GraphedStep, evaluate, graph_checked, make_optimiser, setup,  # noqa: E402
+from flybeats.model.training import (GraphedStep, evaluate, graph_checked, make_optimiser, make_schedule, setup,  # noqa: E402
                                      silence_test, to_tensors, train_step)
 from tqdm import tqdm  # noqa: E402
 
@@ -105,7 +105,7 @@ model, loss_of = s["model"], s["loss"]
 val_clips = [s["val"].clip(c["song"], c["start"]) for c in
              load_validation_clips(set_dir(s["paths"]["work_dir"], args.set) / "validation_clips.json")]
 opt = make_optimiser(model, cfg)
-sched = torch.optim.lr_scheduler.CosineAnnealingLR(opt, steps)
+sched = make_schedule(opt, steps, cfg)
 first = to_tensors(s["train"].batch(tc["batch_clips"]), args.device)   # step 1's batch, also the one recorded with
 use_graph, why = graph_for_training()
 graphed = GraphedStep(model, opt, first, loss_of, tc["grad_clip_norm"]) if use_graph else None

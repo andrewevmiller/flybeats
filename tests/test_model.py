@@ -133,3 +133,34 @@ def test_drum_weights_capped(cfg):
 def test_memorisation():
     script = Path(__file__).resolve().parents[1] / "scripts" / "memorise.py"
     assert subprocess.run([sys.executable, str(script)]).returncode == 0
+
+
+def test_schedule_runs_from_locked_rate_to_zero(cfg):
+    """The one schedule train.py and memorise.py share: locked rate at step 1, falling, 0 after the last step."""
+    from flybeats.model.training import make_optimiser, make_schedule
+    model = torch.nn.Linear(2, 2)
+    opt = make_optimiser(model, cfg)
+    sched = make_schedule(opt, 10, cfg)
+    rates = []
+    for _ in range(10):
+        rates.append(opt.param_groups[0]["lr"])
+        opt.step()
+        sched.step()
+    assert rates[0] == cfg["training"]["learning_rate"]
+    assert all(a > b for a, b in zip(rates, rates[1:]))
+    assert opt.param_groups[0]["lr"] == pytest.approx(0, abs=1e-12)
+
+
+def test_train_step_reports_gradient_size_before_clipping(cfg, paths):
+    from flybeats.model.training import train_step
+    model = make(cfg, paths)[0]
+    frames = 100
+    batch = {"audio": torch.randn(2, int(0.5 * SR)) * 0.1,
+             "hits": (torch.rand(2, frames, len(model.pieces)) < 0.05).float(), "mask": torch.ones(2, frames)}
+    batch["vel"] = batch["hits"] * 0.7
+    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+    clip = 1e-3                                           # small, so this step is surely clipped
+    stats = train_step(model, opt, batch, make_loss(cfg, torch.ones(len(model.pieces))), clip)
+    after = torch.sqrt(sum(p.grad.pow(2).sum() for p in model.parameters() if p.grad is not None))
+    assert stats["grad_norm"] > clip and np.isfinite(stats["grad_norm"])
+    assert float(after) == pytest.approx(clip, rel=1e-3)   # the gradients themselves were clipped to the limit

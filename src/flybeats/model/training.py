@@ -57,6 +57,14 @@ def make_optimiser(model, cfg):
     return torch.optim.Adam(model.parameters(), lr=tc["learning_rate"])
 
 
+def make_schedule(opt, steps, cfg):
+    """The locked learning-rate schedule over a run of `steps` steps; call .step() after each optimiser step.
+    cosine_to_zero: from the locked rate down to 0 at the last step. train.py and memorise.py both use this."""
+    if cfg["training"]["schedule"] != "cosine_to_zero":
+        raise ValueError(f"unknown schedule {cfg['training']['schedule']!r}")
+    return torch.optim.lr_scheduler.CosineAnnealingLR(opt, steps)
+
+
 def to_tensors(clips, device):
     stack = lambda k, dt: torch.as_tensor(np.stack([c[k] for c in clips]), dtype=dt, device=device)
     return {"audio": stack("audio", torch.float32), "hits": stack("hits", torch.float32),
@@ -80,10 +88,10 @@ def train_step(model, opt, batch, loss_of, clip_norm, segment=0):
         (loss / n_segments).backward()
         v = v.detach()
         total += float(loss.detach()) / n_segments
-    torch.nn.utils.clip_grad_norm_(model.parameters(), clip_norm)
+    grad_norm = torch.nn.utils.clip_grad_norm_(model.parameters(), clip_norm)   # the size before clipping
     opt.step()
     return {"loss": total, **parts, "mean_rate": float(out["mean_rate"].mean()),
-            "peak_rate": float(out["mean_rate"].max())}
+            "peak_rate": float(out["mean_rate"].max()), "grad_norm": float(grad_norm)}
 
 
 class GraphedStep:
@@ -128,11 +136,12 @@ class GraphedStep:
 
     def __call__(self):
         self.graph.replay()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_norm)
+        grad_norm = torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_norm)   # before clipping
         self.opt.step()
         o = self.out
         return {"loss": float(o["loss"]), "hit_bce": float(o["hit_bce"]), "vel_mse": float(o["vel_mse"]),
-                "mean_rate": float(o["mean_rate"].mean()), "peak_rate": float(o["mean_rate"].max())}
+                "mean_rate": float(o["mean_rate"].mean()), "peak_rate": float(o["mean_rate"].max()),
+                "grad_norm": float(grad_norm)}
 
 
 STEP_CODE = ["network.py", "ear.py", "loss.py", "training.py"]

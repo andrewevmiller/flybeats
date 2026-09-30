@@ -1,7 +1,11 @@
 """Phase 3, step 9: the memorisation check. Train on fixed clips from 4 BabySlakh training songs until
 kick, snare and closed hi-hat reach hit F1 >= 0.9 on those same clips. If it cannot, something is broken.
-Optimiser, loss and gradient clipping are the locked training ones; the fixed clips and step limit are this
-check's own.
+Optimiser, loss, gradient clipping and learning-rate schedule are the locked training ones (the schedule runs over
+this check's steps); the fixed clips, step limit and pass rule are this check's own, in locked.yaml's memorisation
+section (since prereg-v5). --steps and --songs make a trial run, marked as not the locked check.
+Besides F1 it records, for diagnosis: each step's learning rate and gradient size before clipping; at each check,
+the size of what the readout receives per drum (next to the untrained network's, in the log's first line); and the
+weights as the run ended (final.pt), to re-score or look into without rerunning.
 Each run has a name (--name; by default "real", or "control-N" with --control N) and its own folder,
 reports/memorise/<name>/: memorise.json, log.jsonl with one line per step (flushed as it goes) and the machine
 readings. --pair runs "real" and then control 1 (--pair N: control N) one after the other from one terminal and
@@ -35,16 +39,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import load_locked, reports_dir  # noqa: E402
 from flybeats.model.loss import f1_from_counts, hit_counts  # noqa: E402
 from flybeats.model.training import (GraphedStep, audio_blind_loss, graph_checked, make_optimiser,  # noqa: E402
-                                     setup, to_tensors, train_step)
+                                     make_schedule, setup, to_tensors, train_step)
 from live_chart import LiveChart  # noqa: E402
 from tqdm import tqdm  # noqa: E402
 
-MUST_PASS = ["kick", "snare", "hihat_closed"]
-
 ap = argparse.ArgumentParser()
-ap.add_argument("--steps", type=int, default=3000)
+ap.add_argument("--steps", type=int, default=None, help="trial runs only; default and the locked check: locked.yaml")
 ap.add_argument("--control", type=int, default=None)
-ap.add_argument("--songs", type=int, default=4)
+ap.add_argument("--songs", type=int, default=None, help="trial runs only; default and the locked check: locked.yaml")
 ap.add_argument("--device", default="cuda")
 ap.add_argument("--no-chart", action="store_true", help="no live chart and no website updates")
 ap.add_argument("--no-graph", action="store_true", help="the ordinary training step, not the recorded CUDA graph")
@@ -60,8 +62,8 @@ def run_pair(control):
     live chart and website page. Ctrl+C stops the run that is going (it sends its last website update) and the
     other is not started. Ends with both results; the exit code is the real run's."""
     import subprocess
-    forward = ["--steps", str(args.steps), "--songs", str(args.songs), "--device", args.device]
-    forward += ["--no-chart"] * args.no_chart + ["--no-graph"] * args.no_graph
+    forward = ["--device", args.device] + ["--no-chart"] * args.no_chart + ["--no-graph"] * args.no_graph
+    forward += ["--steps", str(args.steps)] * (args.steps is not None) + ["--songs", str(args.songs)] * (args.songs is not None)
     runs = {"real": ["--name", "real"], f"control-{control}": ["--control", str(control)]}
     ended = {}
     for i, (name, extra) in enumerate(runs.items(), 1):
@@ -100,26 +102,31 @@ name = args.name or ("real" if args.control is None else f"control-{args.control
 out_dir = reports_dir() / "memorise" / name
 out_dir.mkdir(parents=True, exist_ok=True)
 cfg = load_locked()
+mc = cfg["memorisation"]
+if mc["schedule"] != cfg["training"]["schedule"]:
+    sys.exit(f"memorisation.schedule {mc['schedule']!r} differs from training.schedule; the check runs training's")
+MUST_PASS, PASS_F1 = mc["must_pass"], mc["pass_f1"]
+steps = args.steps or mc["steps"]
+as_locked = args.steps is None and args.songs is None       # False: a trial run, not the locked check
 torch.manual_seed(cfg["model"]["init_seed"])                # the same starting weights every run, as in train.py
 s = setup("baby", args.control, args.device, cfg)
 model, loss_of, train = s["model"], s["loss"], s["train"]
 
-rng = np.random.default_rng(7)
-songs = sorted(train.songs.index)[:args.songs]
-clips = [train.clip(song, float(rng.uniform(0, train.songs.duration[song] - train.clip_s))) for song in songs * 2]
+rng = np.random.default_rng(mc["clip_seed"])
+songs = sorted(train.songs.index)[:args.songs or mc["songs"]]
+clips = [train.clip(song, float(rng.uniform(0, train.songs.duration[song] - train.clip_s)))
+         for song in songs * mc["clips_per_song"]]
 batch = to_tensors(clips, args.device)                      # 8 fixed clips, 2 per song, no stem dropout
 opt = make_optimiser(model, cfg)
+sched = make_schedule(opt, steps, cfg)                      # training's schedule, over this check's steps
 floor = audio_blind_loss(batch, loss_of, len(model.pieces))
 print(f"audio-blind floor: {floor:.4f} (the loss must go clearly below this)")
+if not as_locked:
+    print("trial run: --steps or --songs differ from locked.yaml, so this is not the locked check")
 use_graph, why = ((False, "turned off (--no-graph)") if args.no_graph else
                   (False, "not on the GPU") if args.device != "cuda" else graph_checked())
 graphed = GraphedStep(model, opt, batch, loss_of, cfg["training"]["grad_clip_norm"]) if use_graph else None
 print(f"training step: {'recorded (CUDA graph)' if use_graph else 'ordinary'}, {why}")
-log = open(out_dir / "log.jsonl", "w", encoding="utf-8")
-log.write(json.dumps({"meta": {"script": "memorise", "name": name, "steps": args.steps, "audio_blind_floor": floor,
-                               "must_pass": MUST_PASS, "control": args.control, "version": cfg["version"],
-                               "cuda_graph": use_graph}}) + "\n")
-log.flush()
 
 @torch.no_grad()
 def score(model, clips):
@@ -134,40 +141,68 @@ def score(model, clips):
                         cfg["training"]["hit_threshold"])
     tp, fp, fn = counts.T.astype(float)
     ratio = lambda a, n: {p: round(float(x / y), 3) if y > 0 else None for p, x, y in zip(model.pieces, a, n)}  # None: nothing to count
+    # What the readout receives: each drum's motor-neuron rates after the fixed scaling, over the scored frames.
+    # At setup they are standardised (typical size about 1); growing activity makes them larger.
+    z = ((out["mn_rates"] - model.mn_mean) / model.mn_std)[b["mask"] > 0]           # (scored frames, readout neurons)
+    readout_inputs = {}
+    for d, p in enumerate(model.pieces):
+        zd = z[:, model.mn_drum[:, d] > 0]
+        readout_inputs[p] = {"rms": round(float(zd.pow(2).mean().sqrt()), 3), "mean": round(float(zd.mean()), 3),
+                             "max_abs": round(float(zd.abs().max()), 3)}
     return {"f1": dict(zip(model.pieces, np.round(f1_from_counts(counts), 3).tolist())),
             "precision": ratio(tp, tp + fp), "recall": ratio(tp, tp + fn),
-            "hits": {p: {"found": int(t), "extra": int(f), "missed": int(m)} for p, (t, f, m) in zip(model.pieces, counts)}}
+            "hits": {p: {"found": int(t), "extra": int(f), "missed": int(m)} for p, (t, f, m) in zip(model.pieces, counts)},
+            "readout_inputs": readout_inputs}
 
 
-result = None
+model.eval()
+at_start = score(model, clips)["readout_inputs"]              # the untrained network, for comparison with each check
+model.train()
+log = open(out_dir / "log.jsonl", "w", encoding="utf-8")
+log.write(json.dumps({"meta": {"script": "memorise", "name": name, "steps": steps, "audio_blind_floor": floor,
+                               "must_pass": MUST_PASS, "pass_f1": PASS_F1, "control": args.control,
+                               "version": cfg["version"], "as_locked": as_locked, "cuda_graph": use_graph,
+                               "readout_inputs_at_start": at_start}}) + "\n")
+log.flush()
+
+result, step = None, 0
 chart = None if args.no_chart else LiveChart(memorise=name, own_process=True, say=tqdm.write)   # shows this run's log
 try:
     t0 = time.time()
-    bar = tqdm(range(1, args.steps + 1), unit="step", desc="memorising")
+    bar = tqdm(range(1, steps + 1), unit="step", desc="memorising")
     for step in bar:
+        lr = opt.param_groups[0]["lr"]                            # the rate this step uses
         stats = graphed() if graphed else train_step(model, opt, batch, loss_of, cfg["training"]["grad_clip_norm"])
+        sched.step()
         bar.set_postfix(loss=f"{stats['loss']:.4f}")
-        rec = {"step": step, **stats, "elapsed_s": round(time.time() - t0, 1), "t": round(time.time(), 1)}
-        if step % 250 == 0 or step == args.steps:
+        rec = {"step": step, "lr": lr, **stats, "elapsed_s": round(time.time() - t0, 1), "t": round(time.time(), 1)}
+        if step % mc["check_every"] == 0 or step == steps:
             model.eval()
             result = score(model, clips)
             model.train()
-            rec |= {k: result[k] for k in ("f1", "precision", "recall", "hits")}
+            rec |= {k: result[k] for k in ("f1", "precision", "recall", "hits", "readout_inputs")}
             bar.write(f"step {step}: loss {stats['loss']:.4f}  F1 {result['f1']}")
             bar.write("  precision / recall: " + ", ".join(f"{p} {result['precision'][p]} / {result['recall'][p]}"
                                                           for p in MUST_PASS))
+            bar.write("  readout input size (rms; about 1 at setup): " +
+                      ", ".join(f"{p} {v['rms']}" for p, v in result["readout_inputs"].items()))
         log.write(json.dumps(rec) + "\n")
         log.flush()
-        if "f1" in rec and all(result["f1"][p] >= 0.9 for p in MUST_PASS):
+        if "f1" in rec and all(result["f1"][p] >= PASS_F1 for p in MUST_PASS):
             break
     bar.close()
     log.close()
-    passed = all(result["f1"][p] >= 0.9 for p in MUST_PASS)
+    passed = all(result["f1"][p] >= PASS_F1 for p in MUST_PASS)
     report = {"songs": songs, "steps": step, "f1": result["f1"], "precision": result["precision"],
-              "recall": result["recall"], "hits": result["hits"], "passes": passed, "control": args.control,
-              "audio_blind_floor": floor, "final_loss": stats["loss"], "cuda_graph": use_graph}
+              "recall": result["recall"], "hits": result["hits"], "readout_inputs": result["readout_inputs"],
+              "readout_inputs_at_start": at_start, "passes": passed, "control": args.control,
+              "audio_blind_floor": floor, "final_loss": stats["loss"], "cuda_graph": use_graph,
+              "version": cfg["version"], "as_locked": as_locked}
     (out_dir / "memorise.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 finally:                        # finished, failed, crashed or Ctrl+C: the website shows how it ended
+    if step:                    # the weights as they ended, to re-score or look into without rerunning
+        torch.save({"model": model.state_dict(), "step": step, "version": cfg["version"], "name": name},
+                   out_dir / "final.pt")
     if chart:
         chart.finish()
 print("PASS" if passed else "FAIL: the model cannot memorise; something is broken")

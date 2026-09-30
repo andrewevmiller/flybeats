@@ -1,4 +1,4 @@
-version: prereg-v4
+version: prereg-v5
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
@@ -73,6 +73,17 @@ training:                       # the same for the real network and every random
   checkpoint: best_mean_hit_f1_on_validation
   hit_threshold: 0.5            # a hit is a local peak of hit probability at or above this
   stop_if: activity_unbounded_or_not_settled
+
+memorisation:                   # the check that the setup can fit a few fixed clips (scripts/memorise.py); same
+                                # optimiser, loss, gradient clipping and schedule as training
+  songs: 4                      # the first 4 BabySlakh training songs, sorted
+  clips_per_song: 2             # 8 clips = one batch; windows drawn with numpy seed clip_seed, no stem dropout
+  clip_seed: 7
+  steps: 3000                   # the step limit; the schedule runs over these steps
+  schedule: cosine_to_zero      # as training.schedule
+  check_every: 250
+  pass_f1: 0.9
+  must_pass: [kick, snare, hihat_closed]
 
 silence_test:                   # music, then silence; used by the stability gate and during training
   silence_seconds: 4
