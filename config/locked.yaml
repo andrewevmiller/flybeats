@@ -1,4 +1,4 @@
-version: prereg-v3
+version: prereg-v4
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
@@ -26,7 +26,9 @@ connectome:
     unknown: exclude_silenced
   random_controls:
     seeds: [1, 2, 3, 4, 5]
-    method: degree_preserving_swaps   # each neuron keeps its in/out counts, sign and synapse counts travel with edges
+    method: degree_class_reciprocity_preserving_swaps   # each neuron keeps its in/out counts per class of partner;
+                                  # reciprocal pairs swap as pairs, so their number is kept; sign and synapse counts travel with edges
+    classes: [ear, interneuron_1_hop, interneuron_2_plus_hops, motor]   # hops from the ears in the real slice
     swaps_per_edge: 10
 
 model:

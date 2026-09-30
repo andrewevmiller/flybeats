@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from flybeats.connectome.controls import check_control, rewire
+from flybeats.connectome.controls import check_control, control_classes, reciprocal_mask, rewire, rewire_classes
 from flybeats.connectome.slice import build_slice
 from flybeats.connectome.store import control_path, load_slice, save_table, slice_paths
 
@@ -66,7 +66,10 @@ def test_signs_follow_roles(real):
 def test_control_is_a_fair_opponent(cfg, paths, real, seed):
     neurons, edges = real
     ctrl = pd.read_parquet(control_path(paths["work_dir"], seed))
-    checks = check_control(neurons, edges, ctrl, cfg["connectome"]["ears"])  # raises on degree or synapse mismatch
+    ears = cfg["connectome"]["ears"]
+    classes = (control_classes(neurons, edges, ears)
+               if cfg["connectome"]["random_controls"]["method"] == "degree_class_reciprocity_preserving_swaps" else None)
+    checks = check_control(neurons, edges, ctrl, ears, classes)   # raises on degree, synapse, class or pair mismatch
     assert checks["surviving_real_connections_share"] < 0.1
 
 
@@ -81,3 +84,31 @@ def test_rewire_on_a_small_graph():
     assert np.array_equal(np.bincount(edges.post, minlength=40), np.bincount(out.post, minlength=40))
     assert np.allclose(np.bincount(edges.pre, edges.synapses, 40), np.bincount(out.pre, out.synapses, 40))
     assert not (out.pre == out.post).any() and not out.duplicated(["pre", "post"]).any()
+
+
+def test_rewire_classes_on_a_small_graph():
+    """Class blocks, reciprocal pairs and degrees survive; connections still move; blocks with no real connections
+    (here: class 0 to class 3, as ears to motor neurons) stay empty."""
+    rng = np.random.default_rng(0)
+    n = 60
+    classes = np.repeat([0, 1, 2, 3], 15)
+    pairs = set()
+    for a, b in rng.integers(0, n, (500, 2)).tolist():
+        if a != b and not (classes[a] == 0 and classes[b] == 3) and not (classes[b] == 0 and classes[a] == 3):
+            pairs.add((a, b))
+            if rng.random() < 0.15:
+                pairs.add((b, a))
+    edges = pd.DataFrame(sorted(pairs), columns=["pre", "post"])
+    edges["synapses"] = rng.integers(5, 50, len(edges)).astype(float)
+    out, accepted = rewire_classes(edges, classes, 10, seed=1)
+    assert accepted > 0
+    k = 4
+    for a, b in (("pre", "post"), ("post", "pre")):
+        assert np.array_equal(np.bincount(edges[a] * k + classes[edges[b]], minlength=n * k),
+                              np.bincount(out[a] * k + classes[out[b]], minlength=n * k))
+    assert np.allclose(np.bincount(edges.pre, edges.synapses, n), np.bincount(out.pre, out.synapses, n))
+    assert reciprocal_mask(out, n).sum() == reciprocal_mask(edges, n).sum() > 0
+    assert not ((classes[out.pre] == 0) & (classes[out.post] == 3)).any()
+    assert not (out.pre == out.post).any() and not out.duplicated(["pre", "post"]).any()
+    moved = set(zip(out.pre, out.post)) - set(zip(edges.pre, edges.post))
+    assert len(moved) > len(edges) / 2
