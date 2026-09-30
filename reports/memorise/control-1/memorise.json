@@ -1,0 +1,24 @@
+{
+  "songs": [
+    "Track00001",
+    "Track00002",
+    "Track00003",
+    "Track00004"
+  ],
+  "steps": 3000,
+  "f1": {
+    "kick": 0.824,
+    "hihat_pedal": 0.903,
+    "snare": 0.636,
+    "hihat_closed": 0.77,
+    "hihat_open": 0.847,
+    "tom": 0.774,
+    "crash": 0.905,
+    "ride": 0.687
+  },
+  "passes": false,
+  "control": 1,
+  "audio_blind_floor": 0.49338385462760925,
+  "final_loss": 0.271291047334671,
+  "cuda_graph": true
+}

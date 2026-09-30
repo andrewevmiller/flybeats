@@ -1,4 +1,6 @@
 {
+  "version": "prereg-v4",
+  "method": "degree_class_reciprocity_preserving_swaps",
   "real": {
     "drum_reach": {
       "crash": {
@@ -49,293 +51,311 @@
         "min_hops": 2,
         "median_hops": 2.0
       }
-    }
+    },
+    "largest_eigenvalue": 730.5550389296604,
+    "reciprocal_share": 0.11446409989594172
   },
   "controls": {
     "1": {
       "connections": 108593,
       "total_synapses": 2287391.391729323,
-      "surviving_real_connections_share": 0.034440525632407244,
+      "surviving_real_connections_share": 0.07321834740729144,
+      "reciprocal_share": 0.11446409989594172,
       "unreachable_drums": [],
       "drum_reach": {
         "crash": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_closed": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "hihat_open": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_pedal": {
           "reachable": 57,
           "of": 57,
-          "min_hops": 1,
-          "median_hops": 2.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "kick": {
           "reachable": 59,
           "of": 59,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "ride": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "snare": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "tom": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         }
       },
-      "accepted_swaps": 1006412
+      "accepted_swaps": 897518,
+      "largest_eigenvalue": 294.6650133940891
     },
     "2": {
       "connections": 108593,
       "total_synapses": 2287391.391729323,
-      "surviving_real_connections_share": 0.03500225613068982,
+      "surviving_real_connections_share": 0.07250927776191836,
+      "reciprocal_share": 0.11446409989594172,
       "unreachable_drums": [],
       "drum_reach": {
         "crash": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_closed": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "hihat_open": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_pedal": {
           "reachable": 57,
           "of": 57,
-          "min_hops": 1,
-          "median_hops": 2.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "kick": {
           "reachable": 59,
           "of": 59,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "ride": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "snare": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "tom": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         }
       },
-      "accepted_swaps": 1006463
+      "accepted_swaps": 897931,
+      "largest_eigenvalue": 264.9433283368123
     },
     "3": {
       "connections": 108593,
       "total_synapses": 2287391.391729323,
-      "surviving_real_connections_share": 0.03491937786045141,
+      "surviving_real_connections_share": 0.0719199211735563,
+      "reciprocal_share": 0.11446409989594172,
       "unreachable_drums": [],
       "drum_reach": {
         "crash": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_closed": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "hihat_open": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_pedal": {
           "reachable": 57,
           "of": 57,
-          "min_hops": 1,
-          "median_hops": 2.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "kick": {
           "reachable": 59,
           "of": 59,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "ride": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "snare": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "tom": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         }
       },
-      "accepted_swaps": 1006868
+      "accepted_swaps": 897747,
+      "largest_eigenvalue": 284.49263180940306
     },
     "4": {
       "connections": 108593,
       "total_synapses": 2287391.391729323,
-      "surviving_real_connections_share": 0.03568369968598344,
+      "surviving_real_connections_share": 0.07260136472884993,
+      "reciprocal_share": 0.11446409989594172,
       "unreachable_drums": [],
       "drum_reach": {
         "crash": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_closed": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "hihat_open": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_pedal": {
           "reachable": 57,
           "of": 57,
-          "min_hops": 1,
-          "median_hops": 2.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "kick": {
           "reachable": 59,
           "of": 59,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "ride": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "snare": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "tom": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         }
       },
-      "accepted_swaps": 1006018
+      "accepted_swaps": 897110,
+      "largest_eigenvalue": 412.4095857260588
     },
     "5": {
       "connections": 108593,
       "total_synapses": 2287391.391729323,
-      "surviving_real_connections_share": 0.03545348226865452,
+      "surviving_real_connections_share": 0.07218697337765786,
+      "reciprocal_share": 0.11446409989594172,
       "unreachable_drums": [],
       "drum_reach": {
         "crash": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_closed": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "hihat_open": {
           "reachable": 8,
           "of": 8,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "hihat_pedal": {
           "reachable": 57,
           "of": 57,
-          "min_hops": 1,
-          "median_hops": 2.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "kick": {
           "reachable": 59,
           "of": 59,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 3.0
         },
         "ride": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         },
         "snare": {
           "reachable": 12,
           "of": 12,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 3,
+          "median_hops": 3.0
         },
         "tom": {
           "reachable": 13,
           "of": 13,
-          "min_hops": 1,
-          "median_hops": 1.0
+          "min_hops": 2,
+          "median_hops": 2.0
         }
       },
-      "accepted_swaps": 1006013
+      "accepted_swaps": 897607,
+      "largest_eigenvalue": 303.3685922273335
     }
+  },
+  "classes": {
+    "ear": 150,
+    "interneuron_1_hop": 763,
+    "interneuron_2_plus_hops": 2200,
+    "motor": 189
   }
 }
