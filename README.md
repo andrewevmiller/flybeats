@@ -168,7 +168,7 @@ Data paths are set in `config/paths.local.yaml`, which is not committed. Every t
 
 ## Licence
 
-The code in this repository is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0). Copyright (C) 2026 Andrew Miller. The full licence text (`LICENSE`) is still to be added.
+Copyright (c) 2026 Andrew Miller. **All rights reserved.** No permission is granted to use, copy, modify or distribute this code except with the copyright holder's prior written permission. See `LICENSE`.
 
 The datasets are not part of this repository and keep their own licences (below).
 
