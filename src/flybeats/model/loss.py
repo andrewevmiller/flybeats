@@ -22,14 +22,16 @@ def soft_targets(hits, neighbour):
     return torch.maximum(hits, neighbour * side)
 
 
-def loss_fn(out, hits, vel, mask, weights, neighbour, velocity_weight):
-    """out from FlyNet; hits/vel (B, T, D); mask (B, T) False on warm-up frames; weights (D,)."""
+def loss_fn(out, hits, vel, mask, weights, neighbour, velocity_weight, as_tensors=False):
+    """out from FlyNet; hits/vel (B, T, D); mask (B, T) False on warm-up frames; weights (D,).
+    as_tensors: the two parts as GPU tensors instead of numbers, so nothing waits on the GPU (CUDA graph capture)."""
     target = soft_targets(hits, neighbour)
     w = torch.where(target > 0, weights, torch.ones_like(weights)) * mask[..., None]
     bce = F.binary_cross_entropy_with_logits(out["hit_logits"], target, weight=w, reduction="sum") / w.sum()
     on = hits * mask[..., None]
     mse = ((out["vel"] - vel) ** 2 * on).sum() / on.sum().clamp_min(1)
-    return bce + velocity_weight * mse, {"hit_bce": float(bce.detach()), "vel_mse": float(mse.detach())}
+    parts = {"hit_bce": bce.detach(), "vel_mse": mse.detach()}
+    return bce + velocity_weight * mse, parts if as_tensors else {k: float(v) for k, v in parts.items()}
 
 
 def make_loss(cfg, weights):

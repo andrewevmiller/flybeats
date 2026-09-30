@@ -59,7 +59,8 @@ for step in bar:
     stats = train_step(model, opt, to_tensors(s["train"].batch(tc["batch_clips"]), args.device), loss_of,
                        tc["grad_clip_norm"])
     sched.step()
-    rec = {"step": step, "lr": sched.get_last_lr()[0], **stats, "elapsed_s": round(time.time() - t0, 1)}
+    rec = {"step": step, "lr": sched.get_last_lr()[0], **stats, "elapsed_s": round(time.time() - t0, 1),
+           "t": round(time.time(), 1)}
     if step % tc["validate_every"] == 0 or step == steps:
         model.eval()
         with tqdm(total=len(val_clips) + 4, unit="clip", desc="validating", leave=False) as vbar:

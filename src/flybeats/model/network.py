@@ -65,6 +65,10 @@ class FlyNet(nn.Module):
         onehot[np.arange(len(mn)), drum_of] = 1
         self.register_buffer("mn_idx", torch.from_numpy(mn.astype(np.int64)))
         self.register_buffer("mn_drum", torch.from_numpy(onehot))
+        # Readout normalisation: fixed per-neuron mean and spread, set once by fit_readout_norm();
+        # until then the identity, so the readout sees raw rates
+        self.register_buffer("mn_mean", torch.zeros(len(mn)))
+        self.register_buffer("mn_std", torch.ones(len(mn)))
 
         # Learned parameters
         n_types, n_pairs, n_mn, n_drums = len(type_names), len(pair_names), len(mn), len(self.pieces)
@@ -117,8 +121,9 @@ class FlyNet(nn.Module):
             v = v + alpha * (-v + r @ w_t + bias + drive)
             r = F.relu(v) * self.alive
             rm = r[:, self.mn_idx]
-            hit.append((rm * self.w_hit) @ self.mn_drum + self.c_hit)
-            vel.append(torch.sigmoid((rm * self.u_vel) @ self.mn_drum + self.e_vel))
+            z = (rm - self.mn_mean) / self.mn_std
+            hit.append((z * self.w_hit) @ self.mn_drum + self.c_hit)
+            vel.append(torch.sigmoid((z * self.u_vel) @ self.mn_drum + self.e_vel))
             mean_rate.append(r.mean(1))
             mn_rates.append(rm)
             if record:
@@ -131,3 +136,11 @@ class FlyNet(nn.Module):
 
     def forward(self, audio, v=None, record=False):
         return self.run(self.ear_input(audio), v, record)
+
+    @torch.no_grad()
+    def fit_readout_norm(self, audio_batches, warmup_frames, std_floor):
+        """Set each readout motor neuron's mean and spread from music through this (untrained) network.
+        Untrained rates vary by about 0.001, far too little for readout weights near 0.01 to use."""
+        rm = torch.cat([self(a)[0]["mn_rates"][:, warmup_frames:].flatten(0, 1) for a in audio_batches])
+        self.mn_mean.copy_(rm.mean(0))
+        self.mn_std.copy_(rm.std(0).clamp_min(std_floor))

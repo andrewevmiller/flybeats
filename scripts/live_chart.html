@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Flybeats Live Loss</title>
+<!-- tab icon: scripts/favicon.svg, embedded so every copy of the page carries it -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAzMiAzMiI+CiAgPCEtLSBNYWNoaW5lIGZseSwgdG9wIHZpZXc6IHBsYWluIHdpbmdzIGFuZCBib2R5LCBzaG9ydCBhbnRlbm5hZSAodGhlIGZseSBoZWFycyB0aHJvdWdoIHRoZW06IEpvaG5zdG9uJ3Mgb3JnYW4sCiAgICAgICB0aGUgbW9kZWwncyBlYXIgbmV1cm9ucyksIGNvbXBvdW5kIGV5ZXMgYW5kIHRoZSBjZW50cmUgb2YgYSBnZWFyIGZvciBhIHRob3JheCBpbiB0aGUgYWNjZW50IGNvbG91ciAtLT4KICA8c3R5bGU+CiAgICAubCB7IHN0cm9rZTogIzFDMUMxQTsgfQogICAgLnAgeyBmaWxsOiAjRjJGMUVFOyB9CiAgICBAbWVkaWEgKHByZWZlcnMtY29sb3Itc2NoZW1lOiBkYXJrKSB7IC5sIHsgc3Ryb2tlOiAjRUNFQkU1OyB9IC5wIHsgZmlsbDogIzE3MTcxNjsgfSB9CiAgPC9zdHlsZT4KICA8ZyBjbGFzcz0ibCBwIiBzdHJva2Utd2lkdGg9IjEuNyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cGF0aCBkPSJNMTIuOCAxMi44IEwzLjYgMTYuMiBMNS44IDIyLjIgTDEzIDE2LjYgWiIvPgogICAgPHBhdGggZD0iTTE5LjIgMTIuOCBMMjguNCAxNi4yIEwyNi4yIDIyLjIgTDE5IDE2LjYgWiIvPgogICAgPHBhdGggZD0iTTEzLjQgMTcuNCBDMTEuOCAyMC40IDEyLjQgMjcuNiAxNiAyNy42IEMxOS42IDI3LjYgMjAuMiAyMC40IDE4LjYgMTcuNCBaIi8+CiAgPC9nPgogIDxnIGNsYXNzPSJsIHAiIHN0cm9rZS13aWR0aD0iMS4zIiBzdHJva2UtbGluZWpvaW49InJvdW5kIj4KICAgIDxwYXRoIGQ9Ik0xNi41MCAxMC44NCBMMTcuNTYgOS40NiBMMTkuMTUgMTAuMzggTDE4LjQ5IDExLjk5IEwxOC45OSAxMi44NSBMMjAuNzEgMTMuMDggTDIwLjcxIDE0LjkyIEwxOC45OSAxNS4xNSBMMTguNDkgMTYuMDEgTDE5LjE1IDE3LjYyIEwxNy41NiAxOC41NCBMMTYuNTAgMTcuMTYgTDE1LjUwIDE3LjE2IEwxNC40NCAxOC41NCBMMTIuODUgMTcuNjIgTDEzLjUxIDE2LjAxIEwxMy4wMSAxNS4xNSBMMTEuMjkgMTQuOTIgTDExLjI5IDEzLjA4IEwxMy4wMSAxMi44NSBMMTMuNTEgMTEuOTkgTDEyLjg1IDEwLjM4IEwxNC40NCA5LjQ2IEwxNS41MCAxMC44NCBaIi8+CiAgPC9nPgogIDxjaXJjbGUgY3g9IjE2IiBjeT0iMTQiIHI9IjEuNiIgZmlsbD0iI0I5OEZENiIvPgogIDxlbGxpcHNlIGNsYXNzPSJsIHAiIGN4PSIxNiIgY3k9IjcuNCIgcng9IjMuNCIgcnk9IjIuOCIgc3Ryb2tlLXdpZHRoPSIxLjciLz4KICA8ZyBjbGFzcz0ibCIgc3Ryb2tlLXdpZHRoPSIxLjIiIGZpbGw9IiNCOThGRDYiPgogICAgPGVsbGlwc2UgY3g9IjEyLjkiIGN5PSI3LjUiIHJ4PSIxLjciIHJ5PSIyLjMiLz4KICAgIDxlbGxpcHNlIGN4PSIxOS4xIiBjeT0iNy41IiByeD0iMS43IiByeT0iMi4zIi8+CiAgPC9nPgogIDxnIGNsYXNzPSJsIiBzdHJva2Utd2lkdGg9IjEuNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBmaWxsPSJub25lIj4KICAgIDxwYXRoIGQ9Ik0xNS4yIDQuOCBMMTQuNCAzLjMiLz4KICAgIDxwYXRoIGQ9Ik0xNi44IDQuOCBMMTcuNiAzLjMiLz4KICA8L2c+Cjwvc3ZnPgo=">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:wght@700&display=swap" rel="stylesheet">
+<style>
+  /* Design language: andrewevmiller.com (field notebook). One left-anchored column, sections split by hairlines. */
+  :root {
+    --bg: #F2F1EE; --bg-soft: #E9E8E2; --panel: #E1E0D9; --line: #CBC9C1;
+    --ink: #1C1C1A; --muted: #5C5B54; --accent: #B98FD6;
+    --serif: "IBM Plex Serif", Cambria, Georgia, serif;
+    --sans: "Geist", Calibri, system-ui, sans-serif;
+    --mono: "IBM Plex Mono", "Courier New", monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #171716; --bg-soft: #1E1E1C; --panel: #242422; --line: #3A3A35;
+      --ink: #ECEBE5; --muted: #A3A29A; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #171716; --bg-soft: #1E1E1C; --panel: #242422; --line: #3A3A35;
+    --ink: #ECEBE5; --muted: #A3A29A; color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; color: var(--ink); font: 17px/1.65 var(--sans);
+    background-color: var(--bg);
+    background-image: radial-gradient(var(--line) 1px, transparent 1px);
+    background-size: 26px 26px;
+  }
+  [hidden] { display: none !important; }
+  .wrap { max-width: 1140px; margin: 0 auto; padding: clamp(24px, 5vw, 56px) 16px; }
+  .label { font: 500 0.75rem/1.4 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  h1 { font: 700 clamp(1.9rem, 4.5vw, 2.6rem)/1.15 var(--serif); letter-spacing: -0.01em; margin: 6px 0 8px; text-wrap: balance; }
+  h2 { font: 700 1.35rem/1.25 var(--serif); letter-spacing: -0.01em; margin: 0 0 6px; }
+  .measure { max-width: 640px; color: var(--muted); margin: 0; }
+  .rule { border: 0; border-top: 1px solid var(--line); margin: 28px 0; }
+
+  /* Online / offline status, first thing on the page */
+  .status { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; padding: 10px 14px;
+            border: 1px solid var(--line); background: var(--bg-soft); margin-bottom: 22px; }
+  .status .word { display: inline-flex; align-items: center; gap: 10px; font: 500 0.95rem/1.3 var(--mono); letter-spacing: .08em; }
+  .status .detail { color: var(--muted); font-size: 0.95rem; min-width: 0; }
+  .dot { position: relative; width: 9px; height: 9px; border-radius: 50%; background: var(--muted); flex: none; }
+  .status.online { border-color: var(--accent); }
+  .status.online .word { color: var(--accent); }
+  .status.online .dot { background: var(--accent); }
+  .status.online.live .dot::after {
+    content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1px solid var(--accent);
+    animation: ping 1.8s ease-out infinite;
+  }
+  .status.offline .dot { background: transparent; border: 1.5px solid var(--muted); }
+  @keyframes ping { from { transform: scale(.5); opacity: .7; } to { transform: scale(1.35); opacity: 0; } }
+
+  /* A finished run's result */
+  .notice { border-left: 2px solid var(--ink); padding: 4px 0 4px 18px; margin: 26px 0 0; max-width: 760px; }
+  .notice p { margin: 0 0 10px; }
+  button { font: 500 0.75rem/1 var(--mono); letter-spacing: .06em; text-transform: uppercase; color: var(--ink);
+           background: var(--bg-soft); border: 1px solid var(--line); padding: 8px 12px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .chip { border-radius: 999px; }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+  .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; }
+  .stat { padding: 4px 20px 4px 0; min-width: 0; }
+  .stat + .stat { border-left: 1px solid var(--line); padding-left: 20px; }
+  @media (max-width: 640px) {
+    .stats { grid-template-columns: repeat(2, 1fr); row-gap: 18px; }
+    .stat:nth-child(odd) { border-left: 0; padding-left: 0; }
+  }
+  .stat .v { font: 400 1.5rem/1.3 var(--mono); font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .note { font: 0.75rem/1.4 var(--mono); color: var(--muted); margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .track { position: relative; height: 2px; background: var(--line); margin-top: 10px; overflow: hidden; }
+  .track > div { height: 100%; width: 0; background: var(--ink); transition: width .5s; }
+  .chart { background: var(--bg-soft); border: 1px solid var(--line); padding: 12px 12px 8px; margin-top: 8px; }
+  canvas { width: 100%; display: block; }
+  #c { height: 360px; }
+  #h { height: 280px; touch-action: pan-y; cursor: crosshair; }
+  .legend { display: flex; gap: 8px 22px; flex-wrap: wrap; margin: 10px 2px 0; font: 0.8rem/1.4 var(--mono); color: var(--muted); }
+  .sw { display: inline-block; width: 18px; height: 0; vertical-align: middle; margin-right: 8px; border-top: 2px solid var(--ink); }
+  .sw.accent { border-top-color: var(--accent); }
+  .sw.floor { border-top: 2px dashed var(--accent); }
+  .sw.dash { border-top-style: dashed; }
+  .boost { color: var(--accent); font-weight: 500; }
+  .sw.sweep { border-top: 0; height: 12px; width: 0; border-left: 1px solid var(--muted); margin: 0 10px 0 8px; }
+  .verdict { margin: 18px 0 0; max-width: 760px; }
+  .verdict .label { margin-right: 10px; }
+  table { width: 100%; border-collapse: collapse; margin-top: 10px; font: 0.9rem/1.5 var(--mono); font-variant-numeric: tabular-nums; }
+  th, td { text-align: right; padding: 8px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; padding-left: 0; }
+  th { font-weight: 500; font-size: 0.72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  th.must { color: var(--ink); }
+  td.hit { font-weight: 500; text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  .scroll { overflow-x: auto; }
+  .empty { color: var(--muted); font: 0.9rem var(--mono); padding: 10px 0; }
+
+  /* Machine */
+  table.mach td, table.mach th { white-space: normal; vertical-align: top; }
+  table.mach td:first-child { color: var(--muted); font-size: 0.8rem; letter-spacing: .04em; text-transform: uppercase; }
+  table.mach .sub { display: block; font-size: 0.72rem; color: var(--muted); }
+  .bar { height: 2px; background: var(--line); margin: 6px 0 0 auto; max-width: 140px; }
+  .bar > div { height: 100%; background: var(--ink); }
+  .controls { display: flex; flex-wrap: wrap; gap: 10px 24px; align-items: center; margin: 10px 0 4px; }
+  .group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .group .label { margin-right: 4px; }
+  .steps input, .steps select { font: 0.85rem var(--mono); color: var(--ink); background: var(--bg-soft);
+                 border: 1px solid var(--line); padding: 6px 8px; border-radius: 0; }
+  .steps input[type="number"] { width: 5.5em; }
+  .steps input[type="time"] { width: 9.5em; }
+  .steps select { padding-right: 26px; appearance: none; cursor: pointer;
+                  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(-45deg, transparent 50%, var(--muted) 50%);
+                  background-position: right 13px center, right 8px center; background-size: 5px 5px; background-repeat: no-repeat; }
+  .steps select:hover { border-color: var(--accent); }
+  .fields { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+  .readout { font: 0.8rem/1.5 var(--mono); color: var(--muted); min-height: 1.5em; margin: 8px 2px 0; font-variant-numeric: tabular-nums; }
+  .summary { font: 0.85rem/1.6 var(--mono); margin: 12px 0 0; font-variant-numeric: tabular-nums; }
+  .summary b { font-weight: 500; }
+  @media (prefers-reduced-motion: reduce) { .status.online.live .dot::after { animation: none; opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="status" id="status" role="status">
+    <span class="word"><span class="dot"></span><span id="stWord">Connecting</span></span>
+    <span class="detail" id="stDetail">Loading…</span>
+  </div>
+  <div class="label" id="eyebrow">flybeats · phase 3 · live</div>
+  <h1 id="title">Loading…</h1>
+  <p class="measure" id="subtitle"></p>
+
+  <section class="notice" id="notice" hidden>
+    <h2 id="nTitle"></h2>
+    <p id="nText"></p>
+  </section>
+
+  <hr class="rule">
+  <div class="stats">
+    <div class="stat"><div class="label">Step</div><div class="v" id="step">–</div><div class="track"><div id="prog"></div></div></div>
+    <div class="stat"><div class="label">Loss</div><div class="v" id="loss">–</div></div>
+    <div class="stat" id="floorStat"><div class="label">Floor to beat</div><div class="v" id="floor">–</div></div>
+    <div class="stat"><div class="label">Time left</div><div class="v" id="eta">–</div><div class="note" id="ago"></div></div>
+  </div>
+  <hr class="rule">
+  <div class="label" id="chartLabel">Training loss per step</div>
+  <div class="chart">
+    <canvas id="c" aria-label="Loss per step"></canvas>
+    <div class="legend">
+      <span><span class="sw"></span>loss per step · dots mark F1 checks</span>
+      <span id="floorKey"><span class="sw floor"></span>audio-blind floor: the best loss without listening</span>
+      <span id="sweepKey"><span class="sw sweep"></span>the step being computed now</span>
+    </div>
+  </div>
+  <p class="verdict" id="verdict"></p>
+  <hr class="rule">
+  <div class="label" id="checksLabel">Hit F1 at each check</div>
+  <div class="scroll"><table id="checks"></table></div>
+
+  <hr class="rule">
+  <div class="label">Machine · now</div>
+  <div class="scroll"><table class="mach" id="mach"></table></div>
+  <p class="note" id="machNote"></p>
+
+  <hr class="rule">
+  <div class="label">Machine · over the run</div>
+  <div class="controls">
+    <div class="group" id="metricGroup" role="group" aria-label="Reading">
+      <span class="label">Show</span>
+    </div>
+    <div class="group" id="rangeGroup" role="group" aria-label="Time range">
+      <span class="label">Range</span>
+    </div>
+    <form class="group steps" id="rangeForm">
+      <label class="label" for="by">Filter by</label>
+      <select id="by">
+        <option value="steps">Steps</option>
+        <option value="time">Time</option>
+      </select>
+      <span class="fields" id="stepFields">
+        <input id="s0" type="number" min="0" inputmode="numeric" placeholder="from" aria-label="From step">
+        <span class="label">to</span>
+        <input id="s1" type="number" min="0" inputmode="numeric" placeholder="to" aria-label="To step">
+      </span>
+      <span class="fields" id="timeFields" hidden>
+        <input id="t0" type="time" aria-label="From time">
+        <span class="label">to</span>
+        <input id="t1" type="time" aria-label="To time">
+      </span>
+      <button type="submit">Show</button>
+    </form>
+  </div>
+  <div class="chart">
+    <canvas id="h" aria-label="CPU and GPU readings over the run"></canvas>
+    <div class="legend" id="hLegend"></div>
+  </div>
+  <div class="readout" id="readout">Drag across the graph to zoom into part of the run. Hover for exact readings.</div>
+  <p class="summary" id="summary"></p>
+</div>
+<script>
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const PIECES = ["kick", "snare", "hihat_closed", "hihat_open", "hihat_pedal", "tom", "crash", "ride"];
+const NAMES = { kick: "kick", snare: "snare", hihat_closed: "closed hh", hihat_open: "open hh", hihat_pedal: "pedal hh", tom: "tom", crash: "crash", ride: "ride" };
+const still = matchMedia("(prefers-reduced-motion: reduce)");
+const EMBED = window.__DATA__ || null;          // set on the phone copy: a snapshot instead of a live server
+const FEED = window.__FEED__ || null;           // set on the website copy: a data file the laptop uploads
+let last = null, hist = [], lastT = 0, serverDown = null;
+let geo = null, base = null, raf = 0, geoH = null, drag = null, hoverX = null;
+
+// ---------- time and number formatting ----------
+function hms(s) {
+  if (s == null || !isFinite(s)) return "–";
+  s = Math.round(s); const h = Math.floor(s / 3600), m = Math.floor(s % 3600 / 60);
+  if (s < 60) return `${s} s`;
+  return h ? `${h} h ${String(m).padStart(2, "0")} m` : `${m} m ${String(s % 60).padStart(2, "0")} s`;
+}
+const clock = (ms, sec) => new Date(ms).toLocaleTimeString([], sec ? { hour: "numeric", minute: "2-digit", second: "2-digit" } : { hour: "numeric", minute: "2-digit" });
+const n0 = v => v == null ? "–" : Math.round(v).toLocaleString();
+function niceStep(range, n = 5) {
+  const raw = range / n, p = Math.pow(10, Math.floor(Math.log10(raw)));
+  return [1, 2, 2.5, 5, 10].map(k => k * p).find(v => v >= raw);
+}
+
+// ---------- run state ----------
+function ageNow(d) { return d.age_s == null ? null : d.age_s + Math.max(0, Date.now() - d.now_ms) / 1000; }
+// An uploaded copy counts as out of date once an update is clearly overdue: its interval plus half again (at least a minute).
+// The run's own last update (final) never goes out of date: nothing more is coming.
+function copyStale(d) { return d.update_every_s && !d.final ? (Date.now() - d.now_ms) / 1000 > d.update_every_s + Math.max(60, d.update_every_s / 2) : false; }
+function runState(d) {
+  if (!d) return "connecting";
+  if (d.done) return "done";
+  if (d.process_running === false) return "idle";
+  if (!d.points.length) return "waiting";
+  const age = ageNow(d), per = d.sec_per_step || 10;
+  return age != null && age > Math.max(3 * per, 90, 1.5 * (d.update_every_s || 0)) ? "stalled" : "running";
+}
+const RUN_NAME = d => d.kind === "train" ? "Training" : "Memorisation";
+
+function paintStatus() {
+  const d = last, st = runState(d), el = $("status");
+  let word, detail, cls;
+  if (serverDown && !EMBED) {
+    if (FEED) { cls = "offline"; word = "Offline"; detail = `This page could not load its data at ${clock(serverDown)}. It will keep trying.`; } else {
+    cls = "offline"; word = "Offline";
+    detail = `Lost the connection at ${clock(serverDown)}. Showing the last figures; it will keep trying.`; }
+  } else if ((EMBED || FEED) && d && copyStale(d)) {
+    cls = "offline"; word = "Offline";
+    detail = `No update since ${clock(d.now_ms)}. The figures below may be out of date.`;
+  } else if (st === "connecting") {
+    cls = ""; word = "Connecting"; detail = "Loading…";
+  } else {
+    const cur = d.points.length ? d.points[d.points.length - 1] : null, age = ageNow(d);
+    ({ running: () => { cls = "online live"; word = "Online"; detail = `${RUN_NAME(d)} running · step ${cur[0].toLocaleString()} of ${d.total.toLocaleString()}`; },
+       waiting: () => { cls = "online live"; word = "Online"; detail = `${RUN_NAME(d)} starting · no step logged yet`; },
+       stalled: () => { cls = "online"; word = "Online"; detail = d.process_running ? `The process is running, but no new step for ${hms(age)}. It may be stuck.`
+                                                                                   : `No new step for ${hms(age)}. The run may have stopped.`; },
+       idle: () => { cls = "offline"; word = "Offline"; detail = cur ? `No run going · the last one stopped at step ${cur[0].toLocaleString()}, ${hms(age)} ago` : "No run going"; },
+       done: () => { cls = "done"; word = "Finished"; detail = d.result ? `${RUN_NAME(d)} ${d.result.passes ? "passed" : "did not pass"} at step ${d.result.steps.toLocaleString()}` : `${RUN_NAME(d)} reached its last step`; },
+    })[st]();
+  }
+  if ((EMBED || FEED) && d && !copyStale(d)) detail += d.final ? ` · last update ${clock(d.now_ms)}` : ` · as of ${clock(d.now_ms)}`;
+  el.className = `status ${cls}`;
+  $("stWord").textContent = word; $("stDetail").textContent = detail;
+  $("sweepKey").hidden = st !== "running";
+}
+
+function paintNotice(d) {
+  const n = $("notice"), cur = d.points.length ? d.points[d.points.length - 1] : null;
+  n.hidden = runState(d) !== "done";
+  if (n.hidden) return;
+  const r = d.result;
+  $("nTitle").textContent = r ? (r.passes ? "Memorisation passed" : "Memorisation did not pass") : "The run finished";
+  $("nText").textContent = r
+    ? `Stopped at step ${r.steps.toLocaleString()}` + (r.final_loss != null ? ` with loss ${r.final_loss.toFixed(4)}` : "") +
+      `. F1: ${Object.entries(r.f1).map(([k, v]) => `${NAMES[k] || k} ${v == null ? "–" : v.toFixed(2)}`).join(", ")}.`
+    : `It reached step ${cur ? cur[0].toLocaleString() : "?"}.`;
+}
+
+// ---------- loss chart ----------
+function drawBase(d) {
+  const cv = $("c"), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  base = document.createElement("canvas"); base.width = cv.width; base.height = cv.height;
+  const g = base.getContext("2d"); g.scale(dpr, dpr);
+  const pad = { l: 54, r: 14, t: 12, b: 30 }, pts = d.points;
+  const ys = pts.map(p => p[1]).concat(d.floor != null ? [d.floor] : []);
+  geo = null;
+  if (!ys.length) {
+    g.font = `13px ${css("--mono")}`; g.fillStyle = css("--muted"); g.fillText("No steps logged yet.", pad.l, h / 2);
+    return;
+  }
+  let lo = Math.min(...ys), hi = Math.max(...ys);
+  const span = Math.max(hi - lo, 0.05); lo -= span * 0.08; hi += span * 0.08;
+  const yStep = niceStep(hi - lo); lo = Math.floor(lo / yStep) * yStep; hi = Math.ceil(hi / yStep) * yStep;
+  // The x-axis grows with the run (a quarter past the newest step), up to its full length
+  const cur = pts.length ? pts[pts.length - 1][0] : 0, want = Math.max(cur * 1.25, 100), ws = niceStep(want);
+  const total = Math.max(1, Math.min(d.total || 1, Math.ceil(want / ws) * ws));
+  const X = s => pad.l + (s / total) * (w - pad.l - pad.r);
+  const Y = v => pad.t + (1 - (v - lo) / (hi - lo)) * (h - pad.t - pad.b);
+  geo = { X, Y, pad, w, h, dpr };
+  g.font = `12px ${css("--mono")}`; g.fillStyle = css("--muted"); g.strokeStyle = css("--line"); g.lineWidth = 1;
+  const dec = yStep < 0.1 ? 2 : 1;
+  for (let v = lo; v <= hi + yStep / 2; v += yStep) {
+    g.beginPath(); g.moveTo(pad.l, Math.round(Y(v)) + .5); g.lineTo(w - pad.r, Math.round(Y(v)) + .5); g.stroke();
+    g.textAlign = "right"; g.fillText(v.toFixed(dec), pad.l - 8, Y(v) + 4);
+  }
+  const xStep = niceStep(total); g.textAlign = "center";
+  for (let s = 0; s <= total + 1e-9; s += xStep) g.fillText(s.toLocaleString(), X(s), h - 9);
+  if (d.floor != null) {
+    g.strokeStyle = css("--accent"); g.setLineDash([6, 5]); g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(pad.l, Y(d.floor)); g.lineTo(w - pad.r, Y(d.floor)); g.stroke(); g.setLineDash([]);
+  }
+  g.strokeStyle = css("--ink"); g.lineWidth = 1.7; g.lineJoin = g.lineCap = "round"; g.beginPath();
+  pts.forEach(([s, v], i) => i ? g.lineTo(X(s), Y(v)) : g.moveTo(X(s), Y(v))); g.stroke();
+  g.fillStyle = css("--ink");
+  d.checks.forEach(c => { g.beginPath(); g.arc(X(c.step), Y(c.loss), 3.2, 0, 7); g.fill(); });
+}
+
+// Each frame: the static chart, then the sweep across the step in progress and a pulse on the newest point.
+function frame(t) {
+  raf = 0;
+  const d = last; if (!d || !base) return;
+  const cv = $("c"), g = cv.getContext("2d");
+  g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, cv.width, cv.height); g.drawImage(base, 0, 0);
+  const st = runState(d), age = ageNow(d);
+  $("ago").textContent = age == null || !d.points.length ? "" :
+    st === "done" ? "run finished" : st === "idle" ? `stopped ${hms(age)} ago` :
+    d.update_every_s ? `data from ${hms(age)} ago` : `last step ${hms(age)} ago`;
+  if (!geo || st !== "running") return;
+  const { X, Y, pad, h, dpr } = geo, [s0, v0] = d.points[d.points.length - 1];
+  // Where the run should be by now: up to one step ahead live, or across the gap between republished copies
+  const per = d.sec_per_step || 10, frac = Math.min(age / per, d.update_every_s ? d.update_every_s / per : 1);
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const x0 = X(s0), x1 = X(Math.min(s0 + frac, d.total));
+  g.fillStyle = css("--line"); g.globalAlpha = 0.55;
+  g.fillRect(x0, pad.t, Math.max(x1 - x0, 1), h - pad.t - pad.b);
+  g.globalAlpha = 1; g.strokeStyle = css("--muted"); g.lineWidth = 1;
+  g.beginPath(); g.moveTo(Math.round(x1) + .5, pad.t); g.lineTo(Math.round(x1) + .5, h - pad.b); g.stroke();
+  if (!still.matches) {
+    const p = (t / 1800) % 1;
+    g.strokeStyle = css("--ink"); g.globalAlpha = 0.6 * (1 - p); g.lineWidth = 1;
+    g.beginPath(); g.arc(X(s0), Y(v0), 4 + 9 * p, 0, 7); g.stroke(); g.globalAlpha = 1;
+    raf = setTimeout(() => requestAnimationFrame(frame), 50);   // about 20 frames a second is plenty
+  }
+}
+function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+
+// ---------- machine: readings now ----------
+const shortCpu = s => (s || "CPU").replace(/^AMD |^Intel\(R\) Core\(TM\) /, "").replace(/ with Radeon Graphics| Processor/g, "").trim();
+const shortGpu = s => (s || "GPU").replace(/^NVIDIA GeForce /, "").replace(/ with Max-Q Design/, " Max-Q").trim();
+function bar(pct) { return pct == null ? "" : `<div class="bar"><div style="width:${Math.max(0, Math.min(100, pct))}%"></div></div>`; }
+// Boost: the CPU running above its base clock (Windows' live performance counter over 100 %)
+const BOOST = `<b class="boost">boosting</b>`;
+// Why the driver says it is holding the GPU clock back (its live clock event reasons, a bit mask)
+const HELD = [[0x4, "its power limit"], [0x80, "its power limit"], [0x20, "heat"], [0x40, "heat"], [0x8, "a hardware slowdown"],
+              [0x2, "a clock setting"], [0x100, "a clock setting"], [0x10, "clock syncing"]];
+function heldBy(mask) {
+  if (mask == null) return null;
+  const why = [...new Set(HELD.filter(([bit]) => mask & bit).map(([, w]) => w))];
+  if (mask & ~HELD.reduce((all, [bit]) => all | bit, 0x1)) why.push("another limit the driver reports");   // newer reasons
+  return why.length ? why.join(" and ") : null;
+}
+function gpuState(g) {
+  if (g.held_by == null || g.usage_pct == null || g.usage_pct < 20) return "";
+  const why = heldBy(g.held_by);
+  return why ? `held back by ${why}` : "nothing holding it back";
+}
+const memText = mb => mb >= 1024 ? `${(mb / 1024).toFixed(1)} GB` : `${Math.round(mb)} MB`;
+const pct = v => `${v.toFixed(0)} %`;
+function paintMachine(d) {
+  const m = d.machine;
+  if (!m) { $("mach").innerHTML = `<tbody><tr><td class="empty">Waiting for the first reading (one every ${d.sample_every_s || 5} s).</td></tr></tbody>`; $("machNote").textContent = ""; return; }
+  const c = m.cpu || {}, g = m.gpu || {}, r = m.run || {};
+  const cBase = `base ${(c.base_mhz / 1000).toFixed(2)} GHz`, gState = gpuState(g);
+  const sub = t => `<span class="sub">${t}</span>`;
+  const runPct = v => sub(`this run ${v != null ? pct(v) : "–"}`);
+  const runMem = (v, what) => v != null ? `${memText(v)}${sub(`${what} used by this run`)}` : `–${sub(m.process_running === false ? "no run going" : `${what} used by this run`)}`;
+  const rows = [
+    ["Clock", c.clock_mhz != null ? `${(c.clock_mhz / 1000).toFixed(2)} GHz` + sub(c.clock_mhz > c.base_mhz + 5 ? `${BOOST} · ${cBase}` : cBase) : "–",
+              g.clock_mhz != null ? `${n0(g.clock_mhz)} MHz` + sub(`memory ${n0(g.mem_clock_mhz)} MHz` + (gState ? ` · ${gState}` : "")) : "–"],
+    ["Usage", c.usage_pct != null ? `${pct(c.usage_pct)}${bar(c.usage_pct)}${sub("whole machine")}${runPct(r.cpu_pct)}` +
+                                    (c.usage_pct > 100 ? sub("over 100 % means boosting above base") : "") : "–",
+              g.usage_pct != null ? `${pct(g.usage_pct)}${bar(g.usage_pct)}${sub("whole card")}${runPct(r.gpu_pct)}` : "–"],
+    ["Temperature", c.temp_c != null ? `${c.temp_c.toFixed(0)} °C${sub("board sensor near the CPU, not per-core")}` : "–",
+                    g.temp_c != null ? `${g.temp_c.toFixed(0)} °C` : "–"],
+    ["Power", c.power_w != null ? `${c.power_w.toFixed(0)} W${sub("whole CPU package")}` : `–${sub("not available")}`, g.power_w != null ? `${g.power_w.toFixed(0)} W` + (g.power_limit_w ? sub(`limit ${g.power_limit_w.toFixed(0)} W`) : "") : "–"],
+    ["Memory", runMem(r.ram_mb, "RAM"), runMem(r.gpu_mem_mb, "GPU memory")],
+  ];
+  $("mach").innerHTML = `<thead><tr><th></th><th>CPU<span class="sub">${shortCpu(c.name)}${c.cores ? ` · ${c.cores} cores` : ""}</span></th><th>GPU<span class="sub">${shortGpu(g.name)}</span></th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`).join("")}</tbody>`;
+  $("machNote").textContent = `Reading taken at ${clock(m.taken_ms, true)}. Clocks are live: the CPU's is its average across all cores. "This run" counts only the training process.`;
+}
+
+// ---------- machine: history graph ----------
+// Each graph's lines: [column in a saved reading, name, colour, dashed]. Old readings lack the columns from 9 on.
+const METRICS = {
+  usage:  { label: "Usage", fmt: pct, axis: v => `${v}%`,
+            series: [[2, "CPU · whole machine", "--ink"], [9, "CPU · this run", "--ink", true], [5, "GPU · whole card", "--accent"], [10, "GPU · this run", "--accent", true]] },
+  clock:  { label: "Clock", fmt: v => `${n0(v)} MHz`, axis: v => v >= 1000 ? `${(v / 1000).toFixed(1)}G` : `${v}`,
+            series: [[1, "CPU", "--ink"], [4, "GPU", "--accent"]] },
+  temp:   { label: "Temperature", fmt: v => `${v.toFixed(0)} °C`, axis: v => `${v}°`, series: [[3, "CPU", "--ink"], [6, "GPU", "--accent"]] },
+  power:  { label: "Power", fmt: v => `${v.toFixed(0)} W`, axis: v => `${v}W`, series: [[15, "CPU", "--ink"], [7, "GPU", "--accent"]] },
+  memory: { label: "Memory", fmt: memText, axis: v => v >= 1024 ? `${Math.round(v / 1024)}G` : `${v}M`,
+            series: [[11, "RAM · this run", "--ink"], [12, "GPU memory · this run", "--accent"]] },
+};
+const RANGES = { run: "Whole run", "1h": "Last hour", "15m": "Last 15 min" };
+let prefs = { metric: "usage", range: { mode: "run" } };
+try { Object.assign(prefs, JSON.parse(localStorage.getItem("flybeats-machine") || "{}")); } catch (e) {}
+if (prefs.range.mode === "custom") prefs.range = { mode: "run" };     // a zoomed range belongs to the visit it was made in
+function savePrefs() {       // remembers the reading shown and the range type, not a zoom (it would be empty in a later run)
+  const keep = { ...prefs, range: prefs.range.mode === "custom" ? { mode: "run" } : prefs.range };
+  try { localStorage.setItem("flybeats-machine", JSON.stringify(keep)); } catch (e) {}
+}
+
+// Map between wall-clock time and training step, from each step's elapsed seconds
+function stepAt(t) {
+  const p = last && last.points, t0 = last && last.run_start_ms;
+  if (!p || !p.length || t0 == null || p[0][2] == null) return null;
+  const e = (t - t0) / 1000;
+  if (e <= 0) return 0;
+  if (e >= p[p.length - 1][2]) return p[p.length - 1][0];
+  let a = 0, b = p.length - 1;
+  while (b - a > 1) { const m = (a + b) >> 1; if (p[m][2] < e) a = m; else b = m; }
+  const f = (e - p[a][2]) / Math.max(p[b][2] - p[a][2], 1e-9);
+  return p[a][0] + f * (p[b][0] - p[a][0]);
+}
+function timeOfStep(s) {
+  const p = last && last.points, t0 = last && last.run_start_ms;
+  if (!p || !p.length || t0 == null || p[0][2] == null) return null;
+  if (s <= 0) return t0;
+  if (s >= p[p.length - 1][0]) return t0 + p[p.length - 1][2] * 1000;
+  let a = 0, b = p.length - 1;
+  while (b - a > 1) { const m = (a + b) >> 1; if (p[m][0] < s) a = m; else b = m; }
+  const f = (s - p[a][0]) / Math.max(p[b][0] - p[a][0], 1e-9);
+  return t0 + (p[a][2] + f * (p[b][2] - p[a][2])) * 1000;
+}
+
+function windowNow() {
+  const tEnd = hist.length ? hist[hist.length - 1][0] : Date.now();
+  const r = prefs.range;
+  if (r.mode === "15m") return [tEnd - 15 * 60e3, tEnd];
+  if (r.mode === "1h") return [tEnd - 60 * 60e3, tEnd];
+  if (r.mode === "custom") return [r.t0, r.t1];
+  const d = last, st = runState(d);
+  const start = d && d.run_start_ms != null ? d.run_start_ms : (hist.length ? hist[0][0] : tEnd - 3600e3);
+  let end = tEnd;
+  if (d && (st === "idle" || st === "done") && d.points.length && d.points[d.points.length - 1][2] != null)
+    end = Math.min(tEnd, start + d.points[d.points.length - 1][2] * 1000 + 60e3);
+  return [Math.min(start, end - 60e3), end];
+}
+
+function timeTicks(t0, t1) {
+  const span = t1 - t0, opts = [15e3, 30e3, 60e3, 2 * 60e3, 5 * 60e3, 10 * 60e3, 15 * 60e3, 30 * 60e3, 3600e3, 2 * 3600e3, 4 * 3600e3];
+  const step = opts.find(o => span / o <= 6) || opts[opts.length - 1];
+  const out = []; for (let t = Math.ceil(t0 / step) * step; t <= t1; t += step) out.push(t);
+  return { ticks: out, sec: step < 60e3 };
+}
+
+function drawHist() {
+  const cv = $("h"), dpr = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = w * dpr; cv.height = h * dpr;
+  const g = cv.getContext("2d"); g.scale(dpr, dpr);
+  const m = METRICS[prefs.metric], [t0, t1] = windowNow();
+  const pad = { l: 50, r: 14, t: 24, b: 30 };
+  const rows = hist.filter(r => r[0] >= t0 && r[0] <= t1);
+  const cols = m.series.map(([c]) => c);
+  const vals = rows.flatMap(r => cols.map(c => r[c])).filter(v => v != null);
+  g.font = `12px ${css("--mono")}`;
+  geoH = null;
+  if (!vals.length) {
+    g.fillStyle = css("--muted");
+    g.fillText(hist.length ? "No readings in this range." : "No readings yet.", pad.l, h / 2);
+    paintSummary([], m, t0, t1); return;
+  }
+  let lo, hi;
+  const vmax = Math.max(...vals), vmin = Math.min(...vals);
+  if (prefs.metric === "usage") { lo = 0; hi = vmax > 100 ? Math.ceil(vmax / 25) * 25 : 100; }   // CPU usage passes 100 % on boost
+  else if (prefs.metric === "temp") { lo = Math.floor((vmin - 5) / 10) * 10; hi = Math.ceil((vmax + 5) / 10) * 10; }
+  else { lo = 0; const s = niceStep(vmax * 1.1 || 1, 4); hi = Math.ceil((vmax * 1.1 || 1) / s) * s; }
+  const X = t => pad.l + (t - t0) / Math.max(t1 - t0, 1) * (w - pad.l - pad.r);
+  const invX = x => t0 + (x - pad.l) / (w - pad.l - pad.r) * (t1 - t0);
+  const Y = v => pad.t + (1 - (v - lo) / Math.max(hi - lo, 1e-9)) * (h - pad.t - pad.b);
+  geoH = { X, invX, pad, w, h, t0, t1, rows };
+
+  // grid and y axis
+  g.strokeStyle = css("--line"); g.fillStyle = css("--muted"); g.lineWidth = 1;
+  const ys = niceStep(hi - lo, 4);
+  for (let v = lo; v <= hi + ys / 2; v += ys) {
+    const y = Math.round(Y(v)) + .5; g.beginPath(); g.moveTo(pad.l, y); g.lineTo(w - pad.r, y); g.stroke();
+    g.textAlign = "right"; g.fillText(m.axis(+v.toFixed(2)), pad.l - 8, y + 4);
+  }
+  // reference lines for boost: 100 % CPU usage, and the CPU's base clock
+  const base = last && last.machine && last.machine.cpu && last.machine.cpu.base_mhz;
+  const ref = prefs.metric === "usage" && hi > 100 ? [100, "100 %: above this, the CPU is boosting"]
+            : prefs.metric === "clock" && base && base > lo && base < hi ? [base, "CPU base clock: above it, boosting"] : null;
+  if (ref) {
+    const y = Math.round(Y(ref[0])) + .5;
+    g.save(); g.setLineDash([4, 4]); g.strokeStyle = css("--muted");
+    g.beginPath(); g.moveTo(pad.l, y); g.lineTo(w - pad.r, y); g.stroke(); g.restore();
+    g.textAlign = "right"; g.fillText(ref[1], w - pad.r - 4, y - 5);
+  }
+  // bottom axis: clock time
+  const tt = timeTicks(t0, t1); g.textAlign = "center";
+  tt.ticks.forEach(t => {                          // keep the end labels inside the drawing
+    const label = clock(t, tt.sec), half = g.measureText(label).width / 2;
+    g.fillText(label, Math.max(half + 2, Math.min(w - half - 2, X(t))), h - 9);
+  });
+  // top axis: training steps over the same span
+  const sA = stepAt(t0), sB = stepAt(t1);
+  if (sA != null && sB != null && sB - sA >= 1) {
+    let ss = niceStep(sB - sA); ss = ss < 1 ? 1 : ss === 2.5 ? 2 : ss;     // whole steps only
+    g.textAlign = "center";
+    for (let s = Math.ceil(sA / ss) * ss; s <= sB; s += ss) {
+      const t = timeOfStep(s); if (t == null || t < t0 || t > t1) continue;
+      const x = X(t); g.fillText(s.toLocaleString(), x, 12);
+      g.beginPath(); g.moveTo(Math.round(x) + .5, 16); g.lineTo(Math.round(x) + .5, pad.t); g.stroke();
+    }
+    g.textAlign = "left"; g.fillText("step", 2, 12);
+  }
+  // run start marker
+  if (last && last.run_start_ms > t0 && last.run_start_ms < t1) {
+    g.save(); g.setLineDash([2, 4]); g.strokeStyle = css("--muted");
+    const x = Math.round(X(last.run_start_ms)) + .5; g.beginPath(); g.moveTo(x, pad.t); g.lineTo(x, h - pad.b); g.stroke(); g.restore();
+  }
+  // series: averaged per pixel column, broken where readings are missing
+  const gapMs = 3 * (last && last.sample_every_s || 5) * 1000 + 2000;
+  const series = m.series;
+  series.forEach(([c, , color, dashed]) => {
+    g.strokeStyle = css(color); g.setLineDash(dashed ? [5, 4] : []); g.lineWidth = 1.6; g.lineJoin = g.lineCap = "round"; g.beginPath();
+    let px = null, sum = 0, n = 0, tPrev = null, started = false, tLastRow = null;
+    const flush = () => {
+      if (!n) return; const y = Y(sum / n);
+      if (!started || (tPrev != null && tLastRow - tPrev > gapMs)) g.moveTo(px, y); else g.lineTo(px, y);
+      started = true; sum = 0; n = 0;
+    };
+    rows.forEach(r => {
+      const v = r[c]; if (v == null) return;
+      const x = Math.round(X(r[0]));
+      if (x !== px) { flush(); tPrev = tLastRow; tLastRow = r[0]; px = x; }
+      else tLastRow = r[0];
+      sum += v; n++;
+    });
+    flush(); g.stroke();
+  });
+  g.setLineDash([]);
+  // drag selection
+  if (drag) {
+    g.fillStyle = css("--accent"); g.globalAlpha = 0.18;
+    g.fillRect(Math.min(drag.x0, drag.x1), pad.t, Math.abs(drag.x1 - drag.x0), h - pad.t - pad.b); g.globalAlpha = 1;
+  }
+  // hover crosshair and readout
+  if (hoverX != null && !drag && hoverX >= pad.l && hoverX <= w - pad.r) {
+    const t = invX(hoverX);
+    let best = null; for (const r of rows) if (!best || Math.abs(r[0] - t) < Math.abs(best[0] - t)) best = r;
+    if (best) {
+      const x = Math.round(X(best[0])) + .5;
+      g.strokeStyle = css("--muted"); g.beginPath(); g.moveTo(x, pad.t); g.lineTo(x, h - pad.b); g.stroke();
+      series.forEach(([c, , color]) => { if (best[c] == null) return; g.fillStyle = css(color); g.beginPath(); g.arc(x, Y(best[c]), 3.2, 0, 7); g.fill(); });
+      const s = stepAt(best[0]);
+      $("readout").textContent = `${clock(best[0], true)}` + (s != null ? ` · step ${Math.round(s).toLocaleString()}` : "") +
+        series.filter(([c]) => best[c] != null).map(([c, name]) => ` · ${name} ${m.fmt(best[c])}`).join("");
+    }
+  }
+  paintSummary(rows, m, t0, t1);
+}
+
+// Over the range shown: how often the CPU was boosting, and what the driver said was holding the busy GPU's clock back
+function boostSummary(rows) {
+  const base = last && last.machine && last.machine.cpu && last.machine.cpu.base_mhz, out = [];
+  const cpu = rows.filter(r => r[1] != null);
+  if (base && cpu.length) out.push(`CPU boosting in <b>${Math.round(100 * cpu.filter(r => r[1] > base + 5).length / cpu.length)} %</b> of readings`);
+  const busy = rows.filter(r => r[5] != null && r[5] >= 20 && r[14] != null);
+  if (busy.length) {
+    const held = busy.filter(r => heldBy(r[14])), why = {};
+    held.forEach(r => { const w = heldBy(r[14]); why[w] = (why[w] || 0) + 1; });
+    const top = Object.entries(why).sort((a, b) => b[1] - a[1])[0];
+    out.push(held.length ? `GPU held back in <b>${Math.round(100 * held.length / busy.length)} %</b> of its busy readings, mostly by ${top[0]}`
+                         : `GPU: nothing held its clock back while busy`);
+  }
+  return out.length ? "<br>" + out.join(" · ") : "";
+}
+
+function paintSummary(rows, m, t0, t1) {
+  const sA = stepAt(t0), sB = stepAt(t1);
+  const span = `${clock(t0)} to ${clock(t1)}` + (sA != null && sB != null ? ` · steps ${Math.round(sA).toLocaleString()} to ${Math.round(sB).toLocaleString()}` : "");
+  const stat = c => {
+    const v = rows.map(r => r[c]).filter(x => x != null);
+    return v.length ? `avg <b>${m.fmt(v.reduce((a, b) => a + b, 0) / v.length)}</b>, peak <b>${m.fmt(Math.max(...v))}</b>` : "no readings";
+  };
+  $("summary").innerHTML = `${span} · ${rows.length.toLocaleString()} readings<br>` +
+    m.series.map(([c, name]) => `${name}: ${stat(c)}`).join("<br>") + boostSummary(rows);
+  $("hLegend").innerHTML = m.series.map(([, name, color, dashed]) =>
+      `<span><span class="sw${color === "--accent" ? " accent" : ""}${dashed ? " dash" : ""}"></span>${name}</span>`).join("") +
+    `<span>top axis: training step · dotted line: run start</span>`;
+  fillRangeInputs(t0, t1, sA, sB);
+}
+
+// The range inputs show the range on the graph, until someone starts typing in them
+let rangeDirty = false;
+const hhmm = t => { const d = new Date(t); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
+function fillRangeInputs(t0, t1, sA, sB) {
+  if (rangeDirty) return;
+  $("s0").value = sA != null ? Math.round(sA) : ""; $("s1").value = sB != null ? Math.round(sB) : "";
+  $("t0").value = hhmm(t0); $("t1").value = hhmm(t1);
+}
+function setBy(by) {
+  prefs.by = by; savePrefs();
+  $("by").value = by; $("stepFields").hidden = by !== "steps"; $("timeFields").hidden = by !== "time";
+}
+// "HH:MM" to a time on whichever day puts it nearest `near`, so runs that cross midnight work
+function timeFromInput(v, near) {
+  const [h, m] = v.split(":").map(Number), d = new Date(near); d.setHours(h, m, 0, 0);
+  let t = d.getTime();
+  [t - 86400e3, t + 86400e3].forEach(c => { if (Math.abs(c - near) < Math.abs(t - near)) t = c; });
+  return t;
+}
+function showRange(t0, t1) { rangeDirty = false; prefs.range = { mode: "custom", t0, t1 }; savePrefs(); paintControls(); drawHist(); }
+
+function paintControls() {
+  const mg = $("metricGroup"), rg = $("rangeGroup");
+  mg.querySelectorAll("button").forEach(b => b.remove());
+  Object.entries(METRICS).forEach(([k, v]) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = v.label;
+    b.setAttribute("aria-pressed", prefs.metric === k); b.onclick = () => { prefs.metric = k; savePrefs(); paintControls(); drawHist(); };
+    mg.appendChild(b);
+  });
+  rg.querySelectorAll("button").forEach(b => b.remove());
+  Object.entries(RANGES).forEach(([k, v]) => {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = v;
+    b.setAttribute("aria-pressed", prefs.range.mode === k); b.onclick = () => { rangeDirty = false; prefs.range = { mode: k }; savePrefs(); paintControls(); drawHist(); };
+    rg.appendChild(b);
+  });
+  if (prefs.range.mode === "custom") {
+    const b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.setAttribute("aria-pressed", "true");
+    b.textContent = "Custom · reset"; b.onclick = () => { rangeDirty = false; prefs.range = { mode: "run" }; savePrefs(); paintControls(); drawHist(); };
+    rg.appendChild(b);
+  }
+}
+
+const hc = $("h");
+hc.addEventListener("pointerdown", e => { if (!geoH) return; drag = { x0: e.offsetX, x1: e.offsetX }; hc.setPointerCapture(e.pointerId); });
+hc.addEventListener("pointermove", e => { if (drag) drag.x1 = e.offsetX; else hoverX = e.offsetX; drawHist(); });
+hc.addEventListener("pointerup", () => {
+  if (drag && geoH && Math.abs(drag.x1 - drag.x0) > 8) {
+    const a = Math.max(geoH.pad.l, Math.min(drag.x0, drag.x1)), b = Math.min(geoH.w - geoH.pad.r, Math.max(drag.x0, drag.x1));
+    drag = null; showRange(geoH.invX(a), geoH.invX(b)); return;
+  }
+  drag = null; drawHist();
+});
+hc.addEventListener("pointerleave", () => { if (!drag) { hoverX = null; drawHist(); } });
+$("rangeForm").addEventListener("submit", e => {
+  e.preventDefault();
+  if ($("by").value === "time") {
+    const a = $("t0").value, b = $("t1").value;
+    if (!a || !b) { $("readout").textContent = "Enter a start time and an end time."; return; }
+    const lo = hist.length ? hist[0][0] : Date.now(), hi = hist.length ? hist[hist.length - 1][0] : Date.now();
+    const ta = timeFromInput(a, (lo + hi) / 2);
+    let tb = timeFromInput(b, ta); if (tb <= ta) tb += 86400e3;
+    showRange(ta, tb);
+    return;
+  }
+  const a = parseFloat($("s0").value), b = parseFloat($("s1").value);
+  if (!isFinite(a) || !isFinite(b) || b <= a) { $("readout").textContent = "Enter a start step and a larger end step."; return; }
+  const ta = timeOfStep(a), tb = timeOfStep(b);
+  if (ta == null || tb == null) { $("readout").textContent = "Step times are not known for this run yet."; return; }
+  showRange(ta, tb);
+});
+$("by").addEventListener("change", e => { rangeDirty = false; setBy(e.target.value); drawHist(); });
+["s0", "s1", "t0", "t1"].forEach(id => $(id).addEventListener("input", () => { rangeDirty = true; }));
+
+// ---------- page ----------
+function render(d) {
+  last = d;
+  document.title = `${d.title} · flybeats`;
+  $("title").textContent = d.title;
+  $("subtitle").textContent = d.subtitle;
+  const p = d.points, cur = p.length ? p[p.length - 1] : null, hasFloor = d.floor != null, st = runState(d);
+  $("step").textContent = `${cur ? cur[0].toLocaleString() : 0} / ${d.total.toLocaleString()}`;
+  $("prog").style.width = cur && d.total ? `${100 * cur[0] / d.total}%` : "0";
+  $("loss").textContent = cur ? cur[1].toFixed(4) : "–";
+  $("floorStat").hidden = $("floorKey").hidden = !hasFloor;
+  $("floor").textContent = hasFloor ? d.floor.toFixed(4) : "–";
+  $("eta").textContent = st === "done" ? "done" : st === "idle" ? "stopped" : hms(d.left_s);
+  $("chartLabel").textContent = d.kind === "train" ? "Training loss per step · dots: validation checks" : "Training loss per step";
+  $("checksLabel").textContent = d.kind === "train" ? "Validation hit F1 at each check" : "Hit F1 at each check";
+
+  const must = new Set(d.must_pass || []);
+  const cols = PIECES.filter(k => d.checks.some(c => k in c.f1));
+  $("checks").innerHTML = d.checks.length
+    ? `<thead><tr><th>Step</th><th>Loss</th>${cols.map(k => `<th class="${must.has(k) ? "must" : ""}">${NAMES[k] || k}</th>`).join("")}</tr></thead>
+       <tbody>${d.checks.map(c => `<tr><td>${c.step.toLocaleString()}</td><td>${c.loss.toFixed(4)}</td>${cols.map(k => {
+         const v = c.f1[k]; return `<td class="${must.has(k) && v >= 0.9 ? "hit" : ""}">${v == null || Number.isNaN(v) ? "–" : v.toFixed(3)}</td>`;
+       }).join("")}</tr>`).join("")}</tbody>`
+    : `<tbody><tr><td class="empty">No check yet${d.kind === "memorise" ? " (every 250 steps)" : ""}.</td></tr></tbody>`;
+
+  let text;
+  if (!cur) text = "Waiting for the first step.";
+  else if (!hasFloor) text = `Loss ${cur[1].toFixed(4)} at step ${cur[0].toLocaleString()}.`;
+  else {
+    const gap = cur[1] - d.floor, anyF1 = d.checks.some(c => [...must].some(k => c.f1[k] > 0));
+    if (gap < -0.01) text = `Below the floor by ${(-gap).toFixed(3)}: the network is using the audio.` + (anyF1 ? " Hit F1 is off zero." : " Hit F1 not off zero yet.");
+    else if (gap < 0.01) text = `At the floor (within 0.01): so far it has learned only how often each drum plays. It needs to go clearly below.`;
+    else text = `${gap.toFixed(3)} above the floor. Falling toward it comes first; the test is whether it goes through.`;
+  }
+  $("verdict").innerHTML = `<span class="label">reading</span>${text}`;
+  paintStatus(); paintNotice(d); paintMachine(d);
+  drawBase(d); kick(); drawHist();
+}
+
+function ingest(d) {
+  for (const r of d.history || []) if (r[0] > lastT) { hist.push(r); lastT = r[0]; }
+  render(d);
+}
+
+async function tick() {
+  try {
+    const r = await fetch(FEED ? `${FEED}?t=${Date.now()}` : `/data?since=${lastT}`, { cache: "no-store" });
+    if (!r.ok) throw new Error(r.status);
+    serverDown = null; ingest(await r.json());
+  } catch (e) { if (!serverDown) serverDown = Date.now(); paintStatus(); }
+  setTimeout(tick, FEED ? 30000 : 5000);
+}
+
+// Once a second: the status, the counters and the sweep
+setInterval(() => { paintStatus(); if (last) paintNotice(last); kick(); }, 1000);
+const redraw = () => { if (last) { drawBase(last); kick(); drawHist(); } };
+window.addEventListener("resize", redraw);
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", redraw);
+setBy(prefs.by === "time" ? "time" : "steps");
+paintControls();
+if (EMBED) ingest(EMBED); else tick();
+</script>
+</body>
+</html>

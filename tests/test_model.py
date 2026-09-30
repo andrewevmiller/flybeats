@@ -97,6 +97,22 @@ def test_causality(net):
     assert not torch.equal(oa["rates"][:, safe:], ob["rates"][:, safe:])
 
 
+def test_readout_norm_standardises_motor_neurons(cfg, paths):
+    model, _, _ = make(cfg, paths)
+    torch.manual_seed(3)
+    batches = [torch.randn(2, SR) * 0.3 for _ in range(2)]
+    floor = cfg["model"]["readout_norm"]["std_floor"]
+    model.fit_readout_norm(batches, 20, floor)
+    with torch.no_grad():
+        rm = torch.cat([model(a)[0]["mn_rates"][:, 20:].flatten(0, 1) for a in batches])
+    z = (rm - model.mn_mean) / model.mn_std
+    varied = rm.std(0) > floor
+    assert varied.sum() > 10
+    assert torch.allclose(z.mean(0), torch.zeros_like(z.mean(0)), atol=1e-3)
+    assert torch.allclose(z.std(0)[varied], torch.ones(int(varied.sum())), atol=1e-3)
+    assert (z.std(0)[~varied] <= 1 + 1e-3).all()      # quiet neurons are not blown up
+
+
 def test_ear_must_match_locked_settings(cfg, paths):
     import copy
     bad = copy.deepcopy(cfg)

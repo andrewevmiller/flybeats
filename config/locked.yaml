@@ -1,4 +1,4 @@
-version: prereg-v2
+version: prereg-v3
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
@@ -37,6 +37,10 @@ model:
   tau_ms: {min: 10, max: 200, init: 20}   # per cell type, learned within this range
   readout_init_std: 0.01        # small random readout weights; exactly zero would block every gradient
   hit_bias_init: -4.0           # each drum starts near "no hit"
+  readout_norm:                 # each readout motor neuron's rate is standardised before the readout
+    clips: 16                   # random training clips through the untrained network, at setup; fixed after
+    seed: 2025
+    std_floor: 1.0e-3           # a neuron varying less than this is scaled as if it varied this much
   init_seed: 0                  # random readout weights
 
 ear:                            # fixed front end; the code refuses to run if these differ from it

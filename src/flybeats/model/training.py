@@ -1,8 +1,12 @@
 """Phase 3, steps 6-8: batches as tensors, one training step, validation, and the silence/stability test."""
+import hashlib
+import json
+from pathlib import Path
+
 import numpy as np
 import torch
 
-from ..config import load_locked, load_paths
+from ..config import load_locked, load_paths, reports_dir
 from ..connectome.store import load_slice
 from ..data.manifest import load_manifest, set_dir
 from ..data.sampler import ClipSampler
@@ -25,10 +29,25 @@ def setup(which, control_seed=None, device="cuda", cfg=None):
     model = FlyNet(neurons, edges, cfg, load_band_stats(stats_path)).to(device)
     train = ClipSampler(root, manifest, events, beats, cfg, "train")
     val = ClipSampler(root, manifest, events, beats, cfg, "validation")
+    fit_readout_norm(model, ClipSampler(root, manifest, events, beats, cfg, "train", seed=cfg["model"]["readout_norm"]["seed"]),
+                     cfg, device)
     weights = drum_weights(manifest, cfg["kit"]["pieces"], cfg["training_data"]["frame_ms"] / 1000,
                            cfg["loss"]["max_drum_weight"]).to(device)
     return {"cfg": cfg, "paths": paths, "model": model, "train": train, "val": val, "weights": weights,
             "loss": make_loss(cfg, weights), "manifest": manifest, "root": root}
+
+
+def fit_readout_norm(model, sampler, cfg, device, batch_size=8):
+    """Standardise the readout's input with fixed stats from locked.yaml's number of random training clips
+    through this network, untrained. Its own sampler, so the training clip sequence is unchanged."""
+    rn = cfg["model"]["readout_norm"]
+    clips = []
+    while len(clips) < rn["clips"]:
+        clips += sampler.batch(min(batch_size, len(sampler.songs), rn["clips"] - len(clips)))
+    batches = [torch.as_tensor(np.stack([c["audio"] for c in clips[i:i + batch_size]]), device=device)
+               for i in range(0, len(clips), batch_size)]
+    warmup = int(round(cfg["training_data"]["warmup_ignored_seconds"] * 1000 / cfg["training_data"]["frame_ms"]))
+    model.fit_readout_norm(batches, warmup, rn["std_floor"])
 
 
 def make_optimiser(model, cfg):
@@ -65,6 +84,97 @@ def train_step(model, opt, batch, loss_of, clip_norm, segment=0):
     opt.step()
     return {"loss": total, **parts, "mean_rate": float(out["mean_rate"].mean()),
             "peak_rate": float(out["mean_rate"].max())}
+
+
+class GraphedStep:
+    """train_step over the whole clip, with the forward pass, loss and backward pass recorded once as a CUDA graph
+    and replayed every step. A 16 s clip is 3,200 frames and about 100,000 small GPU operations per step; run one
+    at a time from Python, the GPU spends much of each step waiting for the next one. Replayed, they go as one job.
+
+    The same operations in the same order as train_step; gradient clipping and the optimiser step stay ordinary
+    PyTorch calls outside the graph, so the locked optimiser runs exactly as it does there. The inputs are fixed
+    tensors: load() copies a new batch into them (same shapes). The warm-up passes (needed before recording) run
+    forward and backward only, so the weights do not move. scripts/check_cuda_graph.py checks that the results
+    match train_step's."""
+
+    def __init__(self, model, opt, batch, loss_of, clip_norm, warmup=2):
+        self.model, self.opt, self.loss_of, self.clip_norm = model, opt, loss_of, clip_norm
+        self.static = {k: batch[k].clone() for k in ("audio", "hits", "vel", "mask")}
+        side = torch.cuda.Stream()
+        side.wait_stream(torch.cuda.current_stream())
+        with torch.cuda.stream(side):
+            for _ in range(warmup):
+                opt.zero_grad(set_to_none=True)
+                self._forward_backward()
+        torch.cuda.current_stream().wait_stream(side)
+        # Recorded with no gradients present, so the backward pass writes them fresh on every replay rather than
+        # adding to them; they must never be set to None afterwards (the graph keeps writing to these tensors)
+        opt.zero_grad(set_to_none=True)
+        self.graph = torch.cuda.CUDAGraph()
+        with torch.cuda.graph(self.graph):
+            self.out = self._forward_backward()
+
+    def _forward_backward(self):
+        b = self.static
+        out, _ = self.model.run(self.model.ear_input(b["audio"]))
+        loss, parts = self.loss_of(out, b["hits"], b["vel"], b["mask"], as_tensors=True)
+        loss.backward()
+        return {"loss": loss.detach(), **parts, "mean_rate": out["mean_rate"].detach()}
+
+    def load(self, batch):
+        """Copy a new batch into the recorded inputs (train.py; memorisation keeps the same one)."""
+        for k, t in self.static.items():
+            t.copy_(batch[k])
+
+    def __call__(self):
+        self.graph.replay()
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), self.clip_norm)
+        self.opt.step()
+        o = self.out
+        return {"loss": float(o["loss"]), "hit_bce": float(o["hit_bce"]), "vel_mse": float(o["vel_mse"]),
+                "mean_rate": float(o["mean_rate"].mean()), "peak_rate": float(o["mean_rate"].max())}
+
+
+STEP_CODE = ["network.py", "ear.py", "loss.py", "training.py"]
+
+
+def step_code_fingerprint():
+    """A hash of the files the training step is made from: a CUDA graph check vouches only for the code it ran on."""
+    here = Path(__file__).resolve().parent
+    return hashlib.sha256(b"".join((here / f).read_bytes() for f in STEP_CODE)).hexdigest()[:16]
+
+
+def graph_checked():
+    """(use the recorded step?, why): only after scripts/check_cuda_graph.py passed on exactly this code."""
+    path = reports_dir() / "cuda_graph_check.json"
+    if not path.exists():
+        return False, "not checked yet (scripts/check_cuda_graph.py)"
+    r = json.loads(path.read_text(encoding="utf-8"))
+    if not r.get("passes"):
+        return False, "its check failed"
+    if r.get("code") != step_code_fingerprint():
+        return False, "the model or training code changed since its check; run scripts/check_cuda_graph.py again"
+    return True, f"checked, {r['speedup']:.2f}x as fast"
+
+
+def audio_blind_loss(batch, loss_of, n_drums):
+    """The lowest loss on this batch from outputs that ignore the audio: one constant hit logit and one
+    constant velocity per drum. A model whose loss sits here has learned only how often each drum plays."""
+    b, t = batch["hits"].shape[:2]
+    dev = batch["hits"].device
+    c = torch.full((n_drums,), -4.0, device=dev, requires_grad=True)
+    e = torch.zeros(n_drums, device=dev, requires_grad=True)
+    opt = torch.optim.LBFGS([c, e], max_iter=500, line_search_fn="strong_wolfe")
+
+    def closure():
+        opt.zero_grad()
+        out = {"hit_logits": c.expand(b, t, n_drums), "vel": torch.sigmoid(e).expand(b, t, n_drums)}
+        loss, _ = loss_of(out, batch["hits"], batch["vel"], batch["mask"])
+        loss.backward()
+        return loss
+
+    opt.step(closure)
+    return float(closure().detach())
 
 
 @torch.no_grad()
