@@ -24,7 +24,6 @@ ap.add_argument("--clips", type=int, default=20)
 args = ap.parse_args()
 s = setup(args.set, args.control, args.device)
 model, cfg = s["model"], s["cfg"]
-frame_s = cfg["training_data"]["frame_ms"] / 1000
 clips = []
 while len(clips) < args.clips:
     clips += s["train"].batch(min(8, len(s["train"].songs)))
@@ -35,7 +34,7 @@ bar = tqdm(total=len(GAINS) * len(clips), unit="clip", desc="stability")
 for gain in GAINS:
     model.gain_scale = gain
     bar.set_postfix_str(f"gain {gain}x")
-    r = silence_test(model, clips, frame_s, batch_size=4, progress=bar.update)
+    r = silence_test(model, clips, cfg, batch_size=4, progress=bar.update)
     results[str(gain)] = r
     bar.write(f"gain {gain:>4}x  {'PASS' if r['passes'] else 'fail'}  bounded={r['bounded']}  "
           f"settled={r['settled_ratio']:.3f}  responding={r['responding_share']:.2f}  per drum={r['responding_per_drum']}")

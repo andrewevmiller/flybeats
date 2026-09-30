@@ -14,6 +14,17 @@ F_LO, F_HI = 40.0, 4000.0
 N_FFT, HOP = 512, 80
 
 
+def check_ear(cfg, sr=16000):
+    """The ear's constants must be the locked ones (band stats were computed with them)."""
+    want = cfg["ear"]
+    have = {"bands": N_BANDS, "low_hz": F_LO, "high_hz": F_HI, "n_fft": N_FFT, "hop_samples": HOP, "causal": True}
+    wrong = {k: (want.get(k), v) for k, v in have.items() if want.get(k) != v}
+    if wrong:
+        raise ValueError(f"ear settings in locked.yaml differ from the code (locked, code): {wrong}")
+    if HOP != round(sr * cfg["training_data"]["frame_ms"] / 1000):
+        raise ValueError(f"hop {HOP} samples is not one {cfg['training_data']['frame_ms']} ms frame at {sr} Hz")
+
+
 def band_matrix(sr=16000, n_fft=N_FFT, n_bands=N_BANDS):
     """(n_fft//2 + 1, n_bands) 0/1 matrix: each FFT bin sums into the band containing its frequency.
     A band too narrow to contain a bin (the lowest, 40-53 Hz) takes its nearest bin instead."""

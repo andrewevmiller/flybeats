@@ -1,5 +1,7 @@
 """Phase 3, step 9: the memorisation check. Train on fixed clips from 4 BabySlakh training songs until
 kick, snare and closed hi-hat reach hit F1 >= 0.9 on those same clips. If it cannot, something is broken.
+Optimiser, loss and gradient clipping are the locked training ones; the fixed clips and step limit are this
+check's own.
 Writes reports/memorise.json.
 
     .venv\\Scripts\\python.exe scripts\\memorise.py [--steps 3000] [--control 1]
@@ -15,7 +17,7 @@ import torch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import reports_dir  # noqa: E402
-from flybeats.model.training import evaluate, setup, to_tensors, train_step  # noqa: E402
+from flybeats.model.training import evaluate, make_optimiser, setup, to_tensors, train_step  # noqa: E402
 from tqdm import tqdm  # noqa: E402
 
 MUST_PASS = ["kick", "snare", "hihat_closed"]
@@ -27,23 +29,22 @@ ap.add_argument("--songs", type=int, default=4)
 ap.add_argument("--device", default="cuda")
 args = ap.parse_args()
 s = setup("baby", args.control, args.device)
-model, weights, train = s["model"], s["weights"], s["train"]
-frame_s = s["cfg"]["training_data"]["frame_ms"] / 1000
+model, loss_of, train, cfg = s["model"], s["loss"], s["train"], s["cfg"]
 
 rng = np.random.default_rng(7)
 songs = sorted(train.songs.index)[:args.songs]
 clips = [train.clip(song, float(rng.uniform(0, train.songs.duration[song] - train.clip_s))) for song in songs * 2]
 batch = to_tensors(clips, args.device)                      # 8 fixed clips, 2 per song, no stem dropout
-opt = torch.optim.Adam(model.parameters(), lr=1e-3)
+opt = make_optimiser(model, cfg)
 
 result = None
 bar = tqdm(range(1, args.steps + 1), unit="step", desc="memorising")
 for step in bar:
-    stats = train_step(model, opt, batch, weights)
+    stats = train_step(model, opt, batch, loss_of, cfg["training"]["grad_clip_norm"])
     bar.set_postfix(loss=f"{stats['loss']:.4f}")
     if step % 250 == 0 or step == args.steps:
         model.eval()
-        result = evaluate(model, clips, weights, frame_s)
+        result = evaluate(model, clips, loss_of, cfg)
         model.train()
         bar.write(f"step {step}: loss {stats['loss']:.4f}  F1 {result['f1']}")
         if all(result["f1"][p] >= 0.9 for p in MUST_PASS):

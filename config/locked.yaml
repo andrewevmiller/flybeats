@@ -1,4 +1,4 @@
-version: prereg-v1
+version: prereg-v2
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
@@ -34,6 +34,47 @@ model:
   signs: fixed
   causal: true
   initial_gain: 1.0             # x the critical gain from the largest eigenvalue
+  tau_ms: {min: 10, max: 200, init: 20}   # per cell type, learned within this range
+  readout_init_std: 0.01        # small random readout weights; exactly zero would block every gradient
+  hit_bias_init: -4.0           # each drum starts near "no hit"
+  init_seed: 0                  # random readout weights
+
+ear:                            # fixed front end; the code refuses to run if these differ from it
+  bands: 16
+  low_hz: 40
+  high_hz: 4000                 # log-spaced band edges
+  n_fft: 512
+  hop_samples: 80               # one frame per 5 ms at 16 kHz
+  causal: true                  # each frame's window ends at the frame
+
+loss:
+  hits: weighted_binary_cross_entropy
+  neighbour_target: 0.5         # the frame either side of a hit counts as half a hit
+  drum_weight: non_hit_over_hit_frames   # per drum, over the training split
+  max_drum_weight: 50
+  velocity: squared_error_on_hit_frames
+  velocity_weight: 0.5
+
+training:                       # the same for the real network and every random control
+  optimiser: adam
+  learning_rate: 1.0e-3
+  schedule: cosine_to_zero      # over the run's steps
+  batch_clips: 8                # each from a different song
+  grad_clip_norm: 1.0
+  backprop: whole_clip          # no truncation
+  steps: {baby: 1000, full: null}   # full is set from the measured cost before the first full run
+  validate_every: 500
+  checkpoint: best_mean_hit_f1_on_validation
+  hit_threshold: 0.5            # a hit is a local peak of hit probability at or above this
+  stop_if: activity_unbounded_or_not_settled
+
+silence_test:                   # music, then silence; used by the stability gate and during training
+  silence_seconds: 4
+  settle_seconds: 1.0           # activity must fall below settle_fraction of its music level within this
+  settle_fraction: 0.05
+  bound_factor: 50              # "bounded": finite and never above 50x the average music level
+  respond_std: 1.0e-3           # a motor neuron "responds" if its rate varies at least this much
+  responding_share: 0.5         # at least half the readout motor neurons respond, and every drum has one
 
 kit:
   pieces: [kick, hihat_pedal, snare, hihat_closed, hihat_open, tom, crash, ride]

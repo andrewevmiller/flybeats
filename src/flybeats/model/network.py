@@ -14,16 +14,18 @@ from torch import nn
 from torch.nn import functional as F
 
 from ..connectome.slice import largest_eigenvalue, type_keys
-from .ear import N_BANDS, Bands, ear_bands
+from .ear import N_BANDS, Bands, check_ear, ear_bands
 
 THETA_ONE = math.log(math.e - 1)          # softplus(THETA_ONE) == 1, so the untrained dials change nothing
-TAU_MIN_MS, TAU_MAX_MS, TAU_INIT_MS = 10.0, 200.0, 20.0
 
 
 class FlyNet(nn.Module):
     def __init__(self, neurons, edges, cfg, band_stats=None, sr=16000):
         super().__init__()
+        check_ear(cfg, sr)
+        mc = cfg["model"]
         self.dt_ms = cfg["training_data"]["frame_ms"]
+        self.tau_min, self.tau_max = float(mc["tau_ms"]["min"]), float(mc["tau_ms"]["max"])
         self.pieces = cfg["kit"]["pieces"]
         n = len(neurons)
         self.n = n
@@ -66,15 +68,15 @@ class FlyNet(nn.Module):
 
         # Learned parameters
         n_types, n_pairs, n_mn, n_drums = len(type_names), len(pair_names), len(mn), len(self.pieces)
-        self.log_tau = nn.Parameter(torch.full((n_types,), math.log(TAU_INIT_MS)))
+        self.log_tau = nn.Parameter(torch.full((n_types,), math.log(mc["tau_ms"]["init"])))
         self.bias = nn.Parameter(torch.zeros(n_types))
         self.theta = nn.Parameter(torch.full((n_pairs,), THETA_ONE))
         self.band_gain = nn.Parameter(torch.ones(N_BANDS))
         self.band_offset = nn.Parameter(torch.zeros(N_BANDS))
         # Small random readout weights: exactly zero would block every gradient into the network
-        self.w_hit = nn.Parameter(0.01 * torch.randn(n_mn))
-        self.u_vel = nn.Parameter(0.01 * torch.randn(n_mn))
-        self.c_hit = nn.Parameter(torch.full((n_drums,), -4.0))   # starts near "no hit"
+        self.w_hit = nn.Parameter(mc["readout_init_std"] * torch.randn(n_mn))
+        self.u_vel = nn.Parameter(mc["readout_init_std"] * torch.randn(n_mn))
+        self.c_hit = nn.Parameter(torch.full((n_drums,), float(mc["hit_bias_init"])))   # starts near "no hit"
         self.e_vel = nn.Parameter(torch.zeros(n_drums))
 
     def weight_matrix(self):
@@ -84,7 +86,7 @@ class FlyNet(nn.Module):
         return w.index_put((self.post, self.pre), vals)
 
     def tau_ms(self):
-        return self.log_tau.exp().clamp(TAU_MIN_MS, TAU_MAX_MS)
+        return self.log_tau.exp().clamp(self.tau_min, self.tau_max)
 
     def init_state(self, batch, device):
         return torch.zeros(batch, self.n, device=device)
@@ -121,8 +123,8 @@ class FlyNet(nn.Module):
             mn_rates.append(rm)
             if record:
                 rates.append(r)
-        out = {"hit_logits": torch.stack(hit, 1), "vel": torch.stack(vel, 1),
-               "mean_rate": torch.stack(mean_rate, 1), "mn_rates": torch.stack(mn_rates, 1)}
+        out = {"hit_logits": torch.stack(hit, 1), "vel": torch.stack(vel, 1), "mean_rate": torch.stack(mean_rate, 1),
+               "mn_rates": torch.stack(mn_rates, 1)}
         if record:
             out["rates"] = torch.stack(rates, 1)
         return out, v

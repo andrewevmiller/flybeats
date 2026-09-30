@@ -12,7 +12,7 @@ import torch
 
 from flybeats.connectome.store import load_slice
 from flybeats.model.ear import HOP
-from flybeats.model.loss import drum_weights, loss_fn
+from flybeats.model.loss import drum_weights, make_loss
 from flybeats.model.network import FlyNet
 
 SR = 16000
@@ -29,14 +29,14 @@ def net(cfg, paths):
     return make(cfg, paths)
 
 
-def one_step(model, seconds=0.5):
+def one_step(model, cfg, seconds=0.5):
     """One optimiser step on random audio with a few random hits."""
     frames = int(seconds * 200)
     audio = torch.randn(2, int(seconds * SR)) * 0.1
     hits = (torch.rand(2, frames, len(model.pieces)) < 0.05).float()
     opt = torch.optim.Adam(model.parameters(), lr=1e-2)
     out, _ = model(audio)
-    loss, _ = loss_fn(out, hits, hits * 0.7, torch.ones(2, frames), torch.ones(len(model.pieces)))
+    loss, _ = make_loss(cfg, torch.ones(len(model.pieces)))(out, hits, hits * 0.7, torch.ones(2, frames))
     opt.zero_grad()
     loss.backward()
     opt.step()
@@ -52,7 +52,7 @@ def test_signs_match_sender_before_and_after_training(cfg, paths):
     model, _, _ = make(cfg, paths)
     got, want = edge_signs(model)
     assert torch.equal(got, want)
-    one_step(model)
+    one_step(model, cfg)
     got, want = edge_signs(model)
     assert torch.equal(got[want != 0], want[want != 0])
 
@@ -76,7 +76,7 @@ def test_gain_times_eigenvalue_is_initial_gain(cfg, net):
 def test_random_control_loads_and_trains(cfg, paths):
     model, _, _ = make(cfg, paths, control=1)
     before = model.theta.detach().clone()
-    loss = one_step(model)
+    loss = one_step(model, cfg)
     assert np.isfinite(loss)
     assert not torch.equal(before, model.theta.detach())
 
@@ -97,10 +97,18 @@ def test_causality(net):
     assert not torch.equal(oa["rates"][:, safe:], ob["rates"][:, safe:])
 
 
-def test_drum_weights_capped():
+def test_ear_must_match_locked_settings(cfg, paths):
+    import copy
+    bad = copy.deepcopy(cfg)
+    bad["ear"]["n_fft"] = 1024
+    with pytest.raises(ValueError, match="n_fft"):
+        make(bad, paths)
+
+
+def test_drum_weights_capped(cfg):
     import pandas as pd
     m = pd.DataFrame({"split": ["train"], "duration": [100.0], "hits_a": [10], "hits_b": [0]})
-    w = drum_weights(m, ["a", "b"], 0.005).numpy()
+    w = drum_weights(m, ["a", "b"], 0.005, cfg["loss"]["max_drum_weight"]).numpy()
     assert w[0] == pytest.approx(min((20000 - 10) / 10, 50)) and w[1] == 50
 
 
