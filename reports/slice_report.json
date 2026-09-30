@@ -1,0 +1,98 @@
+{
+  "annotated_neurons": 166700,
+  "connections_ge_min_synapses": 6242118,
+  "usable_ears": 93,
+  "usable_left": 75,
+  "usable_right": 18,
+  "ears_after_mirroring": 150,
+  "mirror_skipped_untyped_synapses": 116.0,
+  "mirror_lost_synapses": 171.0,
+  "mirror_lost_share": 0.005466751918158568,
+  "mirror_lost_types": [
+    "CB2086",
+    "CB2710",
+    "JO-A3",
+    "JO-B4_a",
+    "JO-CA2"
+  ],
+  "slice_neurons": 3302,
+  "slice_connections": 108593,
+  "sides": {
+    "L": 1595,
+    "R": 1645,
+    "M": 62
+  },
+  "roles": {
+    "excitatory": 1863,
+    "inhibitory": 1228,
+    "motor": 189,
+    "modulatory": 8,
+    "unknown": 14
+  },
+  "motor_groups": {
+    "hind_leg": 120,
+    "middle_leg": 2,
+    "wing": 67
+  },
+  "wing_motor_neurons": {
+    "count": 67,
+    "types": 25,
+    "types_left": 25,
+    "types_right": 25
+  },
+  "hind_leg_motor_neurons": {
+    "count": 120,
+    "of_annotated": 130,
+    "types": 26
+  },
+  "song_neurons": {
+    "AMMC-A1": "5/6",
+    "aPN1": "16/17",
+    "vPN1": "8/11",
+    "dPR1": "2/2",
+    "pC2l": "4/37"
+  },
+  "types_untyped_separate": {
+    "cell_types": 1224,
+    "type_pairs": 41186
+  },
+  "types_untyped_lumped": {
+    "cell_types": 1203,
+    "type_pairs": 41029
+  },
+  "largest_eigenvalue": 730.6,
+  "drums": {
+    "crash": {
+      "motor_neurons": 8,
+      "types": 7
+    },
+    "hihat_closed": {
+      "motor_neurons": 12,
+      "types": 5
+    },
+    "hihat_open": {
+      "motor_neurons": 8,
+      "types": 7
+    },
+    "hihat_pedal": {
+      "motor_neurons": 57,
+      "types": 24
+    },
+    "kick": {
+      "motor_neurons": 59,
+      "types": 26
+    },
+    "ride": {
+      "motor_neurons": 13,
+      "types": 13
+    },
+    "snare": {
+      "motor_neurons": 12,
+      "types": 5
+    },
+    "tom": {
+      "motor_neurons": 13,
+      "types": 13
+    }
+  }
+}

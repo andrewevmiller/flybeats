@@ -1,0 +1,341 @@
+{
+  "real": {
+    "drum_reach": {
+      "crash": {
+        "reachable": 8,
+        "of": 8,
+        "min_hops": 2,
+        "median_hops": 2.0
+      },
+      "hihat_closed": {
+        "reachable": 12,
+        "of": 12,
+        "min_hops": 3,
+        "median_hops": 3.0
+      },
+      "hihat_open": {
+        "reachable": 8,
+        "of": 8,
+        "min_hops": 2,
+        "median_hops": 2.0
+      },
+      "hihat_pedal": {
+        "reachable": 57,
+        "of": 57,
+        "min_hops": 2,
+        "median_hops": 3.0
+      },
+      "kick": {
+        "reachable": 59,
+        "of": 59,
+        "min_hops": 2,
+        "median_hops": 3.0
+      },
+      "ride": {
+        "reachable": 13,
+        "of": 13,
+        "min_hops": 2,
+        "median_hops": 2.0
+      },
+      "snare": {
+        "reachable": 12,
+        "of": 12,
+        "min_hops": 3,
+        "median_hops": 3.0
+      },
+      "tom": {
+        "reachable": 13,
+        "of": 13,
+        "min_hops": 2,
+        "median_hops": 2.0
+      }
+    }
+  },
+  "controls": {
+    "1": {
+      "connections": 108593,
+      "total_synapses": 2287391.391729323,
+      "surviving_real_connections_share": 0.034440525632407244,
+      "unreachable_drums": [],
+      "drum_reach": {
+        "crash": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_closed": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_open": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_pedal": {
+          "reachable": 57,
+          "of": 57,
+          "min_hops": 1,
+          "median_hops": 2.0
+        },
+        "kick": {
+          "reachable": 59,
+          "of": 59,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "ride": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "snare": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "tom": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        }
+      },
+      "accepted_swaps": 1006412
+    },
+    "2": {
+      "connections": 108593,
+      "total_synapses": 2287391.391729323,
+      "surviving_real_connections_share": 0.03500225613068982,
+      "unreachable_drums": [],
+      "drum_reach": {
+        "crash": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_closed": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_open": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_pedal": {
+          "reachable": 57,
+          "of": 57,
+          "min_hops": 1,
+          "median_hops": 2.0
+        },
+        "kick": {
+          "reachable": 59,
+          "of": 59,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "ride": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "snare": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "tom": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        }
+      },
+      "accepted_swaps": 1006463
+    },
+    "3": {
+      "connections": 108593,
+      "total_synapses": 2287391.391729323,
+      "surviving_real_connections_share": 0.03491937786045141,
+      "unreachable_drums": [],
+      "drum_reach": {
+        "crash": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_closed": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_open": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_pedal": {
+          "reachable": 57,
+          "of": 57,
+          "min_hops": 1,
+          "median_hops": 2.0
+        },
+        "kick": {
+          "reachable": 59,
+          "of": 59,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "ride": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "snare": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "tom": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        }
+      },
+      "accepted_swaps": 1006868
+    },
+    "4": {
+      "connections": 108593,
+      "total_synapses": 2287391.391729323,
+      "surviving_real_connections_share": 0.03568369968598344,
+      "unreachable_drums": [],
+      "drum_reach": {
+        "crash": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_closed": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_open": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_pedal": {
+          "reachable": 57,
+          "of": 57,
+          "min_hops": 1,
+          "median_hops": 2.0
+        },
+        "kick": {
+          "reachable": 59,
+          "of": 59,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "ride": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "snare": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "tom": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        }
+      },
+      "accepted_swaps": 1006018
+    },
+    "5": {
+      "connections": 108593,
+      "total_synapses": 2287391.391729323,
+      "surviving_real_connections_share": 0.03545348226865452,
+      "unreachable_drums": [],
+      "drum_reach": {
+        "crash": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_closed": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_open": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "hihat_pedal": {
+          "reachable": 57,
+          "of": 57,
+          "min_hops": 1,
+          "median_hops": 2.0
+        },
+        "kick": {
+          "reachable": 59,
+          "of": 59,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "ride": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "snare": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 1,
+          "median_hops": 1.0
+        },
+        "tom": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 1,
+          "median_hops": 1.0
+        }
+      },
+      "accepted_swaps": 1006013
+    }
+  }
+}

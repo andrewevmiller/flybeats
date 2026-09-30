@@ -1,0 +1,55 @@
+{
+  "songs": 20,
+  "hits_on_16th_grid_within_1ms": 0.54,
+  "grid_offset_ms": {
+    "median": 0.1,
+    "p90": 36.6
+  },
+  "songs_with_tempo_changes": "7 of 20",
+  "distinct_velocities": 123,
+  "median_velocity": 82.0,
+  "notes_total": 35074,
+  "dropped_hits_share": 0.237,
+  "dropped_top": {
+    "Tambourine": 3289,
+    "Cabasa": 3009,
+    "Low Conga": 273,
+    "Open Triangle": 265,
+    "Maracas": 252,
+    "Claves": 243
+  },
+  "pieces": {
+    "kick": {
+      "hits": 5631,
+      "share_of_all_notes": 0.161
+    },
+    "hihat_pedal": {
+      "hits": 1440,
+      "share_of_all_notes": 0.041
+    },
+    "snare": {
+      "hits": 4588,
+      "share_of_all_notes": 0.131
+    },
+    "hihat_closed": {
+      "hits": 10251,
+      "share_of_all_notes": 0.292
+    },
+    "hihat_open": {
+      "hits": 698,
+      "share_of_all_notes": 0.02
+    },
+    "tom": {
+      "hits": 660,
+      "share_of_all_notes": 0.019
+    },
+    "crash": {
+      "hits": 557,
+      "share_of_all_notes": 0.016
+    },
+    "ride": {
+      "hits": 2920,
+      "share_of_all_notes": 0.083
+    }
+  }
+}
