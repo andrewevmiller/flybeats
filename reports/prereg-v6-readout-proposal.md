@@ -52,6 +52,55 @@ The network finds most hits but adds many false ones.
 - That is a reasoned mechanism, not a measured one. Nothing here proves that fixing the scaling will fix precision.
   This proposal changes the scaling because the pre-set trigger fired, and says plainly that the effect is unknown.
 
+## Context found after the trigger fired: what the false hits are
+
+**Added after the proposal was written. It does not change the proposal:** the trigger was set in advance and fired,
+and reshaping the change to fit this breakdown would be tuning after the fact. It is recorded so expectations and the
+final report are honest.
+
+The real network's final weights (`reports/memorise/real/final.pt`, step 3,000) were run again (`scripts/false_hits.py`) on its 8 clips on the
+CPU, and scored exactly as the check does. The F1 scores matched the logged ones: kick 0.623, snare 0.352, closed
+hi-hat 0.520. Every false hit was then sorted:
+
+| Kind | Meaning |
+|---|---|
+| Duplicate | Within tolerance of a real hit of that drum that another prediction already matched |
+| Near miss | No real hit of that drum within tolerance, but one within twice it |
+| Other drum | Neither of those, but within tolerance of another drum's real hit |
+| Stray | Nothing real nearby |
+
+| Drum | Correct / false / missed | Duplicate | Near miss | Other drum | Stray | Peaks per correct hit |
+|---|---|---|---|---|---|---|
+| Kick | 127 / 129 / 25 | 17% | 19% | 30% | 34% | 1.17 |
+| Pedal hi-hat | 12 / 11 / 2 | 9% | 0% | 45% | 45% | 1.08 |
+| Snare | 54 / 130 / 69 | 11% | 21% | 42% | 26% | 1.30 |
+| Closed hi-hat | 210 / 327 / 60 | 32% | 28% | 10% | 29% | 1.50 |
+| Open hi-hat | 18 / 14 / 8 | 21% | 14% | 21% | 43% | 1.17 |
+| Toms | 10 / 12 / 2 | 33% | 0% | 50% | 17% | 1.40 |
+| Crash | 12 / 16 / 8 | 6% | 12% | 38% | 44% | 1.08 |
+| Ride | 33 / 37 / 24 | 41% | 32% | 19% | 8% | 1.45 |
+| **All drums, 676 false hits** | | **24%** | **24%** | **23%** | **29%** | |
+
+Drums with under 20 false hits have too few to read much into.
+
+**What it shows:**
+- **No single cause dominates.**
+- **Duplicates** (one real hit drawing two or more peaks above the 0.5 threshold) matter most for the fast, frequent
+  drums: closed hi-hat averages 1.5 peaks per real hit, ride 1.45.
+- **Snare's main failure is confusion:** 42% of its false hits land on other drums' hits.
+- **Near misses** are timing a little off.
+- **Strays** are false alarms from nothing.
+
+**What it means for this proposal:**
+- **The readout drift is a plausible cause of duplicates and some strays** (oversized inputs make the output jumpy),
+  and a weak explanation for confusion between drums or slightly-off timing. **prereg-v6 may help, but is unlikely to
+  fix precision on its own.**
+- **The locked scoring counts every local peak above 0.5 as a hit, with no minimum gap between hits,** which is part of
+  why duplicates count against precision. Many onset-detection evaluations suppress peaks that are too close together.
+  Changing the scoring now would be a design change after results, so it stays as locked. The final report notes it.
+- **The same breakdown will be run on control 1's prereg-v5 weights** and added here. If its false hits are made up
+  differently (less snare confusion, say), that points at the wiring, not the setup.
+
 ## Proposed change
 
 **Refit the readout scaling every 250 steps, preserving the network's output exactly.**
