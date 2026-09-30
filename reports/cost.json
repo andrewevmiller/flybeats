@@ -1,0 +1,12 @@
+{
+  "device": "NVIDIA GeForce RTX 2060 with Max-Q Design",
+  "batches_timed": 50,
+  "batch_size": 8,
+  "clip_seconds": 16,
+  "segment_frames": "whole clip",
+  "seconds_per_batch": 7.934,
+  "data_seconds_per_batch": 0.362,
+  "compute_seconds_per_batch": 7.572,
+  "hours_per_1000_batches": 2.2,
+  "peak_gpu_memory_gb": 1.3
+}
