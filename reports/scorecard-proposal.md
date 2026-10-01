@@ -1,7 +1,7 @@
 # Proposal: the full scorecard
 
-Status: **proposal, not locked.** Nothing in `config/locked.yaml` or the code has changed. No network has been
-scored with any facet. It takes in `reports/beat-alignment-proposal.md` (beat alignment, unchanged here) and is
+Status: **accepted and locked as prereg-v5.2** (Andrew, 30 Sep 2026), together with the beat-alignment definition.
+Not yet implemented in `flybeats.scoring`. No network has been scored with any facet. It takes in `reports/beat-alignment-proposal.md` (beat alignment, unchanged here) and is
 meant to be locked with it as one tag, before anything is scored.
 
 **Revised 30 Sep 2026 after the reference checks** (`scripts/scorecard_checks.py`, drum parts only, no network), as

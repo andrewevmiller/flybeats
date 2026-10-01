@@ -1,7 +1,7 @@
 # Proposal: define beat alignment, the main win rule's metric
 
-Status: **proposal, not locked.** Nothing in `config/locked.yaml` or the code has changed. No network has been
-scored with any version of it.
+Status: **accepted and locked as prereg-v5.2** (Andrew, 30 Sep 2026), with the rest of the scorecard
+(`reports/scorecard-proposal.md`). Not yet implemented in `flybeats.scoring`. No network has been scored with it.
 
 ## The gap
 

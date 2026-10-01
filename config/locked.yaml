@@ -1,4 +1,4 @@
-version: prereg-v5.1
+version: prereg-v5.2
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
@@ -138,10 +138,28 @@ scorecard:
   failure_floor: 20
   musicianship_weights: {beat_alignment: 35, tempo_following: 25, listening: 15, style_fit: 15, groove: 10}
   automatic_score: rescale_without_listening
+  # prereg-v5.2: the facets defined (reports/scorecard-proposal.md, reports/beat-alignment-proposal.md;
+  # reference checks: scripts/scorecard_checks.py). b = density balance = min(n/m, m/n), n network hits, m original
+  # hits, all drums; 0 if n = 0.
+  hits: locked_peak_rule_per_drum_5ms_frames   # training.hit_threshold; velocity from the loudness output at the hit
+  test_clips: {per_song: 4, seconds: 16, ignore_first_seconds: 2, drawn_once_into: test_clips.json}
+  grid: sixteenths_from_annotated_beats        # each beat interval split in 4; bars from annotated downbeats
+  floor_song: next_in_split_by_name_wrapping   # its part in beats, laid onto this song's beats, +3/8 beat
+  rescale: per_song_100x_(raw-floor)/(ceiling-floor)_clipped_0_100_then_mean_over_songs
+  exclude_song_from_facet_if_raw_ceiling_minus_floor_below: 0.1   # decided from reference parts before any scoring
+  failure_floor_use: share_of_songs_under_20_reported_per_facet   # not used by any rule
+  musicianship_score: weighted_mean_of_facets_reported_only
+  facets:
+    beat_alignment: mean_over_hits_of_(1+cos(2pi*16th_position))/2_x_b
+    tempo_following: abs_mean_over_hits_of_exp(2pi*i*16th_position)_x_b
+    tempo_following_floor: next_song_part_at_its_own_timing     # exception: the locked floor follows the tempo
+    listening: hit_f1_vs_original_per_drum_locked_tolerance_counts_pooled
+    groove: per_drum_correlation_clipped_at_0_of_hits_at_nearest_of_16_bar_positions_weighted_by_original_share_x_b
+    style_fit: 1_minus_jensen_shannon_base2_of_share_of_hits_per_drum   # reported only; in the musicianship score
 
 win_rule:
   main: real_beats_all_5_random_on_beat_alignment_by_more_than_seed_spread
   seed_spread: sample_sd_of_the_5_control_scores   # divisor 4; same metric, same test songs, unrounded (prereg-v5.1)
   main_test: real_score > max(control_scores) + seed_spread   # a tie is not a win
-  supporting: real_beats_random_median_on_4_of_6_other_facets
+  supporting: real_beats_random_median_on_all_3_of_tempo_following_listening_groove   # prereg-v5.2; was 4 of 6
   evaluated_on: test_split_once
