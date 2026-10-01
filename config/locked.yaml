@@ -1,4 +1,4 @@
-version: prereg-v5
+version: prereg-v5.1
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
@@ -141,5 +141,7 @@ scorecard:
 
 win_rule:
   main: real_beats_all_5_random_on_beat_alignment_by_more_than_seed_spread
+  seed_spread: sample_sd_of_the_5_control_scores   # divisor 4; same metric, same test songs, unrounded (prereg-v5.1)
+  main_test: real_score > max(control_scores) + seed_spread   # a tie is not a win
   supporting: real_beats_random_median_on_4_of_6_other_facets
   evaluated_on: test_split_once

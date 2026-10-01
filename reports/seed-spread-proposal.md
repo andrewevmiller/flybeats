@@ -1,6 +1,6 @@
 # Proposal: define "seed spread" in the main win rule
 
-Status: **proposal, not locked.** Nothing in `config/locked.yaml` or the code has changed.
+Status: **accepted (Andrew, 30 Sep 2026): reading A, the sample standard deviation. Locked as prereg-v5.1**, implemented in `src/flybeats/scoring/win_rule.py` with tests in `tests/test_win_rule.py`.
 
 ## The gap in the locked rule
 
