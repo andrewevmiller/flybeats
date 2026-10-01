@@ -1,0 +1,45 @@
+{
+  "steps": 3000,
+  "parameters": 157200,
+  "validation_clips": 1080,
+  "f1_matched": {
+    "kick": 0.262,
+    "hihat_pedal": 0.0,
+    "snare": 0.059,
+    "hihat_closed": 0.29,
+    "hihat_open": 0.0,
+    "tom": 0.0,
+    "crash": 0.0,
+    "ride": 0.0
+  },
+  "f1_floor": {
+    "kick": 0.125,
+    "hihat_pedal": 0.0,
+    "snare": 0.036,
+    "hihat_closed": 0.189,
+    "hihat_open": 0.0,
+    "tom": 0.0,
+    "crash": 0.0,
+    "ride": 0.0
+  },
+  "three_drum": {
+    "matched": 0.20361033944938764,
+    "floor": 0.11666490603564084,
+    "gap": 0.0869454334137468,
+    "interval_95": [
+      0.0721778285426816,
+      0.10266184374482853
+    ]
+  },
+  "rule": {
+    "drums": [
+      "kick",
+      "snare",
+      "hihat_closed"
+    ],
+    "go": 0.1,
+    "near": 0.05
+  },
+  "outcome": "unclear",
+  "version": "prereg-v5"
+}
