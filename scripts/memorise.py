@@ -30,8 +30,8 @@ apply to every frame of it, as they do to the locked target's neighbours. Veloci
 Its run is named "<name>-wide-target" by default.
 --history-readout (a trial in the same way) turns on the readout history proposed in
 reports/history-readout-proposal.md: each drum weighs its motor neurons' present frame and four 50 ms blocks before
-it through a learned profile, starting present-only. It uses the ordinary step: the CUDA graph check covers the
-locked readout only. Its run is named "<name>-history-readout" by default; with --wide-target too, both apply.
+it through a learned profile, starting present-only. It uses the recorded step only if the CUDA graph check's
+readout-history part passed on this code. Its run is named "<name>-history-readout" by default; with --wide-target too, both apply.
 
     .venv\\Scripts\\python.exe scripts\\memorise.py [--pair [N] | --control N] [--name NAME] [--steps 3000] [--no-chart] [--no-graph] [--wide-target] [--history-readout]
 Uses the GPU.
@@ -180,9 +180,8 @@ print(f"audio-blind floor: {floor:.4f} (the loss must go clearly below this)")
 if not as_locked:
     print("trial run: --steps or --songs differ from locked.yaml, so this is not the locked check")
 use_graph, why = ((False, "turned off (--no-graph)") if args.no_graph else
-                  (False, "history readout trial: the CUDA graph check covers the locked readout only")
-                  if args.history_readout else
-                  (False, "not on the GPU") if args.device != "cuda" else graph_checked())
+                  (False, "not on the GPU") if args.device != "cuda" else
+                  graph_checked(history_readout=args.history_readout))
 graphed = GraphedStep(model, opt, batch, loss_of, cfg["training"]["grad_clip_norm"]) if use_graph else None
 print(f"training step: {'recorded (CUDA graph)' if use_graph else 'ordinary'}, {why}")
 

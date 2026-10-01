@@ -153,8 +153,9 @@ def step_code_fingerprint():
     return hashlib.sha256(b"".join((here / f).read_bytes() for f in STEP_CODE)).hexdigest()[:16]
 
 
-def graph_checked():
-    """(use the recorded step?, why): only after scripts/check_cuda_graph.py passed on exactly this code."""
+def graph_checked(history_readout=False):
+    """(use the recorded step?, why): only after scripts/check_cuda_graph.py passed on exactly this code; with
+    history_readout, only if its readout-history part passed too."""
     path = reports_dir() / "cuda_graph_check.json"
     if not path.exists():
         return False, "not checked yet (scripts/check_cuda_graph.py)"
@@ -163,6 +164,8 @@ def graph_checked():
         return False, "its check failed"
     if r.get("code") != step_code_fingerprint():
         return False, "the model or training code changed since its check; run scripts/check_cuda_graph.py again"
+    if history_readout and not (r.get("history_readout") or {}).get("passes"):
+        return False, "the check has no passing readout-history part; run scripts/check_cuda_graph.py again"
     return True, f"checked, {r['speedup']:.2f}x as fast"
 
 

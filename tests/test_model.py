@@ -301,3 +301,20 @@ def test_readout_history_keeps_drums_disjoint(cfg, paths):
     others = [d for d in range(len(on.pieces)) if d != 1]
     assert torch.equal(before["hit_logits"][..., others], after["hit_logits"][..., others])
     assert not torch.equal(before["hit_logits"][..., 1], after["hit_logits"][..., 1])
+
+
+def test_readout_after_the_loop_matches_the_per_frame_readout(cfg, paths):
+    """The readout runs once after the frame loop; each frame must get exactly what reading that frame alone gives."""
+    model, _, _ = make(cfg, paths)
+    torch.manual_seed(9)
+    with torch.no_grad():
+        model.mn_std.fill_(1e-3)
+        model.w_hit.normal_()
+        model.u_vel.normal_()
+        out, _ = model(torch.randn(2, SR // 2) * 0.3)
+        for t in (0, 7, 63):
+            z = (out["mn_rates"][:, t] - model.mn_mean) / model.mn_std
+            assert torch.allclose(out["hit_logits"][:, t], (z * model.w_hit) @ model.mn_drum + model.c_hit,
+                                  rtol=1e-6, atol=1e-5)
+            assert torch.allclose(out["vel"][:, t], torch.sigmoid((z * model.u_vel) @ model.mn_drum + model.e_vel),
+                                  rtol=1e-6, atol=1e-6)

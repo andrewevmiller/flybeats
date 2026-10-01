@@ -178,12 +178,7 @@ class FlyNet(nn.Module):
         alpha = (self.dt_ms / self.tau_ms())[self.type_idx]
         bias = self.bias[self.type_idx]
         r = F.relu(v) * self.alive
-        hit, vel, mean_rate, mn_rates, rates = [], [], [], [], []
-        if self.history_blocks:                    # readout history: per-neuron profiles, block edges in frames back
-            prof_hit = self.mn_drum @ self.p_hit
-            prof_vel = None if self.p_vel is None else self.mn_drum @ self.p_vel
-            edges = np.cumsum([0] + self.history_blocks)   # block j: frames edges[j] + 1 .. edges[j + 1] back
-            past, sums = [], [None] * len(self.history_blocks)
+        mean_rate, mn_rates, rates = [], [], []
         for t in range(t_len):
             drive = torch.zeros(b, self.n, device=dev, dtype=ear_in.dtype).index_copy(1, self.ear_idx, ear_in[:, t])
             if once:
@@ -193,34 +188,46 @@ class FlyNet(nn.Module):
                 recurrent = r @ w_t
             v = v + alpha * (-v + recurrent + bias + drive)
             r = F.relu(v) * self.alive
-            rm = r[:, self.mn_idx]
-            z = (rm - self.mn_mean) / self.mn_std
-            if self.history_blocks:
-                # Running block sums of earlier frames' z; frames before the clip count as z = 0 (average activity)
-                for j in range(len(sums)):
-                    enter, leave = t - edges[j] - 1, t - edges[j + 1] - 1
-                    if enter >= 0:
-                        sums[j] = past[enter] if sums[j] is None else sums[j] + past[enter]
-                    if leave >= 0:
-                        sums[j] = sums[j] - past[leave]
-                feats = [z] + [torch.zeros_like(z) if sm is None else sm / n_j
-                               for sm, n_j in zip(sums, self.history_blocks)]
-                eff_hit = sum(f * prof_hit[:, k] for k, f in enumerate(feats))
-                eff_vel = z if prof_vel is None else sum(f * prof_vel[:, k] for k, f in enumerate(feats))
-                past.append(z)
-            else:
-                eff_hit = eff_vel = z
-            hit.append((eff_hit * self.w_hit) @ self.mn_drum + self.c_hit)
-            vel.append(torch.sigmoid((eff_vel * self.u_vel) @ self.mn_drum + self.e_vel))
             mean_rate.append(r.mean(1))
-            mn_rates.append(rm)
+            mn_rates.append(r[:, self.mn_idx])
             if record:
                 rates.append(r)
-        out = {"hit_logits": torch.stack(hit, 1), "vel": torch.stack(vel, 1), "mean_rate": torch.stack(mean_rate, 1),
-               "mn_rates": torch.stack(mn_rates, 1)}
+        mn = torch.stack(mn_rates, 1)
+        out = {"mean_rate": torch.stack(mean_rate, 1), "mn_rates": mn, **self.readout(mn)}
         if record:
             out["rates"] = torch.stack(rates, 1)
         return out, v
+
+    def readout(self, mn):
+        """Hit logits and loudness from the readout motor neurons' rates mn (B, T, readout neurons), for all frames at
+        once: the readout never feeds back into the network, so it runs after the frame loop. Each frame reads that
+        frame's scaled rates z (and, with readout history on, the means of earlier blocks of z) of its drum's own
+        motor neurons only."""
+        z = (mn - self.mn_mean) / self.mn_std
+        eff_hit = eff_vel = z
+        if self.history_blocks:
+            feats = [z] + self.history_means(z)
+            eff_hit = sum(f * (self.mn_drum @ self.p_hit)[:, k] for k, f in enumerate(feats))
+            if self.p_vel is not None:
+                eff_vel = sum(f * (self.mn_drum @ self.p_vel)[:, k] for k, f in enumerate(feats))
+        return {"hit_logits": (eff_hit * self.w_hit) @ self.mn_drum + self.c_hit,
+                "vel": torch.sigmoid((eff_vel * self.u_vel) @ self.mn_drum + self.e_vel)}
+
+    def history_means(self, z):
+        """For each history block, the mean of z over its frames before each frame (block j: frames edges[j] + 1 to
+        edges[j + 1] back); frames before the clip count as z = 0 (each neuron's average activity). A moving average
+        over the block's length (each mean adds only that many frames, so no precision is lost over a long clip),
+        on z with the longest lookback of zeros put in front."""
+        t_len = z.shape[1]
+        edges = [int(e) for e in np.cumsum([0] + self.history_blocks)]
+        back = edges[-1]
+        zp = F.pad(z.transpose(1, 2), (back, 0))                          # (B, n, back + T)
+        means = []
+        for j, n_j in enumerate(self.history_blocks):
+            pooled = F.avg_pool1d(zp, n_j, stride=1)                       # pooled[k] = mean of zp[k : k + n_j]
+            first = back - edges[j + 1]                                    # frame t's block starts at t - edges[j + 1]
+            means.append(pooled[:, :, first:first + t_len].transpose(1, 2))
+        return means
 
     def forward(self, audio, v=None, record=False):
         return self.run(self.ear_input(audio), v, record)

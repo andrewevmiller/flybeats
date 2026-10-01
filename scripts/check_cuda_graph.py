@@ -15,8 +15,12 @@ A third part checks the network's own shortcut: its connection gradient is forme
 (network._WeightGradOnce). On 2 clips at full length, both ways in float32 are compared with the per-frame way in
 float64. It passes if the forward pass is identical and every learned tensor's gradient is at least as close to the
 float64 one as the per-frame way's (within 1% of that error). The whole check passes only if all three parts do.
+A fourth part, reported on its own, repeats the same-batch comparison with the readout history on
+(reports/history-readout-proposal.md; not locked) and its profiles set away from present-only, so the readout
+history's code is exercised: memorise.py --history-readout uses the recorded step only if it passed. It does not
+decide whether locked runs may use the recorded step.
 
-    .venv\\Scripts\\python.exe scripts\\check_cuda_graph.py [--steps 20] [--new-batch-steps 10]
+    .venv\\Scripts\\python.exe scripts\\check_cuda_graph.py [--steps 20] [--new-batch-steps 10] [--history-steps 10]
 Uses the GPU: about 2 x (steps + new-batch-steps) x 8 s for A and B, then C, plus a minute or two of setup.
 """
 import argparse
@@ -40,6 +44,7 @@ from tqdm import tqdm  # noqa: E402
 ap = argparse.ArgumentParser()
 ap.add_argument("--steps", type=int, default=20, help="steps on memorise.py's fixed batch")
 ap.add_argument("--new-batch-steps", type=int, default=10, help="steps with a new training batch each step")
+ap.add_argument("--history-steps", type=int, default=10, help="steps with the readout history on (0: skip)")
 args = ap.parse_args()
 
 cfg = load_locked()
@@ -153,10 +158,25 @@ torch.cuda.empty_cache()
 grad_ok, grad = weight_grad_accuracy()
 passes = fixed_ok and new_ok and grad_ok
 eager_s, graph_s = fixed["ordinary_s_per_step"], fixed["recorded_s_per_step"]
+history = None
+if args.history_steps:          # the readout history on: the same comparison on its own model (run() reads these)
+    hcfg = copy.deepcopy(cfg)
+    hcfg["model"]["readout_history"] = {"present": True, "blocks_ms": [50, 50, 50, 50], "profile": "per_drum",
+                                        "init": "present_only", "velocity": "same"}
+    del model, s
+    torch.cuda.empty_cache()
+    torch.manual_seed(cfg["model"]["init_seed"])
+    s = setup("baby", None, "cuda", hcfg)
+    model, loss_of = s["model"], s["loss"]
+    with torch.no_grad():                                   # away from present-only, so the history is used
+        model.p_hit.add_(0.2)
+        model.p_vel.add_(0.2)
+    start = copy.deepcopy(model.state_dict())
+    _, history = compare("readout history, same batch:", [batch] * args.history_steps)
 noise, graph, allowed = fixed["ordinary_vs_ordinary"], fixed["recorded_vs_ordinary"], fixed["allowed"]
 report = {"steps": args.steps, "passes": passes, "ordinary_vs_ordinary": noise, "recorded_vs_ordinary": graph,
           "allowed": allowed, "ordinary_s_per_step": eager_s, "recorded_s_per_step": graph_s,
-          "speedup": eager_s / graph_s, "record_s": fixed["record_s"],
+          "speedup": eager_s / graph_s, "record_s": fixed["record_s"], "history_readout": history,
           "peak_gpu_memory_gb": torch.cuda.max_memory_allocated() / 2**30,
           "losses": fixed["losses"], "new_batches": new, "weight_gradient": grad, "version": cfg["version"],
           "code": step_code_fingerprint()}        # memorise.py and train.py use the recorded step only for this code
@@ -174,6 +194,13 @@ print(f"connection gradient once per clip, against a float64 reference ({grad['c
 for k in grad["error_vs_float64_per_frame"]:
     print(f"  {k:<12} error per frame {grad['error_vs_float64_per_frame'][k]:.1e}, "
           f"once per clip {grad['error_vs_float64_once_per_clip'][k]:.1e}")
+if history:
+    print(f"readout history (reported on its own; memorise.py --history-readout only): "
+          f"{'pass' if history['passes'] else 'FAIL'}; ordinary {history['ordinary_s_per_step']:.2f} s, recorded "
+          f"{history['recorded_s_per_step']:.2f} s a step")
+    for k, name in (("loss", "loss, every step"), ("weights", "weights at the end")):
+        print(f"  {name}: ordinary vs ordinary {history['ordinary_vs_ordinary'][k]:.1e}, recorded vs ordinary "
+              f"{history['recorded_vs_ordinary'][k]:.1e}  (allowed {history['allowed'][k]:.1e})")
 print(f"peak GPU memory {report['peak_gpu_memory_gb']:.2f} GB")
 print("PASS: the recorded step trains like the ordinary one" if passes else
       "FAIL: the recorded step does not match the ordinary one; do not use it")
