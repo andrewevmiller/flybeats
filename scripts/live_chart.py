@@ -116,11 +116,14 @@ def memorise_data(path):
     report = path.with_name("memorise.json")
     if report.exists() and path.exists() and report.stat().st_mtime >= path.stat().st_mtime - 5:
         result = json.loads(report.read_text(encoding="utf-8"))          # written at the end of this run
-    return {"title": "Memorisation check" + (f" · control {meta['control']}" if meta.get("control") else ""),
+    return {"title": "Memorisation check" + (f" · control {meta['control']}" if meta.get("control") else "")
+                     + (" · wide-target trial" if meta.get("wide_target") else ""),
             "kind": "memorise",
             "subtitle": f"The network practises on 8 short drum clips until it can pick out every kick, snare and "
                         f"closed hi-hat in them, for up to {total:,} steps."
-                        + (" This is a control run." if meta.get("control") else ""),
+                        + (" This is a control run." if meta.get("control") else "")
+                        + (" Trial: it learns from a wider answer key that gives partial credit for near misses; "
+                           "not the locked check." if meta.get("wide_target") else ""),
             "floor": meta.get("audio_blind_floor"), "total": total, "must_pass": meta.get("must_pass", []),
             "points": points(steps),
             "checks": [{"step": r["step"], "loss": r["loss"], "f1": r["f1"]} for r in steps if "f1" in r],
