@@ -186,6 +186,11 @@ Rescaled 0-100, mean over each facet's kept songs:
 Everything matches the expected table except style fit's weakness (above). The locked floor would have scored 55 on
 tempo following, confirming its exception. The rejected cosine groove scored random times 51.
 
+**Rerun through the implementation** (`flybeats.scoring.scorecard`, after locking): the numbers above moved by about
+a point at most. Two reasons: the floor song's window wraps deterministically where the floor song is too short (the
+checks had used a random start; about a third of songs; recorded in the CHANGELOG as a clarification), and jitter is
+now applied to the frame times. Style fit leaves out 91 songs (34%). Current numbers: `reports/scorecard_checks.json`.
+
 ## If accepted
 
 1. **`locked.yaml`:** a `scorecard.facets` section with each measure as above, the tempo-following floor exception,
