@@ -20,17 +20,32 @@ import numpy as np
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import reports_dir  # noqa: E402
 
-feas = json.loads((reports_dir() / "feasibility.json").read_text(encoding="utf-8"))
-lo, hi = feas["three_drum"]["interval_95"]
-headroom = feas["three_drum"]["gap"]
+import argparse  # noqa: E402
+
+ap = argparse.ArgumentParser()
+ap.add_argument("--metric", choices=["hit_f1", "beat_alignment"], default="hit_f1",
+                help="hit_f1: reports/feasibility.json (the original estimate); beat_alignment: the main rule's metric, "
+                     "from reports/feasibility_scorecard.json (scripts/feasibility_scorecard.py), in points of 100")
+args = ap.parse_args()
+if args.metric == "hit_f1":
+    feas = json.loads((reports_dir() / "feasibility.json").read_text(encoding="utf-8"))
+    lo, hi = feas["three_drum"]["interval_95"]
+    headroom = feas["three_drum"]["gap"]
+else:
+    fct = json.loads((reports_dir() / "feasibility_scorecard.json").read_text(encoding="utf-8"))["facets"]["beat_alignment"]
+    lo, hi = fct["interval_95"]
+    headroom = fct["gap"]
 sd_diff_270 = (hi - lo) / (2 * 1.96)
 sigma_m = sd_diff_270 / np.sqrt(2) * np.sqrt(270 / 151)
-print(f"headroom {headroom:.3f}; song-sampling noise per network on 151 test songs: sd {sigma_m:.4f}")
+print(f"metric {args.metric}; headroom {headroom:.3f}; song-sampling noise per network on 151 test songs: sd {sigma_m:.4f}")
 
 rng = np.random.default_rng(0)
 N = 100_000
 deltas = np.array([0, 0.005, 0.01, 0.02, 0.03, 0.044, 0.065, 0.087])
 sigmas = [0.0, 0.005, 0.01, 0.02, 0.04]
+if args.metric != "hit_f1":          # the same grid, as the same shares of this metric's headroom
+    deltas = deltas / 0.087 * headroom
+    sigmas = [round(x / 0.087 * headroom, 3) for x in sigmas]
 for spread_name, spread in (("sd of the 5 controls", lambda c: c.std(1, ddof=1)),
                             ("range of the 5 controls", lambda c: c.max(1) - c.min(1))):
     print(f"\nseed spread read as the {spread_name}: chance the real network wins")
@@ -46,10 +61,11 @@ for spread_name, spread in (("sd of the 5 controls", lambda c: c.std(1, ddof=1))
 print("\nsmallest true advantage with an 80% chance of winning (sd reading):")
 for s in sigmas:
     ok = None
-    for d in np.linspace(0, 0.2, 401):
+    for d in np.linspace(0, 2.3 * headroom, 401):
         ctrl = rng.normal(0, s, (20_000, 5)) + rng.normal(0, sigma_m, (20_000, 5))
         real = d + rng.normal(0, s, 20_000) + rng.normal(0, sigma_m, 20_000)
         if np.mean(real > ctrl.max(1) + ctrl.std(1, ddof=1)) >= 0.8:
             ok = d
             break
-    print(f"  sigma_c {s:<6}: {ok:.3f} ({ok / headroom:.0%} of the headroom)" if ok is not None else f"  sigma_c {s}: > 0.2")
+    print(f"  sigma_c {s:<6}: {ok:.3f} ({ok / headroom:.0%} of the headroom)" if ok is not None
+          else f"  sigma_c {s}: more than 2.3 x the headroom")

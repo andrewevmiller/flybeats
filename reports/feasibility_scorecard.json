@@ -1,0 +1,4391 @@
+{
+ "songs": 270,
+ "facets": {
+  "beat_alignment": {
+   "matched": 24.2985252675133,
+   "other_band": 18.807673257482747,
+   "gap": 5.490852010030546,
+   "interval_95": [
+    3.2039147427361945,
+    7.708364120654134
+   ],
+   "songs": 267,
+   "failed_share_matched": 0.4307116104868914,
+   "rule": "main"
+  },
+  "tempo_following": {
+   "matched": 10.468326459611337,
+   "other_band": 1.567420957295475,
+   "gap": 8.900905502315862,
+   "interval_95": [
+    7.649590126382504,
+    10.15348849240566
+   ],
+   "songs": 259,
+   "failed_share_matched": 0.8687258687258688,
+   "rule": "supporting"
+  },
+  "listening": {
+   "matched": 17.172179267887447,
+   "other_band": 9.101605125706872,
+   "gap": 8.070574142180577,
+   "interval_95": [
+    6.80356760956477,
+    9.380908298724297
+   ],
+   "songs": 267,
+   "failed_share_matched": 0.602996254681648,
+   "rule": "supporting"
+  },
+  "groove": {
+   "matched": 10.740733838135448,
+   "other_band": 2.097920831066413,
+   "gap": 8.642813007069037,
+   "interval_95": [
+    7.263077045806868,
+    10.051237964909813
+   ],
+   "songs": 267,
+   "failed_share_matched": 0.7677902621722846,
+   "rule": "supporting"
+  },
+  "style_fit": {
+   "matched": 22.469657680816077,
+   "other_band": 20.99592143234818,
+   "gap": 1.4737362484678989,
+   "interval_95": [
+    -0.8260650571527145,
+    3.7546015001404336
+   ],
+   "songs": 179,
+   "failed_share_matched": 0.6424581005586593,
+   "rule": "reported only"
+  }
+ },
+ "musicianship": {
+  "matched": 18.141914384651564,
+  "other_band": 11.69896194625773
+ },
+ "per_song": {
+  "Track01501": {
+   "matched": {
+    "beat_alignment": 12.922188146643283,
+    "tempo_following": 4.816610776078043,
+    "listening": 7.458669742406767,
+    "groove": 8.122275873021346,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 6.642385361898344,
+    "tempo_following": 0.0,
+    "listening": 5.995549324037508,
+    "groove": 0.9189377144811578,
+    "style_fit": 0.0
+   }
+  },
+  "Track01502": {
+   "matched": {
+    "beat_alignment": 26.327843472294678,
+    "tempo_following": 7.108153372155917,
+    "listening": 28.55061908230153,
+    "groove": 25.757896808071074,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 46.06897014613505,
+    "tempo_following": 0.0,
+    "listening": 12.85878300803674,
+    "groove": 2.8227497062043865,
+    "style_fit": 0.0
+   }
+  },
+  "Track01503": {
+   "matched": {
+    "beat_alignment": 22.33008672040447,
+    "tempo_following": 12.115532446354182,
+    "listening": 27.021129039715202,
+    "groove": 20.884489224112755,
+    "style_fit": 56.23941195205222
+   },
+   "other_band": {
+    "beat_alignment": 21.60859422407042,
+    "tempo_following": 0.17270051333492684,
+    "listening": 7.811260515723395,
+    "groove": 0.0,
+    "style_fit": 66.63492849465415
+   }
+  },
+  "Track01504": {
+   "matched": {
+    "beat_alignment": 37.17029786483074,
+    "tempo_following": 9.05267838890311,
+    "listening": 2.7624309392265194,
+    "groove": 0.9573577820525635,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 25.595040678217323,
+    "tempo_following": 2.4652830452806898,
+    "listening": 4.310344827586207,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01505": {
+   "matched": {
+    "beat_alignment": 43.76618483289727,
+    "tempo_following": 16.564154713939768,
+    "listening": 45.45573171527369,
+    "groove": 47.109806178243026,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 42.03505720033238,
+    "tempo_following": 0.0,
+    "listening": 20.934071060015643,
+    "groove": 5.29169785610367,
+    "style_fit": null
+   }
+  },
+  "Track01507": {
+   "matched": {
+    "beat_alignment": 0.7966517726141589,
+    "tempo_following": 16.09611135885528,
+    "listening": 26.181180782407772,
+    "groove": 21.268593428120674,
+    "style_fit": 56.219153427276424
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 8.48558886308413,
+    "groove": 0.0,
+    "style_fit": 57.762318168925056
+   }
+  },
+  "Track01508": {
+   "matched": {
+    "beat_alignment": 69.80220587685885,
+    "tempo_following": 46.92675392243946,
+    "listening": 10.933940774487471,
+    "groove": 14.540631328878945,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 17.245428406269784,
+    "tempo_following": 0.0,
+    "listening": 9.178743961352657,
+    "groove": 0.29615496324973223,
+    "style_fit": 0.0
+   }
+  },
+  "Track01509": {
+   "matched": {
+    "beat_alignment": 25.347510517052278,
+    "tempo_following": 11.86424311985841,
+    "listening": 29.82248520710059,
+    "groove": 21.488361584463576,
+    "style_fit": 39.121322026079135
+   },
+   "other_band": {
+    "beat_alignment": 10.693437553494551,
+    "tempo_following": 0.5502399650220623,
+    "listening": 2.5889967637540456,
+    "groove": 0.0,
+    "style_fit": 31.61047012667424
+   }
+  },
+  "Track01510": {
+   "matched": {
+    "beat_alignment": 39.44631412426088,
+    "tempo_following": 25.122850384166682,
+    "listening": 7.4138733705772815,
+    "groove": 45.068155250541835,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.6284798280082451,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 45.84372535397024
+   }
+  },
+  "Track01511": {
+   "matched": {
+    "beat_alignment": 16.795682457464633,
+    "tempo_following": 7.027050124553271,
+    "listening": 2.535800739813959,
+    "groove": 0.17971429749052567,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 27.820899536060423,
+    "tempo_following": 0.0,
+    "listening": 2.329583978025414,
+    "groove": 7.39406037898396,
+    "style_fit": null
+   }
+  },
+  "Track01512": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 10.436719827859852,
+    "listening": 3.9521879649104816,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 3.4545877755280183,
+    "listening": 1.530791377010042,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01513": {
+   "matched": {
+    "beat_alignment": 52.70550099268978,
+    "tempo_following": 5.888580412867796,
+    "listening": 12.340514536707802,
+    "groove": 0.22226888451954743,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 62.84940890551135,
+    "tempo_following": 34.61584044570471,
+    "listening": 3.784228166698288,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01514": {
+   "matched": {
+    "beat_alignment": 47.70011226378383,
+    "tempo_following": 27.02341241154248,
+    "listening": 32.23880597014925,
+    "groove": 50.14175650418737,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01515": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 12.198719767695918,
+    "tempo_following": 2.0628965698278,
+    "listening": 12.769585575511917,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01516": {
+   "matched": {
+    "beat_alignment": 20.426472790156218,
+    "tempo_following": 11.509986860107656,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 25.997630040070867
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 35.7895910695281
+   }
+  },
+  "Track01517": {
+   "matched": {
+    "beat_alignment": 41.28362590990211,
+    "tempo_following": 3.5079539220886446,
+    "listening": 25.641183344609143,
+    "groove": 1.4070371422580046,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 52.680765961658736,
+    "tempo_following": 0.0,
+    "listening": 22.387693700661153,
+    "groove": 11.572045615506548,
+    "style_fit": 0.0
+   }
+  },
+  "Track01518": {
+   "matched": {
+    "beat_alignment": 27.313106670528132,
+    "tempo_following": 8.524740235108837,
+    "listening": 44.46412754650133,
+    "groove": 31.639623805455162,
+    "style_fit": 85.22811734368555
+   },
+   "other_band": {
+    "beat_alignment": 23.28869662603401,
+    "tempo_following": 0.0,
+    "listening": 20.382165605095544,
+    "groove": 0.0,
+    "style_fit": 86.19946708987366
+   }
+  },
+  "Track01519": {
+   "matched": {
+    "beat_alignment": 7.277253127549835,
+    "tempo_following": 2.0602146643335253,
+    "listening": 9.473038788343736,
+    "groove": 5.608513025995237,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 10.431805841921065,
+    "tempo_following": 0.0,
+    "listening": 5.197527931433656,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01520": {
+   "matched": {
+    "beat_alignment": 31.94234922911144,
+    "tempo_following": 5.325359097401511,
+    "listening": 20.626941133983387,
+    "groove": 10.342874924826129,
+    "style_fit": 26.929397771904462
+   },
+   "other_band": {
+    "beat_alignment": 13.679997820743292,
+    "tempo_following": 1.254504231731473,
+    "listening": 6.854271356783919,
+    "groove": 1.284289225116076,
+    "style_fit": 35.20164818871373
+   }
+  },
+  "Track01521": {
+   "matched": {
+    "beat_alignment": 24.464704781618316,
+    "tempo_following": 12.979183914873996,
+    "listening": 0.0,
+    "groove": 21.247423526028726,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 13.155041914089255,
+    "tempo_following": 3.146437485013682,
+    "listening": 0.0,
+    "groove": 4.989988646607464,
+    "style_fit": 0.0
+   }
+  },
+  "Track01522": {
+   "matched": {
+    "beat_alignment": 45.212161736022274,
+    "tempo_following": 17.64367409437094,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 26.008874344615545,
+    "tempo_following": 0.0,
+    "listening": 6.56881406146715,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01523": {
+   "matched": {
+    "beat_alignment": 14.112721866849482,
+    "tempo_following": 8.710454846790972,
+    "listening": 31.01545336064048,
+    "groove": 22.175659274883753,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 19.28664315558106,
+    "tempo_following": 0.8104478920452324,
+    "listening": 9.874154539864726,
+    "groove": 4.7564478475697625,
+    "style_fit": null
+   }
+  },
+  "Track01524": {
+   "matched": {
+    "beat_alignment": 35.93785047908017,
+    "tempo_following": 11.348073749343971,
+    "listening": 1.9453753996687067,
+    "groove": 6.765332558689038,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.046345177129578634,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01525": {
+   "matched": {
+    "beat_alignment": 7.001584511146502,
+    "tempo_following": null,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 38.387032822747216
+   },
+   "other_band": {
+    "beat_alignment": 12.985251407562307,
+    "tempo_following": null,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 69.17825871285613
+   }
+  },
+  "Track01526": {
+   "matched": {
+    "beat_alignment": 17.97830895899589,
+    "tempo_following": 6.200592671693643,
+    "listening": 4.6889089269612265,
+    "groove": 5.543509070971623,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 26.803167884736258,
+    "tempo_following": 0.0,
+    "listening": 2.6347305389221556,
+    "groove": 2.9682359059996597,
+    "style_fit": null
+   }
+  },
+  "Track01527": {
+   "matched": {
+    "beat_alignment": 23.174530369865938,
+    "tempo_following": 9.566053774580876,
+    "listening": 0.018790634747641196,
+    "groove": 1.8966366876347724,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 13.592450801357636,
+    "tempo_following": 1.0261010756105047,
+    "listening": 0.0,
+    "groove": 0.6905932352078475,
+    "style_fit": 0.0
+   }
+  },
+  "Track01528": {
+   "matched": {
+    "beat_alignment": 36.55580378039663,
+    "tempo_following": 12.476798445427642,
+    "listening": 25.15151515151515,
+    "groove": 23.538837375087567,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 40.79822875756449,
+    "tempo_following": 3.8237782169286723,
+    "listening": 16.300371631783737,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01529": {
+   "matched": {
+    "beat_alignment": 37.297994076738334,
+    "tempo_following": 21.470519730373272,
+    "listening": 45.58342420937841,
+    "groove": 33.395351029523425,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 18.52246688092726,
+    "tempo_following": 0.0,
+    "listening": 25.203252032520325,
+    "groove": 4.235929832897264,
+    "style_fit": null
+   }
+  },
+  "Track01530": {
+   "matched": {
+    "beat_alignment": 11.370298300645542,
+    "tempo_following": 18.925635649655852,
+    "listening": 4.275228894998364,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 9.978377398702994,
+    "tempo_following": 2.2282310896340234,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01531": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 1.4951435926545318,
+    "listening": 23.18178792518139,
+    "groove": 0.9992381165867475,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 3.173892772688635,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01532": {
+   "matched": {
+    "beat_alignment": 12.848868409299625,
+    "tempo_following": 10.097613128212526,
+    "listening": 12.099644128113878,
+    "groove": 12.04171095875078,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 15.87823359016597,
+    "tempo_following": 1.9102038468152036,
+    "listening": 20.77922077922078,
+    "groove": 0.6572541078342247,
+    "style_fit": null
+   }
+  },
+  "Track01533": {
+   "matched": {
+    "beat_alignment": 44.056119336697805,
+    "tempo_following": 14.890933176309778,
+    "listening": 35.03339308659993,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 33.52460599446486,
+    "tempo_following": 2.8873555299043114,
+    "listening": 20.821372078036205,
+    "groove": 1.1018817120737578,
+    "style_fit": null
+   }
+  },
+  "Track01537": {
+   "matched": {
+    "beat_alignment": 37.01027452477346,
+    "tempo_following": 14.092389483756671,
+    "listening": 28.331387235496823,
+    "groove": 20.925818275873752,
+    "style_fit": 29.1577369579267
+   },
+   "other_band": {
+    "beat_alignment": 15.827334149199032,
+    "tempo_following": 0.0,
+    "listening": 15.039378573740425,
+    "groove": 5.067261465915847,
+    "style_fit": 63.51678882630248
+   }
+  },
+  "Track01539": {
+   "matched": {
+    "beat_alignment": 11.046544038726962,
+    "tempo_following": 1.5848604374094453,
+    "listening": 7.0278403004297,
+    "groove": 1.738431041379447,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01540": {
+   "matched": {
+    "beat_alignment": 2.596750223027131,
+    "tempo_following": 1.9622095175025396,
+    "listening": 5.714285714285714,
+    "groove": 1.5098816998747675,
+    "style_fit": 89.59012343375053
+   },
+   "other_band": {
+    "beat_alignment": 18.055441283146713,
+    "tempo_following": 0.22500990949212885,
+    "listening": 26.704014939309058,
+    "groove": 0.0,
+    "style_fit": 86.67927213491346
+   }
+  },
+  "Track01542": {
+   "matched": {
+    "beat_alignment": 14.040833711625808,
+    "tempo_following": 4.041784038773721,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 14.998743045762438,
+    "tempo_following": 0.0,
+    "listening": 0.2004008016032064,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01545": {
+   "matched": {
+    "beat_alignment": 29.85908413713313,
+    "tempo_following": 17.654799392608684,
+    "listening": 42.3703218667357,
+    "groove": 34.52792311822864,
+    "style_fit": 44.1900187188367
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01546": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 30.839598541820063
+   }
+  },
+  "Track01548": {
+   "matched": {
+    "beat_alignment": 37.28797505732763,
+    "tempo_following": 10.819146215806699,
+    "listening": 7.964152165485623,
+    "groove": 0.5664318090955336,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.817951867669873,
+    "tempo_following": 5.5899313664324835,
+    "listening": 4.969829217786288,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01551": {
+   "matched": {
+    "beat_alignment": 22.605973241634917,
+    "tempo_following": 3.9773377956975753,
+    "listening": 2.7172037275265915,
+    "groove": 1.0892986476016122,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 1.9042328506341677,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01552": {
+   "matched": {
+    "beat_alignment": 10.736411572259557,
+    "tempo_following": 1.0341763101854413,
+    "listening": 28.698752228163993,
+    "groove": 15.704242946069503,
+    "style_fit": 30.353423015031638
+   },
+   "other_band": {
+    "beat_alignment": 26.90909417154691,
+    "tempo_following": 0.0,
+    "listening": 18.003565062388592,
+    "groove": 8.47310534364903,
+    "style_fit": 22.672318953518133
+   }
+  },
+  "Track01554": {
+   "matched": {
+    "beat_alignment": 17.50421207547547,
+    "tempo_following": 0.0,
+    "listening": 17.050071640192648,
+    "groove": 6.489399907336134,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 7.3037437386423845,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01556": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 6.374319395736306,
+    "listening": 29.14769213470512,
+    "groove": 22.903350782747786,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 2.696882949975398,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01557": {
+   "matched": {
+    "beat_alignment": 11.662258836749324,
+    "tempo_following": 12.170008981383383,
+    "listening": 10.900720279201009,
+    "groove": 1.2942374145440565,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 6.926332745000599,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01558": {
+   "matched": {
+    "beat_alignment": 22.97721614061472,
+    "tempo_following": 1.3034899371249469,
+    "listening": 14.477379956763922,
+    "groove": 0.5027577390106552,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 46.9480943717969,
+    "tempo_following": 2.3659465367859847,
+    "listening": 5.275089185463125,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01559": {
+   "matched": {
+    "beat_alignment": 33.298908033418684,
+    "tempo_following": 22.426153180520107,
+    "listening": 23.33015165977304,
+    "groove": 30.8278373681972,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 12.12391174544906,
+    "tempo_following": 0.0,
+    "listening": 15.774851364116243,
+    "groove": 1.7505175238696813,
+    "style_fit": null
+   }
+  },
+  "Track01560": {
+   "matched": {
+    "beat_alignment": 16.440248819266774,
+    "tempo_following": 17.886536354419043,
+    "listening": 42.630296384294375,
+    "groove": 22.250785169065786,
+    "style_fit": 76.50670248682545
+   },
+   "other_band": {
+    "beat_alignment": 9.491632018874073,
+    "tempo_following": 0.0,
+    "listening": 12.857425285841378,
+    "groove": 0.0,
+    "style_fit": 90.85041877442052
+   }
+  },
+  "Track01561": {
+   "matched": {
+    "beat_alignment": 39.88466238025549,
+    "tempo_following": 6.7229499833578785,
+    "listening": 4.855138154936948,
+    "groove": 5.364579503870107,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 23.663411157066278,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01563": {
+   "matched": {
+    "beat_alignment": 55.06031782593672,
+    "tempo_following": 28.948963505250997,
+    "listening": 21.45922746781116,
+    "groove": 34.732536244909326,
+    "style_fit": 64.65922062792232
+   },
+   "other_band": {
+    "beat_alignment": 3.469715335342264,
+    "tempo_following": 0.0,
+    "listening": 11.726907630522089,
+    "groove": 0.0,
+    "style_fit": 59.40567866087342
+   }
+  },
+  "Track01564": {
+   "matched": {
+    "beat_alignment": 24.727764870855054,
+    "tempo_following": 2.755155113957822,
+    "listening": 28.400954653937948,
+    "groove": 8.323748775061922,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 22.095515447215522,
+    "tempo_following": 0.0,
+    "listening": 9.02061855670103,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01565": {
+   "matched": {
+    "beat_alignment": 40.84568896673278,
+    "tempo_following": 12.837293392946469,
+    "listening": 6.896551724137931,
+    "groove": 16.04883789325929,
+    "style_fit": 0.48457936041583816
+   },
+   "other_band": {
+    "beat_alignment": 29.18060319105344,
+    "tempo_following": 1.2361017624868014,
+    "listening": 1.0889292196007259,
+    "groove": 0.2996810291660037,
+    "style_fit": 0.0
+   }
+  },
+  "Track01566": {
+   "matched": {
+    "beat_alignment": 18.45632166624348,
+    "tempo_following": 9.648186607901556,
+    "listening": 3.508771929824561,
+    "groove": 9.564926193485885,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 13.279461451747308,
+    "tempo_following": 0.5682750307278521,
+    "listening": 1.0869565217391304,
+    "groove": 3.1002869173267067,
+    "style_fit": 0.0
+   }
+  },
+  "Track01568": {
+   "matched": {
+    "beat_alignment": 43.26220859537863,
+    "tempo_following": 4.571468417884636,
+    "listening": 7.964531744554086,
+    "groove": 14.036863084247397,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 16.186149691130435,
+    "tempo_following": 0.0,
+    "listening": 11.334149521416988,
+    "groove": 2.937599229034511,
+    "style_fit": 0.0
+   }
+  },
+  "Track01570": {
+   "matched": {
+    "beat_alignment": 19.597219345341074,
+    "tempo_following": 6.318658867369904,
+    "listening": 28.42377260981912,
+    "groove": 15.543711831812518,
+    "style_fit": 45.789445284997605
+   },
+   "other_band": {
+    "beat_alignment": 33.308626108848735,
+    "tempo_following": 1.2098772601341745,
+    "listening": 16.22464898595944,
+    "groove": 1.7183105207587688,
+    "style_fit": 25.097706768370763
+   }
+  },
+  "Track01571": {
+   "matched": {
+    "beat_alignment": 15.664337984751352,
+    "tempo_following": 2.5010996665703233,
+    "listening": 18.962164073550213,
+    "groove": 15.87181059204403,
+    "style_fit": 7.615563179982061
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 9.076165225738125
+   }
+  },
+  "Track01573": {
+   "matched": {
+    "beat_alignment": 10.050023740986234,
+    "tempo_following": 4.752477473918986,
+    "listening": 7.123287671232877,
+    "groove": 5.6211497501362055,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 20.725675876404857,
+    "tempo_following": 0.0,
+    "listening": 11.607992388201712,
+    "groove": 0.7776758928952129,
+    "style_fit": 0.0
+   }
+  },
+  "Track01574": {
+   "matched": {
+    "beat_alignment": 26.28728922957378,
+    "tempo_following": 8.404650732086614,
+    "listening": 32.71719038817005,
+    "groove": 22.676726472961796,
+    "style_fit": 76.29812851410894
+   },
+   "other_band": {
+    "beat_alignment": 20.17004456129551,
+    "tempo_following": 1.8209242929067153,
+    "listening": 14.285714285714285,
+    "groove": 2.8765464682124304,
+    "style_fit": 73.62570988101001
+   }
+  },
+  "Track01575": {
+   "matched": {
+    "beat_alignment": 45.43149889731575,
+    "tempo_following": 28.216200371291993,
+    "listening": 1.1869436201780417,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 34.81376210763044,
+    "tempo_following": 6.38996175866943,
+    "listening": 2.366863905325444,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01576": {
+   "matched": {
+    "beat_alignment": 50.02937798455049,
+    "tempo_following": 29.200462833829732,
+    "listening": 15.119760479041918,
+    "groove": 1.8629111878942732,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 7.097992689164904,
+    "tempo_following": 0.0,
+    "listening": 17.179663164563646,
+    "groove": 0.8031870183798877,
+    "style_fit": null
+   }
+  },
+  "Track01578": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 6.473854102656702,
+    "listening": 8.374282264225341,
+    "groove": 0.0,
+    "style_fit": 86.20748904154512
+   },
+   "other_band": {
+    "beat_alignment": 17.033139269877108,
+    "tempo_following": 2.9152677140222623,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 49.543769718539934
+   }
+  },
+  "Track01579": {
+   "matched": {
+    "beat_alignment": 63.911619601767256,
+    "tempo_following": 12.48078176588923,
+    "listening": 10.44546850998464,
+    "groove": 17.340811474887555,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 12.82330941540003,
+    "tempo_following": 0.0,
+    "listening": 8.68632707774799,
+    "groove": 1.5948652705849393,
+    "style_fit": 8.315973972165464
+   }
+  },
+  "Track01580": {
+   "matched": {
+    "beat_alignment": 7.936449348261389,
+    "tempo_following": 0.0,
+    "listening": 6.291390728476822,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 14.48370940386681,
+    "tempo_following": 1.3221808023835024,
+    "listening": 6.79886685552408,
+    "groove": 9.76147396249086,
+    "style_fit": 0.0
+   }
+  },
+  "Track01581": {
+   "matched": {
+    "beat_alignment": 16.25591281312449,
+    "tempo_following": 8.054269969385363,
+    "listening": 13.367609254498714,
+    "groove": 14.143450518109512,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 23.232996848116276,
+    "tempo_following": 0.8779442059592791,
+    "listening": 20.86752637749121,
+    "groove": 14.703298195823141,
+    "style_fit": null
+   }
+  },
+  "Track01582": {
+   "matched": {
+    "beat_alignment": 30.202076927884498,
+    "tempo_following": 15.822221944355713,
+    "listening": 38.095238095238095,
+    "groove": 32.472049220476165,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 25.059971724703534,
+    "tempo_following": 0.5881035596930592,
+    "listening": 19.68408262454435,
+    "groove": 2.5561781729856725,
+    "style_fit": null
+   }
+  },
+  "Track01583": {
+   "matched": {
+    "beat_alignment": 31.276352382131655,
+    "tempo_following": 14.270262874697654,
+    "listening": 37.14881774583268,
+    "groove": 39.291442002904326,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 18.813670519969307,
+    "tempo_following": 0.0,
+    "listening": 20.966553136349315,
+    "groove": 4.744934696188092,
+    "style_fit": null
+   }
+  },
+  "Track01584": {
+   "matched": {
+    "beat_alignment": 28.002938798195707,
+    "tempo_following": 13.10718196448915,
+    "listening": 40.635451505016725,
+    "groove": 27.540566999874947,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 6.444303666483601,
+    "tempo_following": 2.4659947564838216,
+    "listening": 4.30622009569378,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01586": {
+   "matched": {
+    "beat_alignment": 8.055050976335073,
+    "tempo_following": 3.680603480418928,
+    "listening": 10.918114143920596,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 20.62691847691763,
+    "tempo_following": 0.0,
+    "listening": 14.173228346456693,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01588": {
+   "matched": {
+    "beat_alignment": 36.00015977407133,
+    "tempo_following": 31.017842276250025,
+    "listening": 14.314543081771017,
+    "groove": 34.54893291402004,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 12.304727794840531,
+    "tempo_following": 0.0,
+    "listening": 7.864546048741014,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01589": {
+   "matched": {
+    "beat_alignment": 27.45064071739374,
+    "tempo_following": 13.348593747843177,
+    "listening": 17.079718205413425,
+    "groove": 13.93965748335775,
+    "style_fit": 6.048534882597339
+   },
+   "other_band": {
+    "beat_alignment": 16.385294240777917,
+    "tempo_following": 0.28029730639880585,
+    "listening": 12.060501232841423,
+    "groove": 11.22252891126845,
+    "style_fit": 17.381739949697135
+   }
+  },
+  "Track01590": {
+   "matched": {
+    "beat_alignment": 41.44394089463001,
+    "tempo_following": 17.6425218832107,
+    "listening": 28.604382929642448,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 48.20422529535746,
+    "tempo_following": 5.729056355324626,
+    "listening": 26.587887740029544,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01591": {
+   "matched": {
+    "beat_alignment": 34.67745621389927,
+    "tempo_following": 11.88205142583033,
+    "listening": 0.17578554163920013,
+    "groove": 19.525529717903815,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.7383418020717455,
+    "listening": 0.8806559368357118,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01592": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 11.06052654205636,
+    "listening": 19.761482408551878,
+    "groove": 22.761383387885974,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 22.598044732209676,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 2.4771656378179117,
+    "style_fit": null
+   }
+  },
+  "Track01594": {
+   "matched": {
+    "beat_alignment": 60.45980727203034,
+    "tempo_following": 27.983411216987076,
+    "listening": 25.543478260869566,
+    "groove": 32.52421071334923,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 13.694056133488239,
+    "tempo_following": 0.0,
+    "listening": 24.45255474452555,
+    "groove": 4.082257279641483,
+    "style_fit": null
+   }
+  },
+  "Track01595": {
+   "matched": {
+    "beat_alignment": 10.73342394413636,
+    "tempo_following": 7.230558212351118,
+    "listening": 27.592730055701324,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 42.2202035406215,
+    "tempo_following": 3.086412842577893,
+    "listening": 23.359832734832736,
+    "groove": 21.604489191319097,
+    "style_fit": null
+   }
+  },
+  "Track01597": {
+   "matched": {
+    "beat_alignment": 51.24721241719925,
+    "tempo_following": 24.014712475293727,
+    "listening": 36.37691165598441,
+    "groove": 23.522830241788103,
+    "style_fit": 39.91048082209576
+   },
+   "other_band": {
+    "beat_alignment": 1.8603394073153283,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.13064110371005694,
+    "style_fit": 43.1446950291906
+   }
+  },
+  "Track01598": {
+   "matched": {
+    "beat_alignment": 1.5425555433636524,
+    "tempo_following": 0.7018107215035676,
+    "listening": 1.4388489208633095,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 7.849695516890208,
+    "tempo_following": 0.9261865865401996,
+    "listening": 4.487179487179487,
+    "groove": 0.10805182542094308,
+    "style_fit": 0.0
+   }
+  },
+  "Track01599": {
+   "matched": {
+    "beat_alignment": 8.877438135113874,
+    "tempo_following": 4.623542859936151,
+    "listening": 11.386138613861387,
+    "groove": 0.0,
+    "style_fit": 77.14992652936034
+   },
+   "other_band": {
+    "beat_alignment": 12.167983372071284,
+    "tempo_following": 6.103459034917975,
+    "listening": 10.964912280701753,
+    "groove": 0.0,
+    "style_fit": 75.46290360972534
+   }
+  },
+  "Track01602": {
+   "matched": {
+    "beat_alignment": 18.422905281892334,
+    "tempo_following": 7.557721734562743,
+    "listening": 4.390243902439024,
+    "groove": 5.425612155109049,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 14.718212069674463,
+    "tempo_following": 0.0,
+    "listening": 5.895357406042741,
+    "groove": 0.8341516947727189,
+    "style_fit": 0.0
+   }
+  },
+  "Track01604": {
+   "matched": {
+    "beat_alignment": 4.8290859378938835,
+    "tempo_following": 10.370397652422406,
+    "listening": 39.59051425016152,
+    "groove": 24.081375557579555,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 19.795122482132037,
+    "tempo_following": 5.48146622520311,
+    "listening": 12.852093776900094,
+    "groove": 10.569462408809487,
+    "style_fit": null
+   }
+  },
+  "Track01605": {
+   "matched": {
+    "beat_alignment": 28.002448102771503,
+    "tempo_following": 2.8016561724077533,
+    "listening": 12.661555312157722,
+    "groove": 17.60090682323401,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 17.156952573147045,
+    "tempo_following": 0.0,
+    "listening": 8.089034102511741,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01606": {
+   "matched": {
+    "beat_alignment": 61.114277663495585,
+    "tempo_following": 28.19872633346849,
+    "listening": 7.074786324786324,
+    "groove": 5.224050320248692,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 39.051846723154796,
+    "tempo_following": 6.151266713685809,
+    "listening": 0.0,
+    "groove": 2.8034167742017573,
+    "style_fit": 0.0
+   }
+  },
+  "Track01607": {
+   "matched": {
+    "beat_alignment": 44.78548930185474,
+    "tempo_following": 28.042434667099364,
+    "listening": 29.938650306748464,
+    "groove": 0.0,
+    "style_fit": 15.60138518435426
+   },
+   "other_band": {
+    "beat_alignment": 25.69691311723642,
+    "tempo_following": 0.0,
+    "listening": 34.93975903614458,
+    "groove": 0.0,
+    "style_fit": 16.210737255818195
+   }
+  },
+  "Track01611": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 14.917284427819558,
+    "listening": 0.15090543259557485,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01612": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 16.39217329252716,
+    "listening": 11.84326023811804,
+    "groove": 13.128787422893772,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 10.754166020394496,
+    "tempo_following": 2.1187332105064094,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01613": {
+   "matched": {
+    "beat_alignment": 20.30001151631112,
+    "tempo_following": null,
+    "listening": 32.00191528217006,
+    "groove": 0.0,
+    "style_fit": 11.389925424602477
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": null,
+    "listening": 5.654296502536328,
+    "groove": 3.0573552696410133,
+    "style_fit": 11.018926331229622
+   }
+  },
+  "Track01614": {
+   "matched": {
+    "beat_alignment": 29.03022365196506,
+    "tempo_following": 26.84392926508124,
+    "listening": 33.7972130746985,
+    "groove": 19.776694278687028,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 46.29360180804105,
+    "tempo_following": 24.335928798303286,
+    "listening": 10.377850471720475,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01615": {
+   "matched": {
+    "beat_alignment": 52.49905160074692,
+    "tempo_following": 0.0,
+    "listening": 6.45761120739457,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 26.757547237406083,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01616": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 2.78339610184513,
+    "listening": 16.867553499132445,
+    "groove": 6.596343182335139,
+    "style_fit": 60.515565401819806
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 30.342341377656552
+   }
+  },
+  "Track01618": {
+   "matched": {
+    "beat_alignment": 2.5344125041479386,
+    "tempo_following": 0.0,
+    "listening": 1.3333333333333335,
+    "groove": 0.5664959820231436,
+    "style_fit": 20.465952557064092
+   },
+   "other_band": {
+    "beat_alignment": 24.776908107454148,
+    "tempo_following": 3.153774018779312,
+    "listening": 5.676855895196507,
+    "groove": 0.25900085635972164,
+    "style_fit": 25.62397781500616
+   }
+  },
+  "Track01619": {
+   "matched": {
+    "beat_alignment": 46.954954565768,
+    "tempo_following": 26.37802611329588,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 35.04654205927959,
+    "tempo_following": 0.7999607162002944,
+    "listening": 2.616279069767442,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01620": {
+   "matched": {
+    "beat_alignment": 39.513302684920404,
+    "tempo_following": 12.675071250043516,
+    "listening": 11.854189287006873,
+    "groove": 4.699650776677693,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 14.100799951964488,
+    "tempo_following": 0.0,
+    "listening": 14.032738095238093,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01621": {
+   "matched": {
+    "beat_alignment": 12.080114341428047,
+    "tempo_following": 9.04113062575703,
+    "listening": 29.06906906906907,
+    "groove": 10.657444637191144,
+    "style_fit": 80.78930899054183
+   },
+   "other_band": {
+    "beat_alignment": 11.73915392921607,
+    "tempo_following": 0.10489094599722677,
+    "listening": 19.145802650957293,
+    "groove": 0.8125991482755184,
+    "style_fit": 71.95403758334241
+   }
+  },
+  "Track01622": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 11.798344457035954,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.001002182251853111,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01623": {
+   "matched": {
+    "beat_alignment": 30.983918058885724,
+    "tempo_following": 7.563325132338715,
+    "listening": 23.367697594501717,
+    "groove": 11.248953474872149,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 11.974117092937396,
+    "tempo_following": 0.0,
+    "listening": 25.077720207253883,
+    "groove": 0.307202081217784,
+    "style_fit": null
+   }
+  },
+  "Track01624": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 1.1620149340311785,
+    "listening": 3.5746314316126493,
+    "groove": 6.772196924527176,
+    "style_fit": 37.22792607208222
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01625": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 62.439293902684966,
+    "tempo_following": 8.731535085434437,
+    "listening": 10.070400979491891,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01626": {
+   "matched": {
+    "beat_alignment": 1.3874330542277729,
+    "tempo_following": 3.4185263823397607,
+    "listening": 8.961983961983961,
+    "groove": 10.514574073359269,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.04741833508956862,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01628": {
+   "matched": {
+    "beat_alignment": 16.02359191075967,
+    "tempo_following": 1.6680060447204048,
+    "listening": 24.06130351464481,
+    "groove": 0.0,
+    "style_fit": 58.87052589291907
+   },
+   "other_band": {
+    "beat_alignment": 26.247354380735977,
+    "tempo_following": 14.567437699137246,
+    "listening": 5.2179365816305,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01629": {
+   "matched": {
+    "beat_alignment": 12.319994167822363,
+    "tempo_following": 0.015972818776941032,
+    "listening": 9.814611567092957,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 39.20268397124907,
+    "tempo_following": 2.019460587523037,
+    "listening": 23.942307692307693,
+    "groove": 0.7815930099487847,
+    "style_fit": null
+   }
+  },
+  "Track01630": {
+   "matched": {
+    "beat_alignment": 52.53052053444562,
+    "tempo_following": 24.476996987342922,
+    "listening": 14.814814814814813,
+    "groove": 13.109002417584017,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 44.05894359835394,
+    "tempo_following": 0.3984337872028349,
+    "listening": 7.87746170678337,
+    "groove": 9.205808675700192,
+    "style_fit": 0.0
+   }
+  },
+  "Track01631": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 10.681667921138938,
+    "listening": 29.27303182579564,
+    "groove": 28.17486362459033,
+    "style_fit": 78.03722608015033
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 4.3574059222643875,
+    "listening": 18.5835279684809,
+    "groove": 3.96767438389048,
+    "style_fit": 63.11630586622103
+   }
+  },
+  "Track01632": {
+   "matched": {
+    "beat_alignment": 36.254832048342244,
+    "tempo_following": 6.245397811180818,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 15.814849069864954,
+    "tempo_following": 1.3777940806826694,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01634": {
+   "matched": {
+    "beat_alignment": 24.84529070135257,
+    "tempo_following": 10.779502948122794,
+    "listening": 22.344322344322347,
+    "groove": 22.292202398730364,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 8.67905849853871,
+    "tempo_following": 0.4722812359561213,
+    "listening": 16.842105263157894,
+    "groove": 0.7955640565554383,
+    "style_fit": null
+   }
+  },
+  "Track01635": {
+   "matched": {
+    "beat_alignment": 16.21497303469493,
+    "tempo_following": 3.50449400653709,
+    "listening": 30.585696531465373,
+    "groove": 20.230180337617888,
+    "style_fit": 64.67980287046777
+   },
+   "other_band": {
+    "beat_alignment": 9.648177008873745,
+    "tempo_following": 0.0,
+    "listening": 22.390365274645813,
+    "groove": 0.0,
+    "style_fit": 69.06606083685374
+   }
+  },
+  "Track01639": {
+   "matched": {
+    "beat_alignment": 35.419319164233556,
+    "tempo_following": 53.962902736992866,
+    "listening": 36.19827376998144,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 54.502910681089446,
+    "tempo_following": 11.059117816087719,
+    "listening": 5.48967560727183,
+    "groove": 11.70665368526908,
+    "style_fit": 0.0
+   }
+  },
+  "Track01641": {
+   "matched": {
+    "beat_alignment": 24.028686044808683,
+    "tempo_following": 14.073347912723278,
+    "listening": 11.685900394932554,
+    "groove": 12.425888298513069,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 31.449454315723795,
+    "tempo_following": 3.1936040525859175,
+    "listening": 4.020296808984948,
+    "groove": 6.796285147836205,
+    "style_fit": 0.0
+   }
+  },
+  "Track01642": {
+   "matched": {
+    "beat_alignment": 15.795135982225656,
+    "tempo_following": 0.0,
+    "listening": 21.951219512195124,
+    "groove": 13.848347368593725,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 9.822701277800885,
+    "tempo_following": 0.0,
+    "listening": 7.142857142857142,
+    "groove": 1.1152699821188008,
+    "style_fit": null
+   }
+  },
+  "Track01643": {
+   "matched": {
+    "beat_alignment": 30.248873537797,
+    "tempo_following": 6.170768240334342,
+    "listening": 24.50518378887842,
+    "groove": 0.0,
+    "style_fit": 75.04728539255598
+   },
+   "other_band": {
+    "beat_alignment": 38.85054086469673,
+    "tempo_following": 2.678405301287978,
+    "listening": 19.572553430821145,
+    "groove": 0.0,
+    "style_fit": 76.35624226811609
+   }
+  },
+  "Track01644": {
+   "matched": {
+    "beat_alignment": 10.191718978759377,
+    "tempo_following": 3.990535948224514,
+    "listening": 2.5,
+    "groove": 3.577444339324369,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 2.62582056892779,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01645": {
+   "matched": {
+    "beat_alignment": 26.465563100338645,
+    "tempo_following": 11.602212851495265,
+    "listening": 34.1796875,
+    "groove": 32.51551499369701,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 24.060771308317662,
+    "tempo_following": 0.0,
+    "listening": 22.55924170616114,
+    "groove": 6.374498181917859,
+    "style_fit": null
+   }
+  },
+  "Track01646": {
+   "matched": {
+    "beat_alignment": 20.675704660295015,
+    "tempo_following": 9.394188021717087,
+    "listening": 34.1948310139165,
+    "groove": 23.117528009609867,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 10.099434179884229,
+    "tempo_following": 0.11108709845598902,
+    "listening": 22.376543209876544,
+    "groove": 0.5517527431799788,
+    "style_fit": null
+   }
+  },
+  "Track01647": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 5.09998154526095,
+    "listening": 19.208197078700675,
+    "groove": 0.0,
+    "style_fit": 42.12277511245841
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 10.510593538692712,
+    "groove": 0.0,
+    "style_fit": 47.27522875051417
+   }
+  },
+  "Track01649": {
+   "matched": {
+    "beat_alignment": 28.19583919034895,
+    "tempo_following": 2.399750497979651,
+    "listening": 10.864286166775766,
+    "groove": 1.3710451161174455,
+    "style_fit": 2.9521719329320995
+   },
+   "other_band": {
+    "beat_alignment": 34.672533230788076,
+    "tempo_following": 0.0,
+    "listening": 3.0546501325058246,
+    "groove": 4.599679373640871,
+    "style_fit": 0.0
+   }
+  },
+  "Track01650": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 7.478749587635872,
+    "listening": 43.27111365107112,
+    "groove": 16.951092884652947,
+    "style_fit": 76.26785234862722
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 1.2038826274366192,
+    "listening": 38.31613098960429,
+    "groove": 8.60942651641052,
+    "style_fit": 72.05133989656834
+   }
+  },
+  "Track01652": {
+   "matched": {
+    "beat_alignment": 34.85193398238026,
+    "tempo_following": 21.084660258874003,
+    "listening": 5.103805152318046,
+    "groove": 2.2482505792659544,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.06854238761556078,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01653": {
+   "matched": {
+    "beat_alignment": 24.206292040020973,
+    "tempo_following": 10.973839289199532,
+    "listening": 1.287810721772986,
+    "groove": 1.278498528826399,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.3811462796808786,
+    "groove": 0.24545755109358325,
+    "style_fit": 0.0
+   }
+  },
+  "Track01654": {
+   "matched": {
+    "beat_alignment": 35.996967610559864,
+    "tempo_following": 12.346800141825565,
+    "listening": 33.41280892798109,
+    "groove": 27.15379920468939,
+    "style_fit": 33.06003742790209
+   },
+   "other_band": {
+    "beat_alignment": 34.440382037036095,
+    "tempo_following": 0.0,
+    "listening": 22.868463689690024,
+    "groove": 0.0,
+    "style_fit": 28.673254926648227
+   }
+  },
+  "Track01655": {
+   "matched": {
+    "beat_alignment": 26.240078531785226,
+    "tempo_following": 14.944491708999848,
+    "listening": 16.02634467618002,
+    "groove": 12.09605041098337,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.5281306926661,
+    "tempo_following": 0.06622917778067611,
+    "listening": 9.148936170212766,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01656": {
+   "matched": {
+    "beat_alignment": 4.4914294367893595,
+    "tempo_following": 5.437299444382001,
+    "listening": 13.898783283371538,
+    "groove": 15.871116964433044,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01657": {
+   "matched": {
+    "beat_alignment": 57.88920861708947,
+    "tempo_following": null,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 22.66661779345509,
+    "tempo_following": null,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01659": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 8.907976102495766,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 45.00731768734808
+   }
+  },
+  "Track01660": {
+   "matched": {
+    "beat_alignment": 43.52112627248429,
+    "tempo_following": 17.53845590028078,
+    "listening": 0.0,
+    "groove": 17.709209297804904,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 88.35091250590106,
+    "tempo_following": 52.20995428596821,
+    "listening": 0.0,
+    "groove": 2.63385204129371,
+    "style_fit": null
+   }
+  },
+  "Track01661": {
+   "matched": {
+    "beat_alignment": 33.64195010690284,
+    "tempo_following": 17.74415659891173,
+    "listening": 23.57748810262777,
+    "groove": 4.515628097347342,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 9.526881840655589,
+    "tempo_following": 0.0,
+    "listening": 9.93391160677406,
+    "groove": 3.202283052961986,
+    "style_fit": null
+   }
+  },
+  "Track01662": {
+   "matched": {
+    "beat_alignment": 17.54990615456758,
+    "tempo_following": 6.311738194125114,
+    "listening": 21.711318482841662,
+    "groove": 24.967410371830702,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 45.66062351504714,
+    "tempo_following": 6.056602885563892,
+    "listening": 4.527629233511588,
+    "groove": 29.88931913337627,
+    "style_fit": null
+   }
+  },
+  "Track01664": {
+   "matched": {
+    "beat_alignment": 24.479618412061306,
+    "tempo_following": 16.187688584219913,
+    "listening": 27.602755428434193,
+    "groove": 25.834669512631294,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 27.05810779097142,
+    "tempo_following": 0.0,
+    "listening": 22.778953307941883,
+    "groove": 24.89204623391546,
+    "style_fit": null
+   }
+  },
+  "Track01665": {
+   "matched": {
+    "beat_alignment": 14.92077899767756,
+    "tempo_following": 12.269854967818192,
+    "listening": 4.743739849680853,
+    "groove": 10.684781895126315,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 9.140649903063153,
+    "tempo_following": 1.3939819236041615,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01666": {
+   "matched": {
+    "beat_alignment": 62.9616612042438,
+    "tempo_following": 34.256905689453966,
+    "listening": 43.87096774193549,
+    "groove": 0.9813209168766034,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 45.039173661686476,
+    "tempo_following": 5.795209255621824,
+    "listening": 31.772831926323867,
+    "groove": 13.369675216840173,
+    "style_fit": 0.0
+   }
+  },
+  "Track01670": {
+   "matched": {
+    "beat_alignment": 21.04206525200405,
+    "tempo_following": 7.524076827527779,
+    "listening": 17.451205510907002,
+    "groove": 15.48423818935831,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.63760266851059,
+    "tempo_following": 1.0813760206406875,
+    "listening": 9.195402298850574,
+    "groove": 4.287436881875221,
+    "style_fit": 0.0
+   }
+  },
+  "Track01672": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01674": {
+   "matched": {
+    "beat_alignment": 20.861421391812957,
+    "tempo_following": 5.338709796977743,
+    "listening": 24.257425742574256,
+    "groove": 22.662891322997133,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 7.2274772892563535,
+    "tempo_following": 0.0,
+    "listening": 18.38006230529595,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01675": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.6767994476397942,
+    "listening": 3.456764970542793,
+    "groove": 0.0,
+    "style_fit": 40.725931596397054
+   },
+   "other_band": {
+    "beat_alignment": 3.3743020436407423,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 11.036587364163324
+   }
+  },
+  "Track01676": {
+   "matched": {
+    "beat_alignment": 22.21008356509195,
+    "tempo_following": 9.957396364493597,
+    "listening": 11.613328592171158,
+    "groove": 12.645884690782893,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 28.61296493437572,
+    "tempo_following": 4.069015070769166,
+    "listening": 1.738430583501006,
+    "groove": 2.3518858888010508,
+    "style_fit": 0.0
+   }
+  },
+  "Track01677": {
+   "matched": {
+    "beat_alignment": 27.358703014679048,
+    "tempo_following": 12.110522474227263,
+    "listening": 5.7995899111474145,
+    "groove": 2.6722757193949573,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 1.2849165078824685,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01678": {
+   "matched": {
+    "beat_alignment": 50.78633203231786,
+    "tempo_following": null,
+    "listening": 16.39615846338535,
+    "groove": 1.831553218608747,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 64.62119461721984,
+    "tempo_following": null,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01679": {
+   "matched": {
+    "beat_alignment": 14.399562741356734,
+    "tempo_following": 3.1532261427480974,
+    "listening": 22.83063328424153,
+    "groove": 5.305833402147842,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 5.4161471836315,
+    "tempo_following": 0.10069763785510992,
+    "listening": 9.07979407979408,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01681": {
+   "matched": {
+    "beat_alignment": 22.147873833460917,
+    "tempo_following": 3.399679249335315,
+    "listening": 26.690712353471596,
+    "groove": 6.8581283648755305,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 19.637543454259998,
+    "tempo_following": 0.0,
+    "listening": 25.085910652920962,
+    "groove": 6.497078049069948,
+    "style_fit": null
+   }
+  },
+  "Track01685": {
+   "matched": {
+    "beat_alignment": 35.35411206222436,
+    "tempo_following": 18.115317693747023,
+    "listening": 45.81005586592179,
+    "groove": 32.46555423096928,
+    "style_fit": 16.543173195908878
+   },
+   "other_band": {
+    "beat_alignment": 39.57745041232116,
+    "tempo_following": 0.0,
+    "listening": 18.933333333333334,
+    "groove": 7.8546882064119155,
+    "style_fit": 9.607747659330567
+   }
+  },
+  "Track01688": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 2.0782262696585456,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01689": {
+   "matched": {
+    "beat_alignment": 28.67245108228655,
+    "tempo_following": 13.117581468594567,
+    "listening": 36.9249993992262,
+    "groove": 24.60313863475357,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 12.60742990433347,
+    "tempo_following": 0.0,
+    "listening": 4.816404387219838,
+    "groove": 1.3579429147886064,
+    "style_fit": null
+   }
+  },
+  "Track01690": {
+   "matched": {
+    "beat_alignment": 5.833647207147661,
+    "tempo_following": 2.3155449464805873,
+    "listening": 2.140276878745485,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.093310037593273,
+    "tempo_following": 0.0,
+    "listening": 28.297895920079792,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01691": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 7.101783623021131,
+    "listening": 1.8275596994569387,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 1.4762117110335153,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01692": {
+   "matched": {
+    "beat_alignment": 32.437601881522895,
+    "tempo_following": 5.08715010392927,
+    "listening": 22.64221847095385,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 12.043933946427293,
+    "tempo_following": 0.0,
+    "listening": 11.584759732388529,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01693": {
+   "matched": {
+    "beat_alignment": 8.795847442571667,
+    "tempo_following": 3.765500911299654,
+    "listening": 19.96545768566494,
+    "groove": 1.9604246124699278,
+    "style_fit": 82.3895068075147
+   },
+   "other_band": {
+    "beat_alignment": 18.875793245234178,
+    "tempo_following": 2.411686845526045,
+    "listening": 10.551817379004213,
+    "groove": 2.0725063313629404,
+    "style_fit": 73.30263543149526
+   }
+  },
+  "Track01694": {
+   "matched": {
+    "beat_alignment": 67.35596836171383,
+    "tempo_following": 37.29818159872872,
+    "listening": 4.946996466431095,
+    "groove": 7.5232318346020035,
+    "style_fit": 16.557334519955713
+   },
+   "other_band": {
+    "beat_alignment": 16.270661317711706,
+    "tempo_following": 0.9601706149939419,
+    "listening": 1.015228426395939,
+    "groove": 1.440661465142998,
+    "style_fit": 23.614390857988642
+   }
+  },
+  "Track01695": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 7.278055707710279,
+    "listening": 17.482517482517483,
+    "groove": 4.985896613023954,
+    "style_fit": 82.65215249197017
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 7.556753799867151,
+    "groove": 0.0,
+    "style_fit": 74.88163333386473
+   }
+  },
+  "Track01696": {
+   "matched": {
+    "beat_alignment": 39.713152039096116,
+    "tempo_following": 13.154956512277744,
+    "listening": 10.424028268551238,
+    "groove": 6.061557034309625,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 54.32593211274709,
+    "tempo_following": 25.17073449982936,
+    "listening": 1.9007391763463568,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01697": {
+   "matched": {
+    "beat_alignment": 1.123766004489124,
+    "tempo_following": 0.07660773218239306,
+    "listening": 0.9287925696594427,
+    "groove": 0.10142439181000601,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 1.7553762946094402,
+    "tempo_following": 0.0,
+    "listening": 0.3558718861209964,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01698": {
+   "matched": {
+    "beat_alignment": 23.073002634255623,
+    "tempo_following": 0.0,
+    "listening": 23.56164383561644,
+    "groove": 7.629334483888137,
+    "style_fit": 41.109312634055065
+   },
+   "other_band": {
+    "beat_alignment": 8.076671238643094,
+    "tempo_following": 0.0,
+    "listening": 21.99025748086291,
+    "groove": 5.067631787992865,
+    "style_fit": 80.16846017737618
+   }
+  },
+  "Track01700": {
+   "matched": {
+    "beat_alignment": 15.233760436581775,
+    "tempo_following": 5.543650385152598,
+    "listening": 15.364238410596027,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 32.01014068217823,
+    "tempo_following": 3.5801394476658683,
+    "listening": 11.03448275862069,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01701": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 17.152948252305343,
+    "listening": 23.74980507874819,
+    "groove": 17.425156341389506,
+    "style_fit": 52.13006700208809
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 8.269146530349616,
+    "groove": 0.0,
+    "style_fit": 52.07833926070941
+   }
+  },
+  "Track01702": {
+   "matched": {
+    "beat_alignment": 74.88930890398858,
+    "tempo_following": null,
+    "listening": 16.091545754017154,
+    "groove": 6.713597634502107,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 31.254575493285863,
+    "tempo_following": null,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01703": {
+   "matched": {
+    "beat_alignment": 25.567684004104542,
+    "tempo_following": 10.60640953039621,
+    "listening": 36.85131195335277,
+    "groove": 9.727277362559219,
+    "style_fit": 95.89674530740862
+   },
+   "other_band": {
+    "beat_alignment": 22.490367566763165,
+    "tempo_following": 0.0,
+    "listening": 7.986111111111111,
+    "groove": 0.03820030079084941,
+    "style_fit": 78.22804969600057
+   }
+  },
+  "Track01705": {
+   "matched": {
+    "beat_alignment": 41.59513599309492,
+    "tempo_following": 12.11117386899154,
+    "listening": 2.967359050445104,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 19.99967224726589,
+    "tempo_following": 2.7376004611110325,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01706": {
+   "matched": {
+    "beat_alignment": 52.556474951667084,
+    "tempo_following": 10.75912027198904,
+    "listening": 16.98685540950455,
+    "groove": 23.355392972148113,
+    "style_fit": 1.2060847296040715
+   },
+   "other_band": {
+    "beat_alignment": 40.16226400090561,
+    "tempo_following": 0.1969208762541258,
+    "listening": 18.88111888111888,
+    "groove": 5.393485023569481,
+    "style_fit": 3.278423298938394
+   }
+  },
+  "Track01707": {
+   "matched": {
+    "beat_alignment": 25.865709488807237,
+    "tempo_following": 10.24075971879176,
+    "listening": 10.913140311804009,
+    "groove": 8.288119249942783,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.738273420179166,
+    "tempo_following": 0.10025988569781012,
+    "listening": 4.564315352697095,
+    "groove": 1.7422226562556868,
+    "style_fit": 0.0
+   }
+  },
+  "Track01708": {
+   "matched": {
+    "beat_alignment": 10.744676160186291,
+    "tempo_following": 7.126401057266034,
+    "listening": 25.85047088218335,
+    "groove": 18.180756400385185,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 4.6987248464149785,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01709": {
+   "matched": {
+    "beat_alignment": 23.384568813741232,
+    "tempo_following": 1.2213522877065957,
+    "listening": 18.481284118816394,
+    "groove": 8.83208318185999,
+    "style_fit": 22.348787130153276
+   },
+   "other_band": {
+    "beat_alignment": 2.045959789125993,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01710": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 2.941176470588235,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01713": {
+   "matched": {
+    "beat_alignment": 20.572576016006003,
+    "tempo_following": 8.015597437895659,
+    "listening": 10.173055470547006,
+    "groove": 1.2507986488426988,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 13.33066859808204,
+    "tempo_following": 0.20997386024880385,
+    "listening": 15.402046774094707,
+    "groove": 2.606863888585692,
+    "style_fit": 2.078793967729214
+   }
+  },
+  "Track01714": {
+   "matched": {
+    "beat_alignment": 21.132303100058383,
+    "tempo_following": 15.157539970433287,
+    "listening": 42.28915662650603,
+    "groove": 22.044768599137733,
+    "style_fit": 97.9910970412573
+   },
+   "other_band": {
+    "beat_alignment": 40.01512009550621,
+    "tempo_following": 0.08688868984589884,
+    "listening": 20.727673649393605,
+    "groove": 2.1839579806204625,
+    "style_fit": 83.46526205590226
+   }
+  },
+  "Track01715": {
+   "matched": {
+    "beat_alignment": null,
+    "tempo_following": null,
+    "listening": null,
+    "groove": null,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": null,
+    "tempo_following": null,
+    "listening": null,
+    "groove": null,
+    "style_fit": null
+   }
+  },
+  "Track01716": {
+   "matched": {
+    "beat_alignment": 43.36395099746795,
+    "tempo_following": 26.056105163938568,
+    "listening": 22.538293216630198,
+    "groove": 17.43308711789995,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 17.918568809052225,
+    "tempo_following": 0.0,
+    "listening": 5.995717344753747,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01717": {
+   "matched": {
+    "beat_alignment": 23.412284460949447,
+    "tempo_following": 3.1554218634145057,
+    "listening": 0.0,
+    "groove": 6.0525478262702155,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 27.454212784282678,
+    "tempo_following": 8.641820876819862,
+    "listening": 2.484472049689441,
+    "groove": 2.1729527095718173,
+    "style_fit": 0.0
+   }
+  },
+  "Track01718": {
+   "matched": {
+    "beat_alignment": 58.92127932890134,
+    "tempo_following": 41.18464372331845,
+    "listening": 8.438818565400844,
+    "groove": 10.885550206031331,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 7.064627268619801,
+    "tempo_following": 0.18471033780771554,
+    "listening": 14.362657091561939,
+    "groove": 3.1193062460876027,
+    "style_fit": 0.0
+   }
+  },
+  "Track01719": {
+   "matched": {
+    "beat_alignment": 31.28745246874288,
+    "tempo_following": 19.000250352511127,
+    "listening": 49.022346368715084,
+    "groove": 32.4895248104877,
+    "style_fit": 94.79378042490121
+   },
+   "other_band": {
+    "beat_alignment": 38.66743724900532,
+    "tempo_following": 1.058466441551281,
+    "listening": 18.271604938271604,
+    "groove": 3.1582532737097533,
+    "style_fit": 76.29119727892129
+   }
+  },
+  "Track01720": {
+   "matched": {
+    "beat_alignment": 15.679366107181153,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 1.0890191959853621,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 26.30382588871349,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01723": {
+   "matched": {
+    "beat_alignment": 24.66616775092027,
+    "tempo_following": 10.76722034400128,
+    "listening": 0.0,
+    "groove": 5.33881114184558,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0613081356430137,
+    "listening": 0.0,
+    "groove": 2.528034635624211,
+    "style_fit": 0.0
+   }
+  },
+  "Track01724": {
+   "matched": {
+    "beat_alignment": 2.5325047270249748,
+    "tempo_following": null,
+    "listening": 6.416178803626309,
+    "groove": 2.132561961220226,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 1.220404424798977,
+    "tempo_following": null,
+    "listening": 7.352533834925502,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01725": {
+   "matched": {
+    "beat_alignment": 34.33819199772773,
+    "tempo_following": 11.573948320685291,
+    "listening": 0.0,
+    "groove": 26.21022323771988,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 40.28737745564783,
+    "tempo_following": 0.9493126455346662,
+    "listening": 0.0,
+    "groove": 8.942521085875168,
+    "style_fit": null
+   }
+  },
+  "Track01727": {
+   "matched": {
+    "beat_alignment": 29.715618689877655,
+    "tempo_following": 5.65676719027119,
+    "listening": 43.60625574977001,
+    "groove": 27.270466832619057,
+    "style_fit": 91.44761376741167
+   },
+   "other_band": {
+    "beat_alignment": 50.100620757824124,
+    "tempo_following": 1.8111841970431395,
+    "listening": 19.650067294751008,
+    "groove": 6.790706665442989,
+    "style_fit": 82.87975350339319
+   }
+  },
+  "Track01730": {
+   "matched": {
+    "beat_alignment": 39.608102890624394,
+    "tempo_following": 0.0,
+    "listening": 1.881720430107527,
+    "groove": 2.196791929848638,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 1.8681318681318682,
+    "groove": 0.35655698755460835,
+    "style_fit": 0.0
+   }
+  },
+  "Track01731": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 2.098859158007112,
+    "listening": 4.008077063126882,
+    "groove": 2.011053597769935,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 15.32585229664505,
+    "tempo_following": 1.3969402387275052,
+    "listening": 2.3238925199709506,
+    "groove": 3.487042329346293,
+    "style_fit": 0.0
+   }
+  },
+  "Track01732": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 9.39111743159863,
+    "listening": 4.356397316052075,
+    "groove": 10.740951468891653,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 42.255773106624005,
+    "tempo_following": 5.116495493588135,
+    "listening": 0.0,
+    "groove": 7.540738562842655,
+    "style_fit": null
+   }
+  },
+  "Track01733": {
+   "matched": {
+    "beat_alignment": 41.51230680338934,
+    "tempo_following": null,
+    "listening": 13.486058568025783,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 45.927363099781154,
+    "tempo_following": null,
+    "listening": 7.775267214717238,
+    "groove": 9.582496359303109,
+    "style_fit": null
+   }
+  },
+  "Track01735": {
+   "matched": {
+    "beat_alignment": 33.87973844293819,
+    "tempo_following": 19.078859337254706,
+    "listening": 38.93138351905039,
+    "groove": 31.33816736982184,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.03959762919051636,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01737": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.1108389529173022,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 2.6330454165505706,
+    "groove": 0.3465943539785258,
+    "style_fit": null
+   }
+  },
+  "Track01738": {
+   "matched": {
+    "beat_alignment": 33.99625506757379,
+    "tempo_following": 3.1666406617769787,
+    "listening": 19.548872180451127,
+    "groove": 0.3292144390331449,
+    "style_fit": 68.93706622548163
+   },
+   "other_band": {
+    "beat_alignment": 15.198095567205122,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 64.15224430399891
+   }
+  },
+  "Track01739": {
+   "matched": {
+    "beat_alignment": 32.99362807910472,
+    "tempo_following": 36.98448727872709,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01741": {
+   "matched": {
+    "beat_alignment": 37.18438862421191,
+    "tempo_following": 2.0837730892074986,
+    "listening": 20.331239291833235,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 37.444610230856696,
+    "tempo_following": 1.751588557169254,
+    "listening": 11.54644017378371,
+    "groove": 5.105852510687073,
+    "style_fit": null
+   }
+  },
+  "Track01742": {
+   "matched": {
+    "beat_alignment": 14.587488194168879,
+    "tempo_following": 13.245714314039667,
+    "listening": 17.61492944924898,
+    "groove": 1.2060444998923867,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 8.019491820396798,
+    "groove": 0.0,
+    "style_fit": 19.053357746088455
+   }
+  },
+  "Track01743": {
+   "matched": {
+    "beat_alignment": 31.897364596312556,
+    "tempo_following": 0.0,
+    "listening": 28.3296011679869,
+    "groove": 20.950746953451397,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 42.80190382707348,
+    "tempo_following": 0.0,
+    "listening": 2.848426222189152,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01744": {
+   "matched": {
+    "beat_alignment": 48.965582459236934,
+    "tempo_following": 22.892083244930664,
+    "listening": 40.46511627906977,
+    "groove": 18.313207932473976,
+    "style_fit": 62.12765973044008
+   },
+   "other_band": {
+    "beat_alignment": 4.706183779998694,
+    "tempo_following": 0.0,
+    "listening": 5.524861878453039,
+    "groove": 0.0,
+    "style_fit": 58.8433921387875
+   }
+  },
+  "Track01745": {
+   "matched": {
+    "beat_alignment": 11.782482767630396,
+    "tempo_following": 3.6600859435363793,
+    "listening": 9.486166007905137,
+    "groove": 3.132836099293087,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 42.114123153037255,
+    "tempo_following": 4.927529938516339,
+    "listening": 14.634146341463413,
+    "groove": 3.1090152702160663,
+    "style_fit": 0.0
+   }
+  },
+  "Track01746": {
+   "matched": {
+    "beat_alignment": 41.45507164096916,
+    "tempo_following": 18.272171011059637,
+    "listening": 38.51203501094092,
+    "groove": 32.303463366923054,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 21.955323468247467,
+    "tempo_following": 0.0,
+    "listening": 23.135135135135133,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01747": {
+   "matched": {
+    "beat_alignment": 28.938005500865653,
+    "tempo_following": 14.874637950512568,
+    "listening": 33.19826168663378,
+    "groove": 29.042126366371292,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 18.42979800820229,
+    "tempo_following": 0.0,
+    "listening": 13.053640623591962,
+    "groove": 2.375022734936606,
+    "style_fit": null
+   }
+  },
+  "Track01749": {
+   "matched": {
+    "beat_alignment": 1.2345450600241878,
+    "tempo_following": 5.119131355324771,
+    "listening": 23.218390804597703,
+    "groove": 13.29964089205713,
+    "style_fit": 78.78665183110272
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01750": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 7.408873889677666,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01751": {
+   "matched": {
+    "beat_alignment": 11.306487951835658,
+    "tempo_following": 4.318492032070647,
+    "listening": 9.660735468564653,
+    "groove": 4.522714242354542,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.710366014850088,
+    "tempo_following": 0.3625384166410622,
+    "listening": 5.147595356550581,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01753": {
+   "matched": {
+    "beat_alignment": 31.031056579302557,
+    "tempo_following": 14.058160057270758,
+    "listening": 28.368794326241137,
+    "groove": 22.03788116977751,
+    "style_fit": 81.47958029446842
+   },
+   "other_band": {
+    "beat_alignment": 39.341067048750574,
+    "tempo_following": 3.8581503532040706,
+    "listening": 16.771488469601678,
+    "groove": 7.330166372999431,
+    "style_fit": 83.29701535079622
+   }
+  },
+  "Track01754": {
+   "matched": {
+    "beat_alignment": 4.116186351727536,
+    "tempo_following": 0.6990556027304411,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.8305015982182378,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01756": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 7.395805315191796,
+    "groove": 9.093373220109155,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 5.837588061261928,
+    "style_fit": null
+   }
+  },
+  "Track01757": {
+   "matched": {
+    "beat_alignment": 45.425316494543,
+    "tempo_following": 17.949058916761913,
+    "listening": 22.22222222222222,
+    "groove": 7.0687942699212885,
+    "style_fit": 32.90546874290825
+   },
+   "other_band": {
+    "beat_alignment": 33.39319300818473,
+    "tempo_following": 10.796360959319307,
+    "listening": 19.718309859154928,
+    "groove": 15.207604164546018,
+    "style_fit": 41.896251416349536
+   }
+  },
+  "Track01758": {
+   "matched": {
+    "beat_alignment": 21.10082958453175,
+    "tempo_following": 2.3266614887540413,
+    "listening": 7.431340872374798,
+    "groove": 4.02984562647247,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01760": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 9.68589935566339,
+    "tempo_following": 0.0,
+    "listening": 25.10460251046025,
+    "groove": 3.5660032680186275,
+    "style_fit": 79.10755993243899
+   }
+  },
+  "Track01761": {
+   "matched": {
+    "beat_alignment": 19.698431548907305,
+    "tempo_following": 10.670190976033844,
+    "listening": 12.561990782685342,
+    "groove": 0.3744211256306014,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 11.411974743753325,
+    "tempo_following": 0.0,
+    "listening": 8.459989735896727,
+    "groove": 1.7689091375859605,
+    "style_fit": 0.0
+   }
+  },
+  "Track01762": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 18.686987104337636,
+    "groove": 0.07831684811222278,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 44.20283510097532,
+    "tempo_following": 2.581676611657909,
+    "listening": 8.011815020270225,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01763": {
+   "matched": {
+    "beat_alignment": 40.81429767890079,
+    "tempo_following": 26.746533411274946,
+    "listening": 4.8797409805735485,
+    "groove": 17.747936733307895,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 28.368257431359055,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01766": {
+   "matched": {
+    "beat_alignment": 19.723632587529437,
+    "tempo_following": 9.768786417825202,
+    "listening": 19.778993413645015,
+    "groove": 31.65275818650532,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 1.8310382749285992,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01768": {
+   "matched": {
+    "beat_alignment": 28.06486417614138,
+    "tempo_following": 0.0,
+    "listening": 37.577086909530166,
+    "groove": 29.14409542751316,
+    "style_fit": 53.938210933340734
+   },
+   "other_band": {
+    "beat_alignment": 41.37602548275108,
+    "tempo_following": 4.259363377930477,
+    "listening": 15.127109183120158,
+    "groove": 4.114239235090867,
+    "style_fit": 51.97815926391648
+   }
+  },
+  "Track01769": {
+   "matched": {
+    "beat_alignment": 61.230118326841044,
+    "tempo_following": 0.0,
+    "listening": 1.2180687125380534,
+    "groove": 6.073755664740704,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 13.382547417530832,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 2.5144670816035055,
+    "style_fit": null
+   }
+  },
+  "Track01770": {
+   "matched": {
+    "beat_alignment": 19.997558792108045,
+    "tempo_following": 7.030383881275403,
+    "listening": 26.873343951091655,
+    "groove": 0.0,
+    "style_fit": 77.85232103503446
+   },
+   "other_band": {
+    "beat_alignment": 17.60093187804588,
+    "tempo_following": 0.0,
+    "listening": 21.946112248706427,
+    "groove": 2.5933127862717185,
+    "style_fit": 37.89591189059245
+   }
+  },
+  "Track01771": {
+   "matched": {
+    "beat_alignment": 33.10111312147083,
+    "tempo_following": 0.0,
+    "listening": 20.577871740662438,
+    "groove": 3.458923101637733,
+    "style_fit": 9.654517359353092
+   },
+   "other_band": {
+    "beat_alignment": 52.87863861274794,
+    "tempo_following": 0.0,
+    "listening": 18.73170731707317,
+    "groove": 8.881821702402965,
+    "style_fit": 8.398843721002255
+   }
+  },
+  "Track01772": {
+   "matched": {
+    "beat_alignment": 10.849999240135341,
+    "tempo_following": 4.916836704284214,
+    "listening": 9.698996655518394,
+    "groove": 6.703474182235575,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 5.140911152875941,
+    "tempo_following": 0.0,
+    "listening": 4.651162790697675,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01773": {
+   "matched": {
+    "beat_alignment": 19.115305556837754,
+    "tempo_following": 18.258484889887786,
+    "listening": 22.181069665738356,
+    "groove": 21.576964732155744,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.653777276132256,
+    "tempo_following": 2.702591909047096,
+    "listening": 3.257858896670174,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01774": {
+   "matched": {
+    "beat_alignment": 32.95799694783208,
+    "tempo_following": 3.1899323954204926,
+    "listening": 8.492030492030487,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 20.237338827329296,
+    "tempo_following": 0.6374959338330002,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01775": {
+   "matched": {
+    "beat_alignment": 36.0009058443022,
+    "tempo_following": 14.233396892190997,
+    "listening": 30.538943251289997,
+    "groove": 1.2529356329146069,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 43.512334278499864,
+    "tempo_following": 2.440981891716245,
+    "listening": 27.69168331001484,
+    "groove": 13.532087035173781,
+    "style_fit": null
+   }
+  },
+  "Track01776": {
+   "matched": {
+    "beat_alignment": 19.348316036232642,
+    "tempo_following": 9.428003968421583,
+    "listening": 24.21134041600521,
+    "groove": 4.11729648359491,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 7.293686445329538,
+    "tempo_following": 0.049119428006889745,
+    "listening": 14.686469207434108,
+    "groove": 0.0,
+    "style_fit": 17.702803695841645
+   }
+  },
+  "Track01777": {
+   "matched": {
+    "beat_alignment": 10.161698881309865,
+    "tempo_following": 3.454456220620343,
+    "listening": 18.761692159294473,
+    "groove": 0.0,
+    "style_fit": 95.01342925760707
+   },
+   "other_band": {
+    "beat_alignment": 14.237268854186707,
+    "tempo_following": 0.0,
+    "listening": 17.476434546954163,
+    "groove": 0.05637503427448452,
+    "style_fit": 49.31130535905722
+   }
+  },
+  "Track01778": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 3.7738436013053835,
+    "listening": 21.713134929514435,
+    "groove": 14.895240344626448,
+    "style_fit": 58.58252614849142
+   },
+   "other_band": {
+    "beat_alignment": 29.010000165574862,
+    "tempo_following": 0.0,
+    "listening": 6.459930313588851,
+    "groove": 0.4863574495982268,
+    "style_fit": 59.984256818510026
+   }
+  },
+  "Track01779": {
+   "matched": {
+    "beat_alignment": 56.092771111665805,
+    "tempo_following": 29.77558199573769,
+    "listening": 4.528639250262038,
+    "groove": 4.241921027772166,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 56.2364028244293,
+    "tempo_following": 0.0,
+    "listening": 0.8077595802194307,
+    "groove": 3.6264614228630845,
+    "style_fit": 0.0
+   }
+  },
+  "Track01781": {
+   "matched": {
+    "beat_alignment": 25.171768525915816,
+    "tempo_following": 13.183223006690813,
+    "listening": 30.679611650485437,
+    "groove": 27.22960994686267,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 7.106885386557321,
+    "tempo_following": 0.501711356352074,
+    "listening": 15.197132616487455,
+    "groove": 1.7201409035434263,
+    "style_fit": null
+   }
+  },
+  "Track01782": {
+   "matched": {
+    "beat_alignment": 12.265797874867921,
+    "tempo_following": 1.3367338652256677,
+    "listening": 24.06417112299465,
+    "groove": 11.500855392504269,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 31.892573761234864,
+    "tempo_following": 0.0,
+    "listening": 14.814814814814813,
+    "groove": 4.608358907867023,
+    "style_fit": null
+   }
+  },
+  "Track01783": {
+   "matched": {
+    "beat_alignment": 43.71016637585571,
+    "tempo_following": 11.895234090276906,
+    "listening": 37.31543624161074,
+    "groove": 43.57767436565458,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 22.79580703012448,
+    "tempo_following": 0.0,
+    "listening": 18.54043392504931,
+    "groove": 1.8990476144935993,
+    "style_fit": null
+   }
+  },
+  "Track01785": {
+   "matched": {
+    "beat_alignment": 33.98898203337666,
+    "tempo_following": 18.382215332669315,
+    "listening": 43.907156673114116,
+    "groove": 30.81342952988831,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 20.417908539174533,
+    "tempo_following": 0.0,
+    "listening": 21.73913043478261,
+    "groove": 1.9823952067569872,
+    "style_fit": null
+   }
+  },
+  "Track01787": {
+   "matched": {
+    "beat_alignment": 22.66675361897623,
+    "tempo_following": 15.598546533481054,
+    "listening": 16.99528536353914,
+    "groove": 17.213822936911967,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 38.291801101393034,
+    "tempo_following": 4.314980806437899,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01788": {
+   "matched": {
+    "beat_alignment": 4.142998425529598,
+    "tempo_following": 0.0,
+    "listening": 2.0649337091554436,
+    "groove": 0.306111438038933,
+    "style_fit": 25.25540387845682
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 8.960573476702509,
+    "groove": 0.6251529745045806,
+    "style_fit": 36.64241667591423
+   }
+  },
+  "Track01789": {
+   "matched": {
+    "beat_alignment": 18.18765019726449,
+    "tempo_following": 6.1687025694405575,
+    "listening": 10.177885824461397,
+    "groove": 15.960853835441114,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 8.3032734685614,
+    "tempo_following": 0.0,
+    "listening": 5.555852742620549,
+    "groove": 0.6083695956631213,
+    "style_fit": 0.0
+   }
+  },
+  "Track01790": {
+   "matched": {
+    "beat_alignment": 25.636287762313227,
+    "tempo_following": 9.798967826053529,
+    "listening": 38.90006706908115,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 46.34050029560344,
+    "tempo_following": 0.0,
+    "listening": 29.20353982300885,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01791": {
+   "matched": {
+    "beat_alignment": 25.27687591820659,
+    "tempo_following": 3.345914462795232,
+    "listening": 23.19277108433735,
+    "groove": 0.0,
+    "style_fit": 16.26274599321796
+   },
+   "other_band": {
+    "beat_alignment": 19.267201248034276,
+    "tempo_following": 0.0,
+    "listening": 19.91584852734923,
+    "groove": 0.0,
+    "style_fit": 14.735738576898022
+   }
+  },
+  "Track01792": {
+   "matched": {
+    "beat_alignment": 34.47429626484199,
+    "tempo_following": 0.40083286963093323,
+    "listening": 20.481927710843372,
+    "groove": 0.7206299828431765,
+    "style_fit": 21.909427358180654
+   },
+   "other_band": {
+    "beat_alignment": 18.953777121686457,
+    "tempo_following": 0.0,
+    "listening": 18.44484629294756,
+    "groove": 1.3448602399803202,
+    "style_fit": 28.411459241312997
+   }
+  },
+  "Track01793": {
+   "matched": {
+    "beat_alignment": 18.796339645727453,
+    "tempo_following": 6.948473621938367,
+    "listening": 18.679827305524167,
+    "groove": 11.883381064466404,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 11.568673416093675,
+    "tempo_following": 0.0,
+    "listening": 9.24435272255269,
+    "groove": 0.9886946013701942,
+    "style_fit": 0.0
+   }
+  },
+  "Track01795": {
+   "matched": {
+    "beat_alignment": 17.199019195963295,
+    "tempo_following": 2.058601127841821,
+    "listening": 18.455497382198953,
+    "groove": 8.564672611147149,
+    "style_fit": 40.75717164886281
+   },
+   "other_band": {
+    "beat_alignment": 22.14402692854097,
+    "tempo_following": 1.0968359240943166,
+    "listening": 5.376344086021505,
+    "groove": 0.0,
+    "style_fit": 35.68720915600091
+   }
+  },
+  "Track01796": {
+   "matched": {
+    "beat_alignment": 22.060255258972138,
+    "tempo_following": 15.126464930327007,
+    "listening": 27.759958475850784,
+    "groove": 0.3515850841592061,
+    "style_fit": 39.04483939407651
+   },
+   "other_band": {
+    "beat_alignment": 0.42132732542466184,
+    "tempo_following": 0.0,
+    "listening": 6.197801184079175,
+    "groove": 0.6475577484936719,
+    "style_fit": 44.849313883390074
+   }
+  },
+  "Track01797": {
+   "matched": {
+    "beat_alignment": 21.329732135603063,
+    "tempo_following": 2.161387850247342,
+    "listening": 20.5825935673819,
+    "groove": 0.0,
+    "style_fit": 28.586136892626264
+   },
+   "other_band": {
+    "beat_alignment": 13.909569585498103,
+    "tempo_following": 0.0,
+    "listening": 16.4071660324925,
+    "groove": 0.0,
+    "style_fit": 30.933245588066775
+   }
+  },
+  "Track01799": {
+   "matched": {
+    "beat_alignment": 14.50927075971435,
+    "tempo_following": 8.269646880972687,
+    "listening": 15.105233284141221,
+    "groove": 0.0,
+    "style_fit": 57.0723132130902
+   },
+   "other_band": {
+    "beat_alignment": 21.827717040224044,
+    "tempo_following": 1.0598605118703608,
+    "listening": 8.152920896380003,
+    "groove": 0.0,
+    "style_fit": 62.98634520185891
+   }
+  },
+  "Track01802": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 5.4656390494540785,
+    "groove": 0.0,
+    "style_fit": 15.097475689172061
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01803": {
+   "matched": {
+    "beat_alignment": 6.235068165724669,
+    "tempo_following": 5.559475859693343,
+    "listening": 10.507782101167313,
+    "groove": 4.968394711170658,
+    "style_fit": 15.833424788361
+   },
+   "other_band": {
+    "beat_alignment": 25.7887278348065,
+    "tempo_following": 0.6659750945846887,
+    "listening": 10.666894713587322,
+    "groove": 20.931097233073846,
+    "style_fit": 7.045862802737818
+   }
+  },
+  "Track01804": {
+   "matched": {
+    "beat_alignment": 53.21585833517028,
+    "tempo_following": 23.8330933597501,
+    "listening": 16.666666666666664,
+    "groove": 21.506748030189353,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 13.305741686946288,
+    "tempo_following": 4.399455384095386,
+    "listening": 3.076923076923077,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01805": {
+   "matched": {
+    "beat_alignment": 10.763759855611571,
+    "tempo_following": 4.855138529038431,
+    "listening": 10.948905109489052,
+    "groove": 0.6189980002544028,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 29.323012066900755,
+    "tempo_following": 0.0,
+    "listening": 5.866666666666666,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01806": {
+   "matched": {
+    "beat_alignment": 49.691992764169555,
+    "tempo_following": 2.7700780185550937,
+    "listening": 12.408759124087592,
+    "groove": 3.4060119333177505,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 7.329722003883385,
+    "tempo_following": 0.0,
+    "listening": 11.731315042573321,
+    "groove": 3.333526182629929,
+    "style_fit": null
+   }
+  },
+  "Track01807": {
+   "matched": {
+    "beat_alignment": 19.405953618684578,
+    "tempo_following": 9.871916751701624,
+    "listening": 41.701085565992905,
+    "groove": 24.502611052988264,
+    "style_fit": 54.358137221929624
+   },
+   "other_band": {
+    "beat_alignment": 38.59978019763087,
+    "tempo_following": 0.0,
+    "listening": 18.57954190850652,
+    "groove": 12.52560477884759,
+    "style_fit": 28.896879131243775
+   }
+  },
+  "Track01809": {
+   "matched": {
+    "beat_alignment": 50.34077397313843,
+    "tempo_following": 14.169824822628524,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 14.284955551321247,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01812": {
+   "matched": {
+    "beat_alignment": 13.140618004904839,
+    "tempo_following": 5.619176804640798,
+    "listening": 29.942570991395584,
+    "groove": 19.89043344503892,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 5.810393069780832,
+    "tempo_following": 0.0,
+    "listening": 17.97554186509769,
+    "groove": 4.597505425867897,
+    "style_fit": null
+   }
+  },
+  "Track01813": {
+   "matched": {
+    "beat_alignment": 7.469200369284647,
+    "tempo_following": 5.4759886863482246,
+    "listening": 20.611124871270086,
+    "groove": 0.0,
+    "style_fit": 95.00832920029272
+   },
+   "other_band": {
+    "beat_alignment": 24.565554663369284,
+    "tempo_following": 0.45548355392790496,
+    "listening": 6.143211164731969,
+    "groove": 0.0,
+    "style_fit": 81.07992545388822
+   }
+  },
+  "Track01814": {
+   "matched": {
+    "beat_alignment": 31.49517953093263,
+    "tempo_following": 16.26712412534725,
+    "listening": 9.813084112149532,
+    "groove": 11.03355703821245,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 20.78675273901472,
+    "tempo_following": 0.9556590391443279,
+    "listening": 3.7815126050420167,
+    "groove": 0.7463249396341359,
+    "style_fit": 0.0
+   }
+  },
+  "Track01815": {
+   "matched": {
+    "beat_alignment": 27.656291127555722,
+    "tempo_following": 11.488478049763595,
+    "listening": 13.696154232352646,
+    "groove": 5.784230844818268,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 10.428938326671041,
+    "tempo_following": 0.7096620076613117,
+    "listening": 6.262798453752268,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01819": {
+   "matched": {
+    "beat_alignment": 67.5553234228029,
+    "tempo_following": 40.89731239060417,
+    "listening": 23.095823095823096,
+    "groove": 19.388860930209304,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 9.834681119530973,
+    "tempo_following": 0.026924387939841463,
+    "listening": 21.778886118038237,
+    "groove": 1.6847714611507025,
+    "style_fit": null
+   }
+  },
+  "Track01820": {
+   "matched": {
+    "beat_alignment": 1.8121218193472006,
+    "tempo_following": 12.094898004625032,
+    "listening": 16.79352226720648,
+    "groove": 5.0842821372996205,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 13.661830043921352,
+    "tempo_following": 0.39360413936108535,
+    "listening": 8.193879104704866,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01821": {
+   "matched": {
+    "beat_alignment": 12.293360727222518,
+    "tempo_following": 6.5125466876776645,
+    "listening": 21.843971631205676,
+    "groove": 4.0830825231918,
+    "style_fit": 87.54308583707981
+   },
+   "other_band": {
+    "beat_alignment": 23.785933169882327,
+    "tempo_following": 0.1949754830243049,
+    "listening": 18.39080459770115,
+    "groove": 0.0,
+    "style_fit": 68.58484007582116
+   }
+  },
+  "Track01823": {
+   "matched": {
+    "beat_alignment": null,
+    "tempo_following": null,
+    "listening": null,
+    "groove": null,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": null,
+    "tempo_following": null,
+    "listening": null,
+    "groove": null,
+    "style_fit": null
+   }
+  },
+  "Track01824": {
+   "matched": {
+    "beat_alignment": 38.52493949566187,
+    "tempo_following": 8.770212076977502,
+    "listening": 18.99640978542206,
+    "groove": 11.992263500731749,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 12.802702518192834,
+    "tempo_following": 0.0,
+    "listening": 11.78026205072725,
+    "groove": 0.23477528456375663,
+    "style_fit": 24.748894815182855
+   }
+  },
+  "Track01825": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 1.4117788837847034,
+    "listening": 13.292228613587262,
+    "groove": 0.0,
+    "style_fit": 64.39262834503818
+   },
+   "other_band": {
+    "beat_alignment": 15.64961158013231,
+    "tempo_following": 0.0,
+    "listening": 4.81749288862832,
+    "groove": 7.573270125095839,
+    "style_fit": 42.03858742808057
+   }
+  },
+  "Track01826": {
+   "matched": {
+    "beat_alignment": 22.447881515521793,
+    "tempo_following": 0.0,
+    "listening": 5.202913631633715,
+    "groove": 1.5633320283010324,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 18.182538429805263,
+    "tempo_following": 0.0,
+    "listening": 3.4170854271356785,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01827": {
+   "matched": {
+    "beat_alignment": 9.494249230900659,
+    "tempo_following": 4.136464688033423,
+    "listening": 11.098265895953757,
+    "groove": 7.162285894400154,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 9.703701370571407,
+    "tempo_following": 0.0,
+    "listening": 4.945054945054945,
+    "groove": 0.3483369133295527,
+    "style_fit": 0.0
+   }
+  },
+  "Track01828": {
+   "matched": {
+    "beat_alignment": 17.751416566420396,
+    "tempo_following": 8.20683028562826,
+    "listening": 18.82948477914153,
+    "groove": 10.123247115088606,
+    "style_fit": 77.78013151384913
+   },
+   "other_band": {
+    "beat_alignment": 7.214961445347654,
+    "tempo_following": 0.28842199170169,
+    "listening": 16.14233156401831,
+    "groove": 1.8385344671246584,
+    "style_fit": 76.78056791841702
+   }
+  },
+  "Track01830": {
+   "matched": {
+    "beat_alignment": 71.30279279909291,
+    "tempo_following": 23.913788747209335,
+    "listening": 0.8541793776693106,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 44.97690338252109,
+    "tempo_following": 0.0,
+    "listening": 5.228758169934641,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01835": {
+   "matched": {
+    "beat_alignment": 34.77914171068864,
+    "tempo_following": 17.194341899701023,
+    "listening": 38.504464285714285,
+    "groove": 13.641719237846631,
+    "style_fit": 93.62831699561227
+   },
+   "other_band": {
+    "beat_alignment": 7.45762835771679,
+    "tempo_following": 0.4741351256191637,
+    "listening": 10.41095890410959,
+    "groove": 1.6387401256630205,
+    "style_fit": 89.96619008974626
+   }
+  },
+  "Track01836": {
+   "matched": {
+    "beat_alignment": null,
+    "tempo_following": null,
+    "listening": null,
+    "groove": null,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": null,
+    "tempo_following": null,
+    "listening": null,
+    "groove": null,
+    "style_fit": null
+   }
+  },
+  "Track01837": {
+   "matched": {
+    "beat_alignment": 23.773428342792062,
+    "tempo_following": 8.929507388570759,
+    "listening": 0.9674710671388405,
+    "groove": 2.7278566855482285,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 25.72884305389205,
+    "tempo_following": 0.1259745288041584,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01838": {
+   "matched": {
+    "beat_alignment": 18.469100916609076,
+    "tempo_following": 0.0,
+    "listening": 4.418265629910005,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 6.7761311694411175,
+    "tempo_following": 0.0,
+    "listening": 0.9393805959195662,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01840": {
+   "matched": {
+    "beat_alignment": 30.295787242085755,
+    "tempo_following": 16.375733410416895,
+    "listening": 16.051289862994064,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 51.175329239268464,
+    "tempo_following": 0.0,
+    "listening": 11.408950032330711,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01841": {
+   "matched": {
+    "beat_alignment": 22.275248448040703,
+    "tempo_following": 24.250567314890105,
+    "listening": 41.54727793696275,
+    "groove": 32.235147436691555,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 22.58282623394185,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01843": {
+   "matched": {
+    "beat_alignment": 19.456860638876453,
+    "tempo_following": 15.505884234838174,
+    "listening": 35.01597444089457,
+    "groove": 13.163870847311099,
+    "style_fit": 75.28024561176287
+   },
+   "other_band": {
+    "beat_alignment": 38.82999963561801,
+    "tempo_following": 3.956855063635049,
+    "listening": 16.207455429497568,
+    "groove": 8.272558527650888,
+    "style_fit": 12.362471739045779
+   }
+  },
+  "Track01845": {
+   "matched": {
+    "beat_alignment": 8.756289487262261,
+    "tempo_following": 2.949311478238743,
+    "listening": 4.3478260869565215,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 5.019483936203694,
+    "tempo_following": 0.3184217946760573,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01848": {
+   "matched": {
+    "beat_alignment": 48.754206282866605,
+    "tempo_following": 33.044045696255054,
+    "listening": 12.847124385585925,
+    "groove": 15.755084412976162,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01849": {
+   "matched": {
+    "beat_alignment": 39.6081775343234,
+    "tempo_following": 8.264651892056808,
+    "listening": 18.502202643171806,
+    "groove": 1.8227069272596523,
+    "style_fit": 74.74060663097256
+   },
+   "other_band": {
+    "beat_alignment": 25.517438915673225,
+    "tempo_following": 0.0,
+    "listening": 24.615384615384617,
+    "groove": 0.0,
+    "style_fit": 73.9946763270559
+   }
+  },
+  "Track01851": {
+   "matched": {
+    "beat_alignment": 22.338746303769746,
+    "tempo_following": 4.921777994386516,
+    "listening": 19.15820029027576,
+    "groove": 9.908664229598724,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 34.04394844272002,
+    "tempo_following": 0.29912105812470735,
+    "listening": 6.486486486486487,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01852": {
+   "matched": {
+    "beat_alignment": 26.816658285198784,
+    "tempo_following": 1.3181851147263879,
+    "listening": 17.35159817351598,
+    "groove": 3.5225206674725458,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 18.277918234658316,
+    "tempo_following": 0.48560446163866927,
+    "listening": 30.711610486891384,
+    "groove": 1.1843993772338504,
+    "style_fit": null
+   }
+  },
+  "Track01855": {
+   "matched": {
+    "beat_alignment": 44.40339675951208,
+    "tempo_following": 22.77765906313924,
+    "listening": 37.35661445386205,
+    "groove": 46.089599099447746,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 40.41069790899871,
+    "tempo_following": 1.0359840621382372,
+    "listening": 27.42601659509964,
+    "groove": 0.29407375026716664,
+    "style_fit": null
+   }
+  },
+  "Track01856": {
+   "matched": {
+    "beat_alignment": 26.122108123563148,
+    "tempo_following": 12.8408610586137,
+    "listening": 7.889692189725052,
+    "groove": 0.0,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 17.73162424004567,
+    "tempo_following": 0.0,
+    "listening": 7.272348867279526,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01858": {
+   "matched": {
+    "beat_alignment": 46.590366340495805,
+    "tempo_following": 24.166371383759877,
+    "listening": 35.10968950922425,
+    "groove": 42.0221791054008,
+    "style_fit": 53.06362458855072
+   },
+   "other_band": {
+    "beat_alignment": 26.371677412312245,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 3.695750416510262,
+    "style_fit": 67.53847035594838
+   }
+  },
+  "Track01860": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 10.982128057026273,
+    "listening": 9.79298405905124,
+    "groove": 11.488567157627735,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 0.0,
+    "tempo_following": 0.0,
+    "listening": 0.0,
+    "groove": 1.943585181978984,
+    "style_fit": 0.0
+   }
+  },
+  "Track01861": {
+   "matched": {
+    "beat_alignment": 37.48034340984686,
+    "tempo_following": 22.379877123530314,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 46.51926596730498,
+    "tempo_following": 12.395726341752086,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01865": {
+   "matched": {
+    "beat_alignment": 39.41876680567743,
+    "tempo_following": 11.004574404179191,
+    "listening": 36.09022556390977,
+    "groove": 18.91979838069108,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 16.68838588452265,
+    "tempo_following": 0.0,
+    "listening": 23.014804845222073,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01867": {
+   "matched": {
+    "beat_alignment": 0.0,
+    "tempo_following": 5.017812838283617,
+    "listening": 14.527264402830479,
+    "groove": 6.836831121939153,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 22.159925872201637,
+    "tempo_following": 1.2258414892236418,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01869": {
+   "matched": {
+    "beat_alignment": 53.9649584795028,
+    "tempo_following": null,
+    "listening": 7.2841471039618035,
+    "groove": 7.8503184613600325,
+    "style_fit": 0.0
+   },
+   "other_band": {
+    "beat_alignment": 32.63366044154504,
+    "tempo_following": null,
+    "listening": 0.0,
+    "groove": 0.0,
+    "style_fit": 0.0
+   }
+  },
+  "Track01870": {
+   "matched": {
+    "beat_alignment": 36.60912128312698,
+    "tempo_following": 16.559554002201725,
+    "listening": 29.776674937965257,
+    "groove": 26.791298957174845,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 12.514641186394396,
+    "tempo_following": 0.0,
+    "listening": 27.034482758620687,
+    "groove": 0.18188511815389702,
+    "style_fit": null
+   }
+  },
+  "Track01873": {
+   "matched": {
+    "beat_alignment": 18.634767351442385,
+    "tempo_following": 5.737986148962467,
+    "listening": 37.581274382314696,
+    "groove": 21.874487855631354,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 47.11842271922295,
+    "tempo_following": 3.182856183793498,
+    "listening": 18.681318681318682,
+    "groove": 0.0,
+    "style_fit": null
+   }
+  },
+  "Track01874": {
+   "matched": {
+    "beat_alignment": 46.497888103412635,
+    "tempo_following": 6.288541110018671,
+    "listening": 33.2375716890874,
+    "groove": 21.49605522440216,
+    "style_fit": null
+   },
+   "other_band": {
+    "beat_alignment": 15.815334257531966,
+    "tempo_following": 0.0,
+    "listening": 20.533013529960215,
+    "groove": 0.10681365940960551,
+    "style_fit": null
+   }
+  },
+  "Track01875": {
+   "matched": {
+    "beat_alignment": 7.652063654427637,
+    "tempo_following": 2.0462532622580727,
+    "listening": 23.847011970613906,
+    "groove": 14.662374306446408,
+    "style_fit": 72.27448293040177
+   },
+   "other_band": {
+    "beat_alignment": 21.068309457782032,
+    "tempo_following": 2.985604238055842,
+    "listening": 17.992460545652037,
+    "groove": 6.41333365821737,
+    "style_fit": 67.92554855971783
+   }
+  }
+ }
+}

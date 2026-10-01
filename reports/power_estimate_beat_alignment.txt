@@ -1,0 +1,30 @@
+metric beat_alignment; headroom 5.491; song-sampling noise per network on 151 test songs: sd 1.0865
+
+seed spread read as the sd of the 5 controls: chance the real network wins
+ true advantage  (share of headroom)  sigma_c=0.0     sigma_c=0.316   sigma_c=0.631   sigma_c=1.262   sigma_c=2.525 
+          0.000                  0%            5.8%           5.7%           5.8%           5.7%           5.8%
+          0.316                  6%            8.9%           8.6%           8.5%           7.7%           7.0%
+          0.631                 11%           13.0%          12.7%          11.9%          10.2%           8.2%
+          1.262                 23%           24.6%          23.8%          21.0%          16.2%          11.1%
+          1.893                 34%           40.2%          38.4%          33.5%          24.2%          14.9%
+          2.777                 51%           63.6%          60.8%          53.8%          38.1%          21.4%
+          4.102                 75%           88.8%          86.6%          80.7%          61.3%          33.1%
+          5.491                100%           98.1%          97.5%          94.9%          81.3%          47.6%
+
+seed spread read as the range of the 5 controls: chance the real network wins
+ true advantage  (share of headroom)  sigma_c=0.0     sigma_c=0.316   sigma_c=0.631   sigma_c=1.262   sigma_c=2.525 
+          0.000                  0%            1.4%           1.5%           1.5%           1.5%           1.4%
+          0.316                  6%            2.4%           2.3%           2.3%           2.0%           1.8%
+          0.631                 11%            3.9%           3.5%           3.5%           2.7%           2.1%
+          1.262                 23%            8.0%           7.6%           6.8%           4.8%           3.1%
+          1.893                 34%           15.4%          14.2%          11.9%           7.8%           4.4%
+          2.777                 51%           30.2%          28.1%          23.3%          14.3%           6.7%
+          4.102                 75%           58.1%          54.7%          46.3%          28.4%          11.9%
+          5.491                100%           82.2%          79.0%          70.8%          47.2%          19.3%
+
+smallest true advantage with an 80% chance of winning (sd reading):
+  sigma_c 0.0   : 3.536 (64% of the headroom)
+  sigma_c 0.316 : 3.694 (67% of the headroom)
+  sigma_c 0.631 : 4.104 (75% of the headroom)
+  sigma_c 1.262 : 5.430 (99% of the headroom)
+  sigma_c 2.525 : 8.903 (162% of the headroom)

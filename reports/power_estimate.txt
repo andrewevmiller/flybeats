@@ -1,4 +1,4 @@
-headroom 0.087; song-sampling noise per network on 151 test songs: sd 0.0074
+metric hit_f1; headroom 0.087; song-sampling noise per network on 151 test songs: sd 0.0074
 
 seed spread read as the sd of the 5 controls: chance the real network wins
  true advantage  (share of headroom)  sigma_c=0.0     sigma_c=0.005   sigma_c=0.01    sigma_c=0.02    sigma_c=0.04  
@@ -25,6 +25,6 @@ seed spread read as the range of the 5 controls: chance the real network wins
 smallest true advantage with an 80% chance of winning (sd reading):
   sigma_c 0.0   : 0.024 (28% of the headroom)
   sigma_c 0.005 : 0.029 (33% of the headroom)
-  sigma_c 0.01  : 0.041 (47% of the headroom)
+  sigma_c 0.01  : 0.040 (47% of the headroom)
   sigma_c 0.02  : 0.069 (79% of the headroom)
-  sigma_c 0.04  : 0.131 (150% of the headroom)
+  sigma_c 0.04  : 0.130 (150% of the headroom)
