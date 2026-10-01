@@ -13,10 +13,10 @@
     "loss": 1e-05,
     "weights": 1e-05
   },
-  "ordinary_s_per_step": 7.550407648086548,
-  "recorded_s_per_step": 3.179748773574829,
-  "speedup": 2.374529620337902,
-  "record_s": 21.396856546401978,
+  "ordinary_s_per_step": 9.572505831718445,
+  "recorded_s_per_step": 3.2058589458465576,
+  "speedup": 2.9859410514989686,
+  "record_s": 24.208502054214478,
   "peak_gpu_memory_gb": 1.5543231964111328,
   "losses": {
     "A": [
@@ -101,9 +101,9 @@
       "loss": 1e-05,
       "weights": 1e-05
     },
-    "ordinary_s_per_step": 7.594094276428223,
-    "recorded_s_per_step": 3.200029134750366,
-    "record_s": 21.10403561592102,
+    "ordinary_s_per_step": 7.8138145208358765,
+    "recorded_s_per_step": 3.2302637100219727,
+    "record_s": 25.030261516571045,
     "losses": {
       "A": [
         1.0656780004501343,
@@ -170,6 +170,6 @@
       "e_vel": 7.392557664280757e-08
     }
   },
-  "version": "prereg-v5",
-  "code": "0039efb1a2b24ea5"
+  "version": "prereg-v5.1",
+  "code": "e4f86dad5f6c92be"
 }
