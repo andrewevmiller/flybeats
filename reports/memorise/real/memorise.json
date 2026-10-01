@@ -7,18 +7,166 @@
   ],
   "steps": 3000,
   "f1": {
-    "kick": 0.563,
-    "hihat_pedal": 0.8,
-    "snare": 0.383,
-    "hihat_closed": 0.53,
-    "hihat_open": 0.563,
-    "tom": 0.581,
-    "crash": 0.566,
-    "ride": 0.567
+    "kick": 0.623,
+    "hihat_pedal": 0.649,
+    "snare": 0.352,
+    "hihat_closed": 0.52,
+    "hihat_open": 0.621,
+    "tom": 0.588,
+    "crash": 0.5,
+    "ride": 0.52
+  },
+  "precision": {
+    "kick": 0.496,
+    "hihat_pedal": 0.522,
+    "snare": 0.293,
+    "hihat_closed": 0.391,
+    "hihat_open": 0.562,
+    "tom": 0.455,
+    "crash": 0.429,
+    "ride": 0.471
+  },
+  "recall": {
+    "kick": 0.836,
+    "hihat_pedal": 0.857,
+    "snare": 0.439,
+    "hihat_closed": 0.778,
+    "hihat_open": 0.692,
+    "tom": 0.833,
+    "crash": 0.6,
+    "ride": 0.579
+  },
+  "hits": {
+    "kick": {
+      "found": 127,
+      "extra": 129,
+      "missed": 25
+    },
+    "hihat_pedal": {
+      "found": 12,
+      "extra": 11,
+      "missed": 2
+    },
+    "snare": {
+      "found": 54,
+      "extra": 130,
+      "missed": 69
+    },
+    "hihat_closed": {
+      "found": 210,
+      "extra": 327,
+      "missed": 60
+    },
+    "hihat_open": {
+      "found": 18,
+      "extra": 14,
+      "missed": 8
+    },
+    "tom": {
+      "found": 10,
+      "extra": 12,
+      "missed": 2
+    },
+    "crash": {
+      "found": 12,
+      "extra": 16,
+      "missed": 8
+    },
+    "ride": {
+      "found": 33,
+      "extra": 37,
+      "missed": 24
+    }
+  },
+  "readout_inputs": {
+    "kick": {
+      "rms": 13.155,
+      "mean": 8.756,
+      "max_abs": 96.855
+    },
+    "hihat_pedal": {
+      "rms": 13.196,
+      "mean": 8.738,
+      "max_abs": 72.697
+    },
+    "snare": {
+      "rms": 7.199,
+      "mean": 5.403,
+      "max_abs": 24.979
+    },
+    "hihat_closed": {
+      "rms": 7.28,
+      "mean": 5.18,
+      "max_abs": 26.608
+    },
+    "hihat_open": {
+      "rms": 9.014,
+      "mean": 6.57,
+      "max_abs": 28.028
+    },
+    "tom": {
+      "rms": 17.3,
+      "mean": 11.679,
+      "max_abs": 71.768
+    },
+    "crash": {
+      "rms": 8.633,
+      "mean": 5.715,
+      "max_abs": 28.768
+    },
+    "ride": {
+      "rms": 23.313,
+      "mean": 16.284,
+      "max_abs": 80.178
+    }
+  },
+  "readout_inputs_at_start": {
+    "kick": {
+      "rms": 0.661,
+      "mean": 0.134,
+      "max_abs": 6.501
+    },
+    "hihat_pedal": {
+      "rms": 0.611,
+      "mean": 0.115,
+      "max_abs": 5.067
+    },
+    "snare": {
+      "rms": 0.982,
+      "mean": 0.357,
+      "max_abs": 5.453
+    },
+    "hihat_closed": {
+      "rms": 0.977,
+      "mean": 0.34,
+      "max_abs": 5.39
+    },
+    "hihat_open": {
+      "rms": 0.964,
+      "mean": 0.196,
+      "max_abs": 6.279
+    },
+    "tom": {
+      "rms": 0.955,
+      "mean": 0.26,
+      "max_abs": 7.205
+    },
+    "crash": {
+      "rms": 0.948,
+      "mean": 0.201,
+      "max_abs": 5.969
+    },
+    "ride": {
+      "rms": 0.929,
+      "mean": 0.248,
+      "max_abs": 6.557
+    }
   },
   "passes": false,
   "control": null,
   "audio_blind_floor": 0.49338385462760925,
-  "final_loss": 0.3367196321487427,
-  "cuda_graph": true
+  "final_loss": 0.34973224997520447,
+  "cuda_graph": true,
+  "version": "prereg-v5",
+  "as_locked": true
 }

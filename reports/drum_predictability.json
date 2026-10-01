@@ -1,0 +1,675 @@
+{
+  "trial": false,
+  "ceiling": {
+    "50": {
+      "median_random_pair_distance": 15.92248821258545,
+      "hits": 674,
+      "quiet_moments_sampled": 3000,
+      "nearest_distance_median_hits": 0.3133931850134335,
+      "by_eps": {
+        "0.05": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 32,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 18,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 66,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 4,
+              "twin_conflicts": 1
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 2,
+              "twin_conflicts": 1
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 354,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.1": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 38,
+              "twin_conflicts": 2
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 25,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 6,
+              "twin_conflicts": 1
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 2,
+              "twin_conflicts": 1
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 598,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.2": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 56,
+              "twin_conflicts": 5
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 1,
+              "twin_conflicts": 1
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 40,
+              "twin_conflicts": 2
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 94,
+              "twin_conflicts": 1
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 7,
+              "twin_conflicts": 2
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 2,
+              "twin_conflicts": 1
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 1,
+              "twin_conflicts": 1
+            }
+          },
+          "quiet_with_twin": 901,
+          "quiet_twin_is_a_hit": 1
+        }
+      }
+    },
+    "200": {
+      "median_random_pair_distance": 31.879718780517578,
+      "hits": 674,
+      "quiet_moments_sampled": 3000,
+      "nearest_distance_median_hits": 0.4221907970932899,
+      "by_eps": {
+        "0.05": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 29,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 18,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 66,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 3,
+              "twin_conflicts": 1
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 1,
+              "twin_conflicts": 1
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 334,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.1": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 32,
+              "twin_conflicts": 1
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 22,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 5,
+              "twin_conflicts": 1
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 1,
+              "twin_conflicts": 1
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 557,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.2": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 47,
+              "twin_conflicts": 1
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 32,
+              "twin_conflicts": 1
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 83,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 6,
+              "twin_conflicts": 1
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 2,
+              "twin_conflicts": 1
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 728,
+          "quiet_twin_is_a_hit": 4
+        }
+      }
+    },
+    "1000": {
+      "median_random_pair_distance": 31.987478256225586,
+      "hits": 674,
+      "quiet_moments_sampled": 3000,
+      "nearest_distance_median_hits": 0.5081851026534391,
+      "by_eps": {
+        "0.05": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 30,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 20,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 4,
+              "twin_conflicts": 0
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 543,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.1": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 30,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 20,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 4,
+              "twin_conflicts": 0
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 543,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.2": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 38,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 25,
+              "twin_conflicts": 1
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 4,
+              "twin_conflicts": 0
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 696,
+          "quiet_twin_is_a_hit": 0
+        }
+      }
+    },
+    "2000": {
+      "median_random_pair_distance": 31.266735076904297,
+      "hits": 674,
+      "quiet_moments_sampled": 3000,
+      "nearest_distance_median_hits": 0.5376575984028085,
+      "by_eps": {
+        "0.05": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 30,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 20,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 4,
+              "twin_conflicts": 0
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 546,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.1": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 30,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 20,
+              "twin_conflicts": 0
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 4,
+              "twin_conflicts": 0
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 546,
+          "quiet_twin_is_a_hit": 0
+        },
+        "0.2": {
+          "per_drum": {
+            "kick": {
+              "hits": 152,
+              "with_twin": 38,
+              "twin_conflicts": 0
+            },
+            "hihat_pedal": {
+              "hits": 14,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "snare": {
+              "hits": 123,
+              "with_twin": 27,
+              "twin_conflicts": 1
+            },
+            "hihat_closed": {
+              "hits": 270,
+              "with_twin": 76,
+              "twin_conflicts": 0
+            },
+            "hihat_open": {
+              "hits": 26,
+              "with_twin": 4,
+              "twin_conflicts": 0
+            },
+            "tom": {
+              "hits": 12,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "crash": {
+              "hits": 20,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            },
+            "ride": {
+              "hits": 57,
+              "with_twin": 0,
+              "twin_conflicts": 0
+            }
+          },
+          "quiet_with_twin": 678,
+          "quiet_twin_is_a_hit": 0
+        }
+      }
+    }
+  },
+  "across_songs": {
+    "fit_songs": [
+      "Track00005",
+      "Track00007",
+      "Track00009",
+      "Track00011",
+      "Track00013"
+    ],
+    "scored_songs": [
+      "Track00006",
+      "Track00008",
+      "Track00010",
+      "Track00012",
+      "Track00014"
+    ],
+    "per_memory": {
+      "200": {
+        "kick": {
+          "average_precision": 0.04997322993727389,
+          "base_rate": 0.021373626373626373
+        },
+        "hihat_pedal": {
+          "average_precision": 0.011762738971202615,
+          "base_rate": 0.011135531135531136
+        },
+        "snare": {
+          "average_precision": 0.02406398890245664,
+          "base_rate": 0.02056776556776557
+        },
+        "hihat_closed": {
+          "average_precision": 0.09223441282707129,
+          "base_rate": 0.06305860805860806
+        },
+        "hihat_open": {
+          "average_precision": 0.0009264593217721598,
+          "base_rate": 0.0008791208791208791
+        },
+        "tom": {
+          "average_precision": 0.012650093073838777,
+          "base_rate": 0.007564102564102564
+        },
+        "crash": {
+          "average_precision": 0.0025176388840734538,
+          "base_rate": 0.0015567765567765569
+        },
+        "ride": {
+          "average_precision": 0.020254255377047448,
+          "base_rate": 0.018443223443223442
+        }
+      },
+      "1000": {
+        "kick": {
+          "average_precision": 0.05244239362533304,
+          "base_rate": 0.021373626373626373
+        },
+        "hihat_pedal": {
+          "average_precision": 0.008837660502260683,
+          "base_rate": 0.011135531135531136
+        },
+        "snare": {
+          "average_precision": 0.031026347640013226,
+          "base_rate": 0.02056776556776557
+        },
+        "hihat_closed": {
+          "average_precision": 0.08721874363054509,
+          "base_rate": 0.06305860805860806
+        },
+        "hihat_open": {
+          "average_precision": 0.0008733084940882003,
+          "base_rate": 0.0008791208791208791
+        },
+        "tom": {
+          "average_precision": 0.01610661791727758,
+          "base_rate": 0.007564102564102564
+        },
+        "crash": {
+          "average_precision": 0.001948181830263021,
+          "base_rate": 0.0015567765567765569
+        },
+        "ride": {
+          "average_precision": 0.0668918817096903,
+          "base_rate": 0.018443223443223442
+        }
+      }
+    }
+  }
+}

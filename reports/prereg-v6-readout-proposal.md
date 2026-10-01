@@ -4,7 +4,7 @@ Status: **proposal, not locked.** Nothing in `config/locked.yaml` or the code ha
 becomes prereg-v6: a new tag and a CHANGELOG line, written before the runs that use it.
 
 Written 30 Sep 2026 from the prereg-v5 memorisation run of the real network (`reports/memorise/real/`, finished 15:37).
-The prereg-v4 control 1 is still running; its numbers go in before this is decided (see "Waiting on").
+Control 1 under prereg-v5 (prereg-v4 wiring) finished at about 18:20; its numbers are in "Control 1's result".
 
 ## Why this proposal exists
 
@@ -98,8 +98,46 @@ Drums with under 20 false hits have too few to read much into.
 - **The locked scoring counts every local peak above 0.5 as a hit, with no minimum gap between hits,** which is part of
   why duplicates count against precision. Many onset-detection evaluations suppress peaks that are too close together.
   Changing the scoring now would be a design change after results, so it stays as locked. The final report notes it.
-- **The same breakdown will be run on control 1's prereg-v5 weights** and added here. If its false hits are made up
-  differently (less snare confusion, say), that points at the wiring, not the setup.
+- **The same breakdown was run on control 1's prereg-v5 weights** (below). If its false hits were made up
+  differently (less snare confusion, say), that would point at the wiring, not the setup.
+
+**Control 1's breakdown** (`reports/memorise/control-1/final.pt`, step 3,000; F1 matched the logged ones):
+
+| Drum | Correct / false / missed | Duplicate | Near miss | Other drum | Stray | Peaks per correct hit |
+|---|---|---|---|---|---|---|
+| Kick | 148 / 46 / 4 | 43% | 15% | 15% | 26% | 1.14 |
+| Pedal hi-hat | 14 / 3 / 0 | 0% | 0% | 67% | 33% | 1.00 |
+| Snare | 106 / 53 / 17 | 17% | 25% | 40% | 19% | 1.10 |
+| Closed hi-hat | 252 / 51 / 18 | 27% | 37% | 10% | 25% | 1.06 |
+| Open hi-hat | 22 / 5 / 4 | 40% | 40% | 20% | 0% | 1.09 |
+| Toms | 12 / 7 / 0 | 43% | 0% | 0% | 57% | 1.25 |
+| Crash | 17 / 14 / 3 | 21% | 7% | 43% | 29% | 1.18 |
+| Ride | 35 / 34 / 22 | 24% | 32% | 29% | 15% | 1.23 |
+| **All drums, 213 false hits** | | **28%** | **25%** | **24%** | **23%** | |
+
+- **Control 1 makes about a third as many false hits (213 against 676), but the mix is almost the same:** roughly a
+  quarter each. Snare's false hits are still mostly on other drums (40% against 42%).
+- **So the kinds of error are a property of the setup, shared by both wirings; the real wiring makes more of every
+  kind.** Closed hi-hat shows the largest gap in duplicates: 1.06 peaks per correct hit against 1.50.
+
+### Readout diagnostics, tested and not proposed
+
+Two other readout ideas were tried on both networks' final weights (CPU, the 8 memorisation clips). Neither is part of
+this proposal.
+
+| Readout | Real F1 (found / false / missed) | Control 1 F1 (found / false / missed) |
+|---|---|---|
+| Locked: one frame's peak at 0.5 | 0.521 (476 / 676 / 198) | 0.812 (606 / 213 / 68) |
+| Peak at 50/51 = 0.98, the threshold consistent with the hit weight, fixed by formula (real only) | 0.000 (0 / 0 / 674) | not run |
+| Window: true-scale probability summed over the tolerance window, at 0.5, fixed by formula | 0.321 (151 / 116 / 523) | 0.351 (151 / 35 / 523) |
+| Peak, best threshold from a sweep | 0.527 | 0.813 |
+| Window, best threshold from a sweep | 0.605 | 0.867 |
+
+- **The consistent threshold is rejected:** no frame's output reaches 0.98, so it finds nothing.
+- **The window readout at its formula threshold is too strict.** At its best threshold it beats the best single-frame
+  readout on both networks (+0.08 real, +0.05 control 1). The sweep thresholds were picked on these same clips, so
+  these are upper bounds, not scores. Using a window readout would mean fixing its threshold in advance on validation
+  songs, as a separate preregistered change; it is not proposed here.
 
 ## Proposed change
 
@@ -181,9 +219,17 @@ against controls on validation or test data; there has been none. This list goes
 
 ## Waiting on
 
-**Control 1 under prereg-v5 (prereg-v4 wiring), due about 18:20.** If its readout inputs drift the same way, that
-confirms the fix is a general one for the setup. If they don't, the drift is a property of the real wiring. The fix is
-then still justified (the pre-set trigger fired), but the write-up should say that the controls didn't need it.
+Nothing. Control 1's result is below.
+
+## Control 1's result
+
+**Control 1 under prereg-v5 (prereg-v4 wiring), finished about 18:20: FAIL at step 3,000**, final loss 0.2827. F1:
+kick 0.855, snare 0.752, closed hi-hat 0.880 (real: 0.623, 0.352, 0.520). It got further than the real network but
+still missed 0.9 on kick and snare.
+
+**Its readout inputs drifted too:** typical size (rms) 11.0–32.6 across drums, against 7.2–23.3 for the real network
+and the trigger of 5. It was set beforehand that this would mean the drift is a general property of the setup, not of
+the real wiring; the fix applies to every network alike.
 
 ## If accepted: the work
 

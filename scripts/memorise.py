@@ -23,7 +23,13 @@ first line of the log says which.
 Every 250 steps it checks hit F1 on the clips, and with it each drum's precision (share of predicted hits that are
 real), recall (share of real hits found) and the counts behind them (found, extra, missed), in the log and the report.
 
-    .venv\\Scripts\\python.exe scripts\\memorise.py [--pair [N] | --control N] [--name NAME] [--steps 3000] [--no-chart] [--no-graph]
+--wide-target (a trial, never the locked check; not part of any preregistration) trains on a wider hit target:
+1 on the hit frame, then from 0.5 on the frames either side down in a straight line to the edge of the scoring
+tolerance (10% of the local beat, about 14 frames), the larger value where two hits' targets overlap. Drum weights
+apply to every frame of it, as they do to the locked target's neighbours. Velocity loss and scoring are unchanged.
+Its run is named "<name>-wide-target" by default.
+
+    .venv\\Scripts\\python.exe scripts\\memorise.py [--pair [N] | --control N] [--name NAME] [--steps 3000] [--no-chart] [--no-graph] [--wide-target]
 Uses the GPU.
 """
 import argparse
@@ -34,10 +40,11 @@ from pathlib import Path
 
 import numpy as np
 import torch
+from torch.nn import functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import load_locked, reports_dir  # noqa: E402
-from flybeats.model.loss import f1_from_counts, hit_counts  # noqa: E402
+from flybeats.model.loss import f1_from_counts, hit_counts, tolerance_frames  # noqa: E402
 from flybeats.model.training import (GraphedStep, audio_blind_loss, graph_checked, make_optimiser,  # noqa: E402
                                      make_schedule, setup, to_tensors, train_step)
 from live_chart import LiveChart  # noqa: E402
@@ -53,6 +60,8 @@ ap.add_argument("--no-graph", action="store_true", help="the ordinary training s
 ap.add_argument("--name", help='this run\'s name; default "real", or "control-N" with --control N')
 ap.add_argument("--pair", type=int, nargs="?", const=1, metavar="N",
                 help="run the real network, then control N (default 1), one after the other")
+ap.add_argument("--wide-target", action="store_true",
+                help="trial only: train on a hit target that spans the scoring tolerance (see the top of this file)")
 args = ap.parse_args()
 
 
@@ -94,11 +103,12 @@ def run_pair(control):
 
 
 if args.pair is not None:
-    if args.name or args.control is not None:
-        ap.error("--pair names its two runs itself; leave out --name and --control")
+    if args.name or args.control is not None or args.wide_target:
+        ap.error("--pair names its two runs itself; leave out --name, --control and --wide-target")
     sys.exit(run_pair(args.pair))
 
-name = args.name or ("real" if args.control is None else f"control-{args.control}")
+name = args.name or (("real" if args.control is None else f"control-{args.control}")
+                     + "-wide-target" * args.wide_target)
 out_dir = reports_dir() / "memorise" / name
 out_dir.mkdir(parents=True, exist_ok=True)
 cfg = load_locked()
@@ -107,7 +117,7 @@ if mc["schedule"] != cfg["training"]["schedule"]:
     sys.exit(f"memorisation.schedule {mc['schedule']!r} differs from training.schedule; the check runs training's")
 MUST_PASS, PASS_F1 = mc["must_pass"], mc["pass_f1"]
 steps = args.steps or mc["steps"]
-as_locked = args.steps is None and args.songs is None       # False: a trial run, not the locked check
+as_locked = args.steps is None and args.songs is None and not args.wide_target   # False: a trial run
 torch.manual_seed(cfg["model"]["init_seed"])                # the same starting weights every run, as in train.py
 s = setup("baby", args.control, args.device, cfg)
 model, loss_of, train = s["model"], s["loss"], s["train"]
@@ -117,6 +127,39 @@ songs = sorted(train.songs.index)[:args.songs or mc["songs"]]
 clips = [train.clip(song, float(rng.uniform(0, train.songs.duration[song] - train.clip_s)))
          for song in songs * mc["clips_per_song"]]
 batch = to_tensors(clips, args.device)                      # 8 fixed clips, 2 per song, no stem dropout
+
+
+def wide_loss(batch):
+    """--wide-target's loss: loss.loss_fn with the wider target, built once for the fixed batch. Same signature."""
+    frame_s = cfg["training_data"]["frame_ms"] / 1000
+    fraction = cfg["scorecard"]["onset_tolerance"]["fraction_of_local_beat"]
+    hits = batch["hits"].cpu().numpy()
+    target = np.zeros_like(hits)
+    n_clips, n_frames, n_drums = hits.shape
+    for i in range(n_clips):
+        for d in range(n_drums):
+            true = np.flatnonzero(hits[i, :, d])
+            for f, tol in zip(true, tolerance_frames(true, batch["beats"][i], frame_s, fraction)):
+                k = np.arange(-int(tol), int(tol) + 1)
+                v = np.where(k == 0, 1.0, 0.5 * (1 - (np.abs(k) - 1) / max(tol, 1)))
+                ok = (f + k >= 0) & (f + k < n_frames)
+                target[i, f + k[ok], d] = np.maximum(target[i, f + k[ok], d], v[ok])
+    target = torch.tensor(target, device=batch["hits"].device)
+    weights, vel_w = s["weights"], cfg["loss"]["velocity_weight"]
+
+    def loss(out, hits, vel, mask, as_tensors=False):
+        w = torch.where(target > 0, weights, torch.ones_like(weights)) * mask[..., None]
+        bce = F.binary_cross_entropy_with_logits(out["hit_logits"], target, weight=w, reduction="sum") / w.sum()
+        on = hits * mask[..., None]
+        mse = ((out["vel"] - vel) ** 2 * on).sum() / on.sum().clamp_min(1)
+        parts = {"hit_bce": bce.detach(), "vel_mse": mse.detach()}
+        return bce + vel_w * mse, parts if as_tensors else {k: float(v) for k, v in parts.items()}
+    return loss
+
+
+if args.wide_target:
+    loss_of = wide_loss(batch)
+    print("trial: --wide-target, the hit target spans the scoring tolerance; scoring is unchanged")
 opt = make_optimiser(model, cfg)
 sched = make_schedule(opt, steps, cfg)                      # training's schedule, over this check's steps
 floor = audio_blind_loss(batch, loss_of, len(model.pieces))
@@ -162,7 +205,7 @@ log = open(out_dir / "log.jsonl", "w", encoding="utf-8")
 log.write(json.dumps({"meta": {"script": "memorise", "name": name, "steps": steps, "audio_blind_floor": floor,
                                "must_pass": MUST_PASS, "pass_f1": PASS_F1, "control": args.control,
                                "version": cfg["version"], "as_locked": as_locked, "cuda_graph": use_graph,
-                               "readout_inputs_at_start": at_start}}) + "\n")
+                               "readout_inputs_at_start": at_start, "wide_target": args.wide_target}}) + "\n")
 log.flush()
 
 result, step = None, 0
@@ -197,7 +240,7 @@ try:
               "recall": result["recall"], "hits": result["hits"], "readout_inputs": result["readout_inputs"],
               "readout_inputs_at_start": at_start, "passes": passed, "control": args.control,
               "audio_blind_floor": floor, "final_loss": stats["loss"], "cuda_graph": use_graph,
-              "version": cfg["version"], "as_locked": as_locked}
+              "version": cfg["version"], "as_locked": as_locked, "wide_target": args.wide_target}
     (out_dir / "memorise.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 finally:                        # finished, failed, crashed or Ctrl+C: the website shows how it ended
     if step:                    # the weights as they ended, to re-score or look into without rerunning
