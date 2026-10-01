@@ -139,6 +139,25 @@ this proposal.
   these are upper bounds, not scores. Using a window readout would mean fixing its threshold in advance on validation
   songs, as a separate preregistered change; it is not proposed here.
 
+### Wider answer key: tested and rejected
+
+A trial (`memorise.py --wide-target`, `reports/memorise/real-wide-target/`; never the locked check) trained the real
+network on a hit target spanning the scoring tolerance: 1 on the hit frame, then from 0.5 beside it falling in a
+straight line to the tolerance edge (about 14 frames). Everything else matched the prereg-v5 real run: starting
+weights, clips, optimiser, schedule, scoring.
+
+| | Kick | Snare | Closed hi-hat | All drums: found / false / missed, F1 |
+|---|---|---|---|---|
+| Locked answer key (prereg-v5 real) | 0.623 | 0.352 | 0.520 | 476 / 676 / 198, 0.521 |
+| Wider answer key (trial) | 0.214 | 0.000 | 0.000 | 38 / 92 / 636, 0.095 |
+
+- **Far worse under the locked scoring.** No output reached 0.5 until step 500; snare and closed hi-hat never scored
+  a correct hit in 3,000 steps.
+- **Not hidden timing either:** with the threshold swept (an upper bound), its best F1 is 0.418 for the single-frame
+  peak and 0.487 for the window readout, against 0.527 and 0.605 for the locked run.
+- **Rejected.** It is not proposed and won't be revisited for this setup. Its readout inputs drifted as well (rms
+  8.1-24.5), consistent with the drift being a property of the setup.
+
 ## Proposed change
 
 **Refit the readout scaling every 250 steps, preserving the network's output exactly.**
