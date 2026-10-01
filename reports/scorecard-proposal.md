@@ -4,6 +4,12 @@ Status: **proposal, not locked.** Nothing in `config/locked.yaml` or the code ha
 scored with any facet. It takes in `reports/beat-alignment-proposal.md` (beat alignment, unchanged here) and is
 meant to be locked with it as one tag, before anything is scored.
 
+**Revised 30 Sep 2026 after the reference checks** (`scripts/scorecard_checks.py`, drum parts only, no network), as
+this proposal allows: groove changed from cosine similarity to a clipped correlation (the cosine version gave random
+timing 51 of 100); style fit reported only, not counted in the supporting rule (a third of songs left out); one
+expected outcome corrected. Andrew chose the supporting rule's count: **all 3** of the other counted facets. Results
+of the checks are in "Reference checks: results" below.
+
 ## The gap
 
 `locked.yaml` names five facets and their weights, a floor and ceiling frame, and two win rules:
@@ -81,33 +87,52 @@ playing the right drum at the right moment, which it can only learn from what th
 The floor (3/8 beat later) is outside the tolerance, so it scores near 0; the ceiling is 1.
 
 ### Groove (10): the drummer's pattern within the bar
-**Measure:** for the network and the original, count hits per drum at each of the 16 positions in the bar (from
-the downbeats), over the song's clips; raw = cosine similarity of the two 8 x 16 counts x b. The v0.0 construction
-(`metrics.groove_similarity`), on annotated bars instead of one fixed tempo, with the density balance added.
+**Measure:** for the network and the original, count hits per drum at each of the 16 positions in the bar, each hit
+at the **nearest** position (bars from the annotated downbeats), over the song's clips. Per drum, the correlation of
+the two 16-position profiles, **clipped at 0** (0 if either profile is flat or the network plays none of that drum);
+raw = the average over drums weighted by the original's share of hits, x b.
 
 It rewards the right pattern even when single hits miss, which listening doesn't. The floor's 3/8-beat shift moves
 every hit to another position, so it scores low.
+
+**Changed after the reference checks.** First proposed as the cosine similarity of the two 8 x 16 counts (v0.0's
+`metrics.groove_similarity`): random timing scored 51, because cosine credits hits spread evenly over the bar. A
+correlation gives an even spread 0. Unclipped, the floor's raw score was slightly negative (median -0.083), so
+silence (0) scored above the floor; clipping each drum's correlation at 0 fixes that. Positions were first taken by
+rounding down, which put grid lines on the bin edges, so hits a few ms early fell into the previous position; the
+nearest position fixes that.
 
 ### Style fit (15): the right drums, in the right proportions
 **Measure:** raw = 1 - (Jensen-Shannon divergence, base 2, between the network's and the original's share of hits
 per drum over the song's clips); 0 if the network plays nothing. 1 = the same mix of kick, snare, hi-hats, toms,
 cymbals.
 
-**The weakest facet, stated plainly:** most songs use similar drum mixes, so the floor (another song's part) may
-often be close to the ceiling, and many songs may fall under the 0.1 rule. It is the only facet that judges
-"style", and the only automatic proxy found that fits "rescale without listening". If the reference checks leave
-out most songs, the proposal is to drop it from the supporting rule and report it only.
+**Reported only; not counted in the supporting rule.** The reference checks confirmed it is weak: another song's
+drum mix is usually close to this song's (raw floor median 0.825), so 90 of 270 songs (33%) fall under the 0.1 rule;
+and it looks only at the mix, so random timing with the right drums scores 100. It stays in the musicianship score
+with its locked weight, and is reported per song.
 
-## The supporting rule: "4 of 6 other facets"
+## The supporting rule: all 3 counted facets (decided)
 
-Only 4 facets besides beat alignment are named. Two ways to fix it:
+Only 4 facets besides beat alignment are named, and style fit is reported only, so 3 are counted: tempo following,
+listening and groove. **The real network must beat the 5 controls' median on all 3** (Andrew, 30 Sep 2026).
 
-- **A (recommended): "at least 3 of the 4 other facets".** The real network beats the 5 controls' median on at
-  least 3 of tempo following, listening, groove and style fit. No facets invented to match a number; slightly
-  stricter (75% against 67%).
-- **B: add two facets to make 6**, for example dynamics (correlation of the network's and the drummer's loudness on
-  matched hits) and arrangement (correlation of hits per bar, following builds and drops). Keeps "4 of 6", but adds
-  two measures to fit a count whose origin isn't recorded.
+Why all 3 rather than 2 of 3: beating the median of 5 controls happens by chance half the time on any one facet when
+the real wiring is no better. The chance of a false supporting win:
+
+| Rule | If the facets were independent | If perfectly correlated |
+|---|---|---|
+| Locked "4 of 6" | 34% | 50% |
+| 2 of 3 | 50% | 50% |
+| **All 3** | **12.5%** | 50% |
+
+Listening and groove both measure playing the drummer's part, so they move together; the real figure for all 3 is
+somewhere around 12.5-25%. Each facet's comparison is reported on its own whatever the rule says, so a specific
+advantage (say, tempo following alone) stays visible.
+
+Considered and not chosen: **2 of 3** (a coin flip with no true effect, and weaker than the locked rule it replaces);
+**adding two facets to make 6** (dynamics, arrangement), which would invent measures to fit a count whose origin isn't
+recorded.
 
 ## Reference checks before locking (drum parts only, no network)
 
@@ -118,7 +143,7 @@ Only 4 facets besides beat alignment are named. Two ways to fix it:
 | Original part | 100 on every facet |
 | Floor | 0 on every facet |
 | Silence | 0 on every facet |
-| Random times, right number of hits | middling on beat alignment and tempo following, low on listening and groove |
+| Random times, right number of hits | middling on beat alignment; low on tempo following, listening and groove (corrected: first written "middling on tempo following", but random times keep no pulse, so low is right) |
 | Every 16th on every drum | low on all |
 | Original +/-10 / +/-20 ms jitter | high on beat alignment, tempo following and groove; listening still high (inside the tolerance) |
 | Original shifted a fixed 30 ms late | lower on beat alignment, high on tempo following |
@@ -129,10 +154,43 @@ Only 4 facets besides beat alignment are named. Two ways to fix it:
 Plus hand-made unit tests with known answers for each facet, and per facet the number of songs left out by the 0.1
 rule. If a facet behaves differently from the table, the proposal is revised before locking, never after scoring.
 
+## Reference checks: results
+
+`scripts/scorecard_checks.py` on the full set's 270 validation songs (4 fixed clips each), drum parts only.
+Hand-made examples all gave their known answers.
+
+| Facet | Raw ceiling | Raw floor | Songs left out |
+|---|---|---|---|
+| Beat alignment | 0.986 | 0.021 | 3 (1%) |
+| Tempo following (own-timing floor) | 0.989 | 0.016 | 11 (4%) |
+| Listening | 1.000 | 0.009 | 3 (1%) |
+| Groove (as revised) | 1.000 | 0.004 | 3 (1%) |
+| Style fit | 1.000 | 0.825 | 90 (33%) |
+
+Rescaled 0-100, mean over each facet's kept songs:
+
+| Output | Beat alignment | Tempo following | Listening | Groove | Style fit |
+|---|---|---|---|---|---|
+| Original | 100 | 100 | 100 | 100 | 100 |
+| Floor | 0 | 0 | 0 | 0 | 0 |
+| Silence | 0 | 0 | 0 | 0 | 0 |
+| Random times | 50 | 5 | 18 | 8 | 100 |
+| Every 16th, every drum | 7 | 11 | 13 | 1 | 18 |
+| +/-10 ms jitter | 97 | 95 | 99 | 98 | 100 |
+| +/-20 ms jitter | 91 | 85 | 99 | 97 | 100 |
+| 30 ms late | 67 | 99 | 97 | 96 | 100 |
+| Steady 16ths, another tempo | 35 | 0 | 19 | 6 | 93 |
+| Drums permuted | 100 | 100 | 12 | 20 | 5 |
+| Hi-hat 8ths | 60 | 64 | 20 | 6 | 8 |
+
+Everything matches the expected table except style fit's weakness (above). The locked floor would have scored 55 on
+tempo following, confirming its exception. The rejected cosine groove scored random times 51.
+
 ## If accepted
 
 1. **`locked.yaml`:** a `scorecard.facets` section with each measure as above, the tempo-following floor exception,
-   the test clips, the 0.1 rule, and `win_rule.supporting` reworded (A or B); a new tag and CHANGELOG line.
+   the test clips, the 0.1 rule, style fit as reported only, and `win_rule.supporting:
+   real_beats_random_median_on_all_3_of_tempo_following_listening_groove`; a new tag and CHANGELOG line.
 2. **Code:** `flybeats.scoring` (one function per facet, the rescaling and the musicianship score) with unit tests;
    `scripts/scorecard_checks.py`.
 3. **Then:** the feasibility model scored on validation songs with every facet (CPU), and the power estimate rerun
@@ -144,5 +202,6 @@ rule. If a facet behaves differently from the table, the proposal is revised bef
 |---|---|---|
 | Facets named, not defined | Each defined above | They had no measure |
 | One floor for every facet | Tempo following uses the other song's part at its own timing | The locked floor follows the tempo by construction |
-| "4 of 6 other facets" | "at least 3 of 4" (A) or two facets added (B) | Only 4 others are named |
+| "4 of 6 other facets" | Beats the controls' median on all 3 of tempo following, listening and groove | Only 4 others are named; style fit is too weak to count |
+| Style fit counted like the others | Reported only (still in the musicianship score) | 33% of songs left out; scores only the drum mix |
 | `failure_floor: 20` | Share of songs under 20 reported per facet; no rule uses it | It had no stated use |
