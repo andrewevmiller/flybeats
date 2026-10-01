@@ -28,8 +28,12 @@ real), recall (share of real hits found) and the counts behind them (found, extr
 tolerance (10% of the local beat, about 14 frames), the larger value where two hits' targets overlap. Drum weights
 apply to every frame of it, as they do to the locked target's neighbours. Velocity loss and scoring are unchanged.
 Its run is named "<name>-wide-target" by default.
+--history-readout (a trial in the same way) turns on the readout history proposed in
+reports/history-readout-proposal.md: each drum weighs its motor neurons' present frame and four 50 ms blocks before
+it through a learned profile, starting present-only. It uses the ordinary step: the CUDA graph check covers the
+locked readout only. Its run is named "<name>-history-readout" by default; with --wide-target too, both apply.
 
-    .venv\\Scripts\\python.exe scripts\\memorise.py [--pair [N] | --control N] [--name NAME] [--steps 3000] [--no-chart] [--no-graph] [--wide-target]
+    .venv\\Scripts\\python.exe scripts\\memorise.py [--pair [N] | --control N] [--name NAME] [--steps 3000] [--no-chart] [--no-graph] [--wide-target] [--history-readout]
 Uses the GPU.
 """
 import argparse
@@ -62,6 +66,8 @@ ap.add_argument("--pair", type=int, nargs="?", const=1, metavar="N",
                 help="run the real network, then control N (default 1), one after the other")
 ap.add_argument("--wide-target", action="store_true",
                 help="trial only: train on a hit target that spans the scoring tolerance (see the top of this file)")
+ap.add_argument("--history-readout", action="store_true",
+                help="trial only: the readout history from reports/history-readout-proposal.md")
 args = ap.parse_args()
 
 
@@ -103,12 +109,12 @@ def run_pair(control):
 
 
 if args.pair is not None:
-    if args.name or args.control is not None or args.wide_target:
-        ap.error("--pair names its two runs itself; leave out --name, --control and --wide-target")
+    if args.name or args.control is not None or args.wide_target or args.history_readout:
+        ap.error("--pair names its two runs itself; leave out --name, --control, --wide-target, --history-readout")
     sys.exit(run_pair(args.pair))
 
 name = args.name or (("real" if args.control is None else f"control-{args.control}")
-                     + "-wide-target" * args.wide_target)
+                     + "-wide-target" * args.wide_target + "-history-readout" * args.history_readout)
 out_dir = reports_dir() / "memorise" / name
 out_dir.mkdir(parents=True, exist_ok=True)
 cfg = load_locked()
@@ -117,7 +123,14 @@ if mc["schedule"] != cfg["training"]["schedule"]:
     sys.exit(f"memorisation.schedule {mc['schedule']!r} differs from training.schedule; the check runs training's")
 MUST_PASS, PASS_F1 = mc["must_pass"], mc["pass_f1"]
 steps = args.steps or mc["steps"]
-as_locked = args.steps is None and args.songs is None and not args.wide_target   # False: a trial run
+as_locked = (args.steps is None and args.songs is None and not args.wide_target
+             and not args.history_readout)                  # False: a trial run, not the locked check
+HISTORY = {"present": True, "blocks_ms": [50, 50, 50, 50], "profile": "per_drum", "init": "present_only",
+           "velocity": "same"}                              # as in reports/history-readout-proposal.md
+if args.history_readout:
+    if cfg["model"].get("readout_history"):
+        sys.exit("locked.yaml already sets model.readout_history; --history-readout is for trials before it is locked")
+    cfg["model"]["readout_history"] = HISTORY
 torch.manual_seed(cfg["model"]["init_seed"])                # the same starting weights every run, as in train.py
 s = setup("baby", args.control, args.device, cfg)
 model, loss_of, train = s["model"], s["loss"], s["train"]
@@ -167,6 +180,8 @@ print(f"audio-blind floor: {floor:.4f} (the loss must go clearly below this)")
 if not as_locked:
     print("trial run: --steps or --songs differ from locked.yaml, so this is not the locked check")
 use_graph, why = ((False, "turned off (--no-graph)") if args.no_graph else
+                  (False, "history readout trial: the CUDA graph check covers the locked readout only")
+                  if args.history_readout else
                   (False, "not on the GPU") if args.device != "cuda" else graph_checked())
 graphed = GraphedStep(model, opt, batch, loss_of, cfg["training"]["grad_clip_norm"]) if use_graph else None
 print(f"training step: {'recorded (CUDA graph)' if use_graph else 'ordinary'}, {why}")
@@ -205,7 +220,8 @@ log = open(out_dir / "log.jsonl", "w", encoding="utf-8")
 log.write(json.dumps({"meta": {"script": "memorise", "name": name, "steps": steps, "audio_blind_floor": floor,
                                "must_pass": MUST_PASS, "pass_f1": PASS_F1, "control": args.control,
                                "version": cfg["version"], "as_locked": as_locked, "cuda_graph": use_graph,
-                               "readout_inputs_at_start": at_start, "wide_target": args.wide_target}}) + "\n")
+                               "readout_inputs_at_start": at_start, "wide_target": args.wide_target,
+                               "history_readout": args.history_readout}}) + "\n")
 log.flush()
 
 result, step = None, 0
@@ -240,7 +256,11 @@ try:
               "recall": result["recall"], "hits": result["hits"], "readout_inputs": result["readout_inputs"],
               "readout_inputs_at_start": at_start, "passes": passed, "control": args.control,
               "audio_blind_floor": floor, "final_loss": stats["loss"], "cuda_graph": use_graph,
-              "version": cfg["version"], "as_locked": as_locked, "wide_target": args.wide_target}
+              "version": cfg["version"], "as_locked": as_locked, "wide_target": args.wide_target,
+              "history_readout": args.history_readout}
+    if args.history_readout:                                # each drum's learned time profile, for the write-up
+        report["history_profiles"] = {"hit": dict(zip(model.pieces, model.p_hit.detach().cpu().tolist())),
+                                      "velocity": dict(zip(model.pieces, model.p_vel.detach().cpu().tolist()))}
     (out_dir / "memorise.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
 finally:                        # finished, failed, crashed or Ctrl+C: the website shows how it ended
     if step:                    # the weights as they ended, to re-score or look into without rerunning

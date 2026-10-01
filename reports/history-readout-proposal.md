@@ -74,8 +74,8 @@ drum's motor neurons.**
    - the means over frames t-1 to t-10, t-11 to t-20, t-21 to t-30 and t-31 to t-40 (5-50, 55-100, 105-150 and
      155-200 ms back).
 
-   Causal: nothing after frame t. At the start of a clip, frames before the first count as zero activity (the same
-   starting state as the network's).
+   Causal: nothing after frame t. At the start of a clip, frames before the first count as z = 0 (each motor
+   neuron's average activity). They fall inside the 2 s warm-up, which the loss and scoring ignore.
 2. **Readout:** hit logit for drum d at frame t = the sum over d's motor neurons of w_hit(neuron) x (the profile of
    drum d applied to that neuron's five numbers) + c_hit(d). The profile is five numbers per drum; loudness has its
    own five per drum, through u_vel and e_vel in the same way. So a drum's motor neurons share one time profile, and

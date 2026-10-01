@@ -116,6 +116,30 @@ class FlyNet(nn.Module):
         self.u_vel = nn.Parameter(mc["readout_init_std"] * torch.randn(n_mn))
         self.c_hit = nn.Parameter(torch.full((n_drums,), float(mc["hit_bias_init"])))   # starts near "no hit"
         self.e_vel = nn.Parameter(torch.zeros(n_drums))
+        self._setup_readout_history(mc.get("readout_history"), n_drums)
+
+    def _setup_readout_history(self, rh, n_drums):
+        """Readout history (reports/history-readout-proposal.md; not locked): off unless model.readout_history is set.
+        Each drum weighs its motor neurons' present frame and the means of len(blocks_ms) earlier blocks through a
+        learned profile per drum, starting at (1, 0, ...), so the untrained readout equals the present-only one."""
+        self.history_blocks = []
+        self.p_hit = self.p_vel = None
+        if not rh:
+            return
+        expected = {"present": True, "profile": "per_drum", "init": "present_only"}
+        for k, v in expected.items():
+            if rh.get(k) != v:
+                raise ValueError(f"readout_history.{k} must be {v!r}, not {rh.get(k)!r}")
+        if rh.get("velocity") not in ("same", "present_only"):
+            raise ValueError(f"readout_history.velocity must be 'same' or 'present_only', not {rh.get('velocity')!r}")
+        self.history_blocks = [int(round(ms / self.dt_ms)) for ms in rh["blocks_ms"]]
+        if min(self.history_blocks) < 1:
+            raise ValueError(f"readout_history.blocks_ms must each be at least one frame: {rh['blocks_ms']}")
+        init = torch.zeros(n_drums, 1 + len(self.history_blocks))
+        init[:, 0] = 1
+        self.p_hit = nn.Parameter(init.clone())
+        if rh["velocity"] == "same":
+            self.p_vel = nn.Parameter(init.clone())
 
     def weight_matrix(self):
         """Dense (post, pre) matrix, rebuilt once per batch from the edge list."""
@@ -155,6 +179,11 @@ class FlyNet(nn.Module):
         bias = self.bias[self.type_idx]
         r = F.relu(v) * self.alive
         hit, vel, mean_rate, mn_rates, rates = [], [], [], [], []
+        if self.history_blocks:                    # readout history: per-neuron profiles, block edges in frames back
+            prof_hit = self.mn_drum @ self.p_hit
+            prof_vel = None if self.p_vel is None else self.mn_drum @ self.p_vel
+            edges = np.cumsum([0] + self.history_blocks)   # block j: frames edges[j] + 1 .. edges[j + 1] back
+            past, sums = [], [None] * len(self.history_blocks)
         for t in range(t_len):
             drive = torch.zeros(b, self.n, device=dev, dtype=ear_in.dtype).index_copy(1, self.ear_idx, ear_in[:, t])
             if once:
@@ -166,8 +195,23 @@ class FlyNet(nn.Module):
             r = F.relu(v) * self.alive
             rm = r[:, self.mn_idx]
             z = (rm - self.mn_mean) / self.mn_std
-            hit.append((z * self.w_hit) @ self.mn_drum + self.c_hit)
-            vel.append(torch.sigmoid((z * self.u_vel) @ self.mn_drum + self.e_vel))
+            if self.history_blocks:
+                # Running block sums of earlier frames' z; frames before the clip count as z = 0 (average activity)
+                for j in range(len(sums)):
+                    enter, leave = t - edges[j] - 1, t - edges[j + 1] - 1
+                    if enter >= 0:
+                        sums[j] = past[enter] if sums[j] is None else sums[j] + past[enter]
+                    if leave >= 0:
+                        sums[j] = sums[j] - past[leave]
+                feats = [z] + [torch.zeros_like(z) if sm is None else sm / n_j
+                               for sm, n_j in zip(sums, self.history_blocks)]
+                eff_hit = sum(f * prof_hit[:, k] for k, f in enumerate(feats))
+                eff_vel = z if prof_vel is None else sum(f * prof_vel[:, k] for k, f in enumerate(feats))
+                past.append(z)
+            else:
+                eff_hit = eff_vel = z
+            hit.append((eff_hit * self.w_hit) @ self.mn_drum + self.c_hit)
+            vel.append(torch.sigmoid((eff_vel * self.u_vel) @ self.mn_drum + self.e_vel))
             mean_rate.append(r.mean(1))
             mn_rates.append(rm)
             if record:

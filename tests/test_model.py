@@ -219,3 +219,85 @@ def test_connection_gradient_once_per_clip_frees_its_graph(cfg, paths):
     del out
     gc.collect()
     assert probe() is None
+
+
+HISTORY = {"present": True, "blocks_ms": [50, 50, 50, 50], "profile": "per_drum", "init": "present_only",
+           "velocity": "same"}
+
+
+def history_pair(cfg, paths):
+    """The locked network and the same network with the readout history on (same weights, profiles at init)."""
+    import copy
+    on_cfg = copy.deepcopy(cfg)
+    on_cfg["model"]["readout_history"] = HISTORY
+    off, _, _ = make(cfg, paths)
+    on, _, _ = make(on_cfg, paths)
+    on.load_state_dict(off.state_dict(), strict=False)
+    return off, on
+
+
+def test_readout_history_starts_equal_to_present_only_readout(cfg, paths):
+    off, on = history_pair(cfg, paths)
+    torch.manual_seed(5)
+    a = torch.randn(2, SR // 2) * 0.3
+    with torch.no_grad():
+        oa, _ = off(a)
+        ob, _ = on(a)
+    assert torch.equal(oa["hit_logits"], ob["hit_logits"]) and torch.equal(oa["vel"], ob["vel"])
+
+
+def test_readout_history_is_causal_and_reads_the_past(cfg, paths):
+    _, on = history_pair(cfg, paths)
+    with torch.no_grad():
+        on.p_hit[:, 1:] = 0.5                      # weigh the past
+        on.p_vel[:, 1:] = 0.5
+    torch.manual_seed(6)
+    a = torch.randn(1, SR) * 0.1
+    b = a.clone()
+    cut = 9_000
+    b[:, cut:] = torch.randn(1, SR - cut)
+    with torch.no_grad():
+        oa, _ = on(a)
+        ob, _ = on(b)
+    safe = cut // HOP
+    for k in ("hit_logits", "vel"):
+        assert torch.equal(oa[k][:, :safe], ob[k][:, :safe]), k
+    with torch.no_grad():
+        on.p_hit[:, 1:] = 0
+        present, _ = on(a)
+    assert not torch.equal(present["hit_logits"], oa["hit_logits"])   # the past profile changes the output
+
+
+def test_readout_history_block_means_are_exact(cfg, paths):
+    """Each block weight alone reproduces that block's mean of earlier z, frames before the clip counting as 0."""
+    _, on = history_pair(cfg, paths)
+    torch.manual_seed(7)
+    a = torch.randn(1, SR // 2) * 0.3
+    d = 0
+    group = on.mn_drum[:, d] > 0
+    with torch.no_grad():
+        on.w_hit.zero_()
+        on.w_hit[group] = 1.0
+        out, _ = on(a)
+        z = (out["mn_rates"][0] - on.mn_mean) / on.mn_std                      # (frames, readout neurons)
+        on.p_hit.zero_()
+        on.p_hit[d, 2] = 1.0                       # the second block: 11-20 frames back
+        out2, _ = on(a)
+    t_len = z.shape[0]
+    want = torch.stack([z[max(t - 20, 0):max(t - 10, 0)].sum(0) / 10 for t in range(t_len)])[:, group].sum(1)
+    got = out2["hit_logits"][0, :, d] - on.c_hit[d]
+    assert torch.allclose(got, want, atol=1e-4)
+
+
+def test_readout_history_keeps_drums_disjoint(cfg, paths):
+    _, on = history_pair(cfg, paths)
+    torch.manual_seed(8)
+    a = torch.randn(1, SR // 2) * 0.3
+    with torch.no_grad():
+        on.p_hit[:, 1:] = 0.3
+        before, _ = on(a)
+        on.w_hit[on.mn_drum[:, 1] > 0] += 1.0      # change only drum 1's motor neurons' weights
+        after, _ = on(a)
+    others = [d for d in range(len(on.pieces)) if d != 1]
+    assert torch.equal(before["hit_logits"][..., others], after["hit_logits"][..., others])
+    assert not torch.equal(before["hit_logits"][..., 1], after["hit_logits"][..., 1])
