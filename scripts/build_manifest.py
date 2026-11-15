@@ -11,6 +11,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import ROOT, load_locked, load_paths, reports_dir  # noqa: E402
+from flybeats.data.confirm import apply_confirmation, read_list  # noqa: E402
 from flybeats.data.manifest import build_manifest, read_excluded, set_dir  # noqa: E402
 from flybeats.data.report import build_report  # noqa: E402
 from flybeats.data.sampler import ClipSampler, make_validation_clips  # noqa: E402
@@ -37,6 +38,9 @@ def progress(song):
 
 manifest, events, beats, dropped = build_manifest(root, args.set, cfg, excluded, progress)
 bar.close()
+if args.set == "full":   # re-apply the v0.15 seal (sealed songs leave train); see data/confirm.py
+    manifest = apply_confirmation(manifest, read_list(ROOT / "config" / "confirmation_A.txt"),
+                                  read_list(ROOT / "config" / "confirmation_B.txt"))
 out = set_dir(paths["work_dir"], args.set)
 manifest.to_parquet(out / "manifest.parquet", index=False)
 events.to_parquet(out / "events.parquet", index=False)

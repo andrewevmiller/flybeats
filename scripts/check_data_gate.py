@@ -13,6 +13,7 @@ import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import ROOT, load_locked, load_paths, reports_dir  # noqa: E402
+from flybeats.data.confirm import confirmation_gate_checks  # noqa: E402
 from flybeats.data.manifest import load_manifest, read_excluded, set_dir  # noqa: E402
 from flybeats.data.report import gate_checks  # noqa: E402
 from flybeats.data.sampler import ClipSampler  # noqa: E402
@@ -31,6 +32,8 @@ root = unpacked_root(paths["work_dir"], args.set)
 manifest, events, beats = load_manifest(paths["work_dir"], args.set)
 excluded = read_excluded(ROOT / "config" / "excluded_songs.txt")
 checks = gate_checks(manifest, root, args.set, cfg["data"]["slakh"]["exclude"], excluded)
+if args.set == "full":
+    checks += confirmation_gate_checks(manifest)
 
 # Sampler: 8 different training songs per batch; never a song from another split
 train = ClipSampler(root, manifest, events, beats, cfg, "train", seed=99)

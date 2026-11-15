@@ -1,8 +1,17 @@
-version: prereg-v5.4
+version: prereg-v5.5
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
   slakh: {release: slakh2100_redux_16k, split: official_redux, exclude: [omitted]}
+  confirmation:                 # v0.15 holdout (prereg-v5.5, 15 Nov 2026; config/CHANGELOG.md). Sealed once.
+    salt: flybeats-v0.15-confirm
+    seed: 20261115
+    unit: drum_hash
+    min_songs: 150
+    clips_per_song: 4
+    clip_seconds: 16
+    confirm_a: {songs: 150, list_sha256: 2fa65308459f87e66eaef7a41a5aad76f431b6dc0ef5217c2888782624448076, clips_sha256: a7351adc6637f8e3120be92dd7aaee4753ee72164e647e3b9a467184d8b4352f}
+    confirm_b: {songs: 150, list_sha256: ff38212fd8b87212b536b940d6d900f99fdd2168bd5673ce2e18ac249f34924c, clips_sha256: f70260c51f128afb33084b6d887b74245640d12e3dfcafc194146804db2f9901}
 
 connectome:
   neurons: annotated            # annotations rows with a superclass (166,700)

@@ -53,13 +53,17 @@
     }
   },
   "songs_per_split": {
+    "confirm_a": 150,
+    "confirm_b": 150,
     "test": 151,
-    "train": 1162,
+    "train": 862,
     "validation": 270
   },
   "hours_per_split": {
+    "confirm_a": 10.0,
+    "confirm_b": 10.8,
     "test": 11.0,
-    "train": 79.9,
+    "train": 59.2,
     "validation": 18.3
   },
   "input_stems_per_song": {

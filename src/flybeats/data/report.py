@@ -65,7 +65,9 @@ def gate_checks(manifest, root, which, excluded_splits, excluded_songs=(), stem_
     excluded_songs = set(excluded_songs)
     on_disk = {s: len([p for p in v if p.name not in excluded_songs])
                for s, v in list_songs(root, which).items() if s not in excluded_splits}
-    in_manifest = manifest.groupby("split").size().to_dict()
+    # the v0.15 confirmation sets are train-folder songs, so they count as train here
+    folded = manifest.split.where(~manifest.split.str.startswith("confirm_"), "train")
+    in_manifest = folded.value_counts().to_dict()
     checks.append((on_disk == in_manifest, "song counts per split match the folders",
                    f"folders {on_disk}, manifest {in_manifest}"))
     checks.append((not set(manifest.split) & set(excluded_splits), "omitted songs excluded",
