@@ -5,24 +5,55 @@ Run after build_slice.py. About 1.1 million proposed swaps per seed. The method 
 connectome.random_controls.method: degree_class_reciprocity_preserving_swaps (prereg-v4: swaps within neuron classes,
 reciprocal pairs kept) or degree_preserving_swaps (prereg-v3 and before: swaps across the whole slice).
 Control tables that already exist are moved, not overwritten, to slice/controls/replaced-<date and time>/.
+
+    .venv\\Scripts\\python.exe scripts\\build_controls.py --count
+--count (spec 0, measurement only): no rewiring and no table is written. It reads the control tables already on disk
+and adds "type_pairs" (the dial count network.py makes: one per (sending type, receiving type) pair in the edge list)
+for the real slice and each control to reports/controls_report.json, leaving everything else in the report as it is.
 """
 import json
 import sys
 import time
 from pathlib import Path
 
+import numpy as np
+import pandas as pd
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import load_locked, load_paths, reports_dir  # noqa: E402
 from flybeats.connectome.controls import (CLASSES, check_control, control_classes, drum_reach,  # noqa: E402
                                           reciprocal_mask, rewire, rewire_classes)
-from flybeats.connectome.slice import largest_eigenvalue  # noqa: E402
+from flybeats.connectome.slice import largest_eigenvalue, type_keys  # noqa: E402
 from flybeats.connectome.store import control_path, load_slice, save_table  # noqa: E402
 from tqdm import tqdm  # noqa: E402
+
+
+def type_pairs(neurons, edges):
+    """Dials network.py makes: one per (sending type, receiving type) pair present in the edge list.
+    Same keys as FlyNet.__init__ (type_keys, pandas factorize with sort=True), so the count matches model.theta."""
+    type_idx, _ = pd.factorize(type_keys(neurons), sort=True)
+    pairs = pd.MultiIndex.from_arrays([type_idx[edges.pre.to_numpy(np.int64)], type_idx[edges.post.to_numpy(np.int64)]])
+    return int(len(pairs.unique()))
+
 
 cfg, paths = load_locked(), load_paths()
 rc = cfg["connectome"]["random_controls"]
 ears = cfg["connectome"]["ears"]
 neurons, real = load_slice(paths["work_dir"])
+
+if "--count" in sys.argv[1:]:
+    out = reports_dir() / "controls_report.json"
+    report = json.loads(out.read_text(encoding="utf-8"))
+    report["real"]["type_pairs"] = type_pairs(neurons, real)
+    for seed in rc["seeds"]:
+        ctrl = load_slice(paths["work_dir"], control_seed=seed)[1]
+        report["controls"][str(seed)]["type_pairs"] = type_pairs(neurons, ctrl)
+        print(f"seed {seed}: {report['controls'][str(seed)]['type_pairs']} dials")
+    print(f"real: {report['real']['type_pairs']} dials")
+    out.write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
+    print(f"wrote {out}")
+    sys.exit(0)
+
 classes = None
 if rc["method"] == "degree_class_reciprocity_preserving_swaps":
     if rc.get("classes") != CLASSES:
@@ -41,7 +72,8 @@ if old:
 
 report = {"version": cfg["version"], "method": rc["method"],
           "real": {"drum_reach": drum_reach(neurons, real, ears), "largest_eigenvalue": largest_eigenvalue(neurons, real),
-                   "reciprocal_share": float(reciprocal_mask(real, len(neurons)).mean())},
+                   "reciprocal_share": float(reciprocal_mask(real, len(neurons)).mean()),
+                   "type_pairs": type_pairs(neurons, real)},
           "controls": {}}
 if classes is not None:
     report["classes"] = {name: int((classes == i).sum()) for i, name in enumerate(CLASSES)}
@@ -56,6 +88,7 @@ for seed in rc["seeds"]:
     checks = check_control(neurons, real, ctrl, ears, classes)
     checks["accepted_swaps"] = accepted
     checks["largest_eigenvalue"] = largest_eigenvalue(neurons, ctrl)
+    checks["type_pairs"] = type_pairs(neurons, ctrl)
     save_table(ctrl, control_path(paths["work_dir"], seed))
     report["controls"][str(seed)] = checks
     bar.write(f"seed {seed}: {accepted} swaps accepted, {checks['surviving_real_connections_share']:.1%} of real "

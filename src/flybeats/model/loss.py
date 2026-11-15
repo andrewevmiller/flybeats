@@ -6,12 +6,19 @@ import torch
 from torch.nn import functional as F
 
 
-def drum_weights(manifest, pieces, frame_s, max_weight):
-    """Per drum: non-hit frames / hit frames over the training split, capped at max_weight."""
+def drum_weights(manifest, pieces, frame_s, max_weight, mode="ratio"):
+    """Per drum: non-hit frames / hit frames over the training split, capped at max_weight.
+    mode "ratio" (the locked setting) keeps that; "sqrt" (trial, fix 04) takes the square root after the cap, so at
+    most sqrt(max_weight)."""
     train = manifest[manifest.split == "train"]
     frames = (train.duration / frame_s).sum()
     hits = np.array([train[f"hits_{p}"].sum() for p in pieces], np.float64)
-    return torch.tensor(np.minimum((frames - hits) / np.maximum(hits, 1), max_weight), dtype=torch.float32)
+    w = np.minimum((frames - hits) / np.maximum(hits, 1), max_weight)
+    if mode == "sqrt":
+        w = np.sqrt(w)
+    elif mode != "ratio":
+        raise ValueError(f"unknown drum weight mode {mode!r}")
+    return torch.tensor(w, dtype=torch.float32)
 
 
 def soft_targets(hits, neighbour):

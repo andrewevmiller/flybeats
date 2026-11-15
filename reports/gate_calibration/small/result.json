@@ -1,0 +1,43 @@
+{
+  "size": "small",
+  "hidden": 64,
+  "parameters": 41744,
+  "steps": 3000,
+  "songs": [
+    "Track00001",
+    "Track00002",
+    "Track00003",
+    "Track00004"
+  ],
+  "passes_at_any_check": false,
+  "best_check": {
+    "step": 750,
+    "f1": {
+      "kick": 0.586,
+      "hihat_pedal": 0.48,
+      "snare": 0.557,
+      "hihat_closed": 0.828,
+      "hihat_open": 0.396,
+      "tom": 0.407,
+      "crash": 0.432,
+      "ride": 0.512
+    },
+    "passes": false
+  },
+  "final": {
+    "step": 3000,
+    "f1": {
+      "kick": 0.48,
+      "hihat_pedal": 0.444,
+      "snare": 0.417,
+      "hihat_closed": 0.687,
+      "hihat_open": 0.476,
+      "tom": 0.429,
+      "crash": 0.458,
+      "ride": 0.545
+    },
+    "passes": false
+  },
+  "audio_blind_floor": 0.49338385462760925,
+  "seconds": 303
+}

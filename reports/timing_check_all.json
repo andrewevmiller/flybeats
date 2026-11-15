@@ -1,0 +1,58 @@
+{
+ "networks": {
+  "real": {
+   "beat_alignment_mean": 15.881956542507771,
+   "hits_mean": 107.27407407407408,
+   "balance_mean": 0.35701865038645153,
+   "timing_without_b_mean": 0.517401847894547,
+   "timing_without_b_sd": 0.1153465522332333,
+   "songs_with_zero_hits_or_original": 4
+  },
+  "control_1": {
+   "beat_alignment_mean": 20.40868931376507,
+   "hits_mean": 132.0185185185185,
+   "balance_mean": 0.4454983731821329,
+   "timing_without_b_mean": 0.5158574503800679,
+   "timing_without_b_sd": 0.10918503080395767,
+   "songs_with_zero_hits_or_original": 3
+  },
+  "control_2": {
+   "beat_alignment_mean": 17.2979388598248,
+   "hits_mean": 113.35555555555555,
+   "balance_mean": 0.38846032991417084,
+   "timing_without_b_mean": 0.5071137938426544,
+   "timing_without_b_sd": 0.13849454933816277,
+   "songs_with_zero_hits_or_original": 5
+  },
+  "control_3": {
+   "beat_alignment_mean": 13.180233503735368,
+   "hits_mean": 88.85925925925926,
+   "balance_mean": 0.30901975685271443,
+   "timing_without_b_mean": 0.5120697192646214,
+   "timing_without_b_sd": 0.15407676301340384,
+   "songs_with_zero_hits_or_original": 5
+  },
+  "control_5": {
+   "beat_alignment_mean": 15.728623052533491,
+   "hits_mean": 105.81851851851852,
+   "balance_mean": 0.35822575131840034,
+   "timing_without_b_mean": 0.5095773219048255,
+   "timing_without_b_sd": 0.12980253188347732,
+   "songs_with_zero_hits_or_original": 4
+  },
+  "control_6": {
+   "beat_alignment_mean": 15.625808506163331,
+   "hits_mean": 103.4888888888889,
+   "balance_mean": 0.35901403793899156,
+   "timing_without_b_mean": 0.5044284364636826,
+   "timing_without_b_sd": 0.13069418374394662,
+   "songs_with_zero_hits_or_original": 4
+  }
+ },
+ "rank_correlation_across_networks": {
+  "beat_alignment_vs_hits": 1.0,
+  "beat_alignment_vs_balance": 0.7714285714285715,
+  "beat_alignment_vs_timing_without_b": 0.3142857142857143
+ },
+ "note": "six networks only: rank correlations are indicative, not significance tests"
+}

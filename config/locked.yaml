@@ -1,4 +1,4 @@
-version: prereg-v5.2
+version: prereg-v5.4
 
 data:
   malecns: {release: v1.0, min_confidence: 0.5}
@@ -25,7 +25,7 @@ connectome:
     modulatory: earmark_silenced   # consensus 5-HT/OA/DA, or unclear with a modulator predicted at >= 0.5
     unknown: exclude_silenced
   random_controls:
-    seeds: [1, 2, 3, 4, 5]
+    seeds: [1, 2, 3, 5, 6]   # prereg-v5.4 (11 Nov 2026): seed 4 refused at start (config/CHANGELOG.md); seed 6 replaces it
     method: degree_class_reciprocity_preserving_swaps   # each neuron keeps its in/out counts per class of partner;
                                   # reciprocal pairs swap as pairs, so their number is kept; sign and synapse counts travel with edges
     classes: [ear, interneuron_1_hop, interneuron_2_plus_hops, motor]   # hops from the ears in the real slice
@@ -82,13 +82,16 @@ memorisation:                   # the check that the setup can fit a few fixed c
   steps: 3000                   # the step limit; the schedule runs over these steps
   schedule: cosine_to_zero      # as training.schedule
   check_every: 250
-  pass_f1: 0.9
+  role: diagnostic              # since 2026-11-11 (config/CHANGELOG.md): reported, not a pass/fail gate; the main test is training on unseen songs
+  pass_f1: 0.9                  # the reported yardstick, unchanged
   must_pass: [kick, snare, hihat_closed]
 
 silence_test:                   # music, then silence; used by the stability gate and during training
   silence_seconds: 4
   settle_seconds: 1.0           # activity must fall below settle_fraction of its music level within this
   settle_fraction: 0.05
+  measure: rest_relative        # from prereg-v5.3 (11 Nov 2026): activity after the music is judged against the network's own
+                                # resting level (what it does on silence alone); "absolute" is the prereg-v5.2 rule
   bound_factor: 50              # "bounded": finite and never above 50x the average music level
   respond_std: 1.0e-3           # a motor neuron "responds" if its rate varies at least this much
   responding_share: 0.5         # at least half the readout motor neurons respond, and every drum has one

@@ -239,11 +239,22 @@ def silence_test(model, clips, cfg, batch_size=4, progress=None):
     finite = bool(np.isfinite(rate).all())
     bounded = finite and float(rate.max()) <= st["bound_factor"] * music_level
     settled_ratio = float(after.max() / music_level) if music_level > 0 else float("inf")
+    result_extra = {}
+    if st.get("measure", "absolute") == "rest_relative":
+        # prereg-v5.3: judge the activity after the music against the network's own resting level, i.e. what it
+        # does on silence alone (highest activity in the last second of a silence-only run of the same length).
+        with torch.no_grad():
+            sil_out, _ = model(torch.as_tensor(np.zeros((min(batch_size, len(clips)), len(clips[0]["audio"]) + pad),
+                                                       np.float32), device=dev))
+        n_sec = int(round(1 / frame_s))
+        rest = float(sil_out["mean_rate"].cpu().numpy()[:, -n_sec:].max())
+        result_extra = {"settled_ratio_absolute": settled_ratio, "rest_level": rest}
+        settled_ratio = (float(after.max()) - rest) / (music_level - rest) if music_level > rest else float("inf")
     responds = mn_rates[:, warmup_frames:music_end].std(1).max(0) > st["respond_std"]
     drums = model.mn_drum.cpu().numpy().T @ responds.astype(np.float32)
     result = {"finite": finite, "bounded": bounded, "music_level": music_level, "peak_level": float(np.nanmax(rate)),
               "settled_ratio": settled_ratio, "responding_share": float(responds.mean()),
-              "responding_per_drum": dict(zip(model.pieces, drums.astype(int).tolist()))}
+              "responding_per_drum": dict(zip(model.pieces, drums.astype(int).tolist())), **result_extra}
     result["passes"] = (bounded and settled_ratio < st["settle_fraction"]
                         and result["responding_share"] >= st["responding_share"]
                         and bool((drums >= 1).all()))

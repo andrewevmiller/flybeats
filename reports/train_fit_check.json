@@ -1,0 +1,67 @@
+{
+  "set": "full",
+  "split": "train (fixed draw, 270 songs x 4 clips)",
+  "threshold": 0.5,
+  "networks": {
+    "real": {
+      "run": "v53_real",
+      "checkpoint_step": 1000,
+      "threshold": 0.5,
+      "hits_per_song": 113.56296296296296,
+      "balance_mean": 0.37499013978509,
+      "beat_alignment": 15.699987296344377,
+      "songs": 269,
+      "timing_without_b": 0.5046773214758962
+    },
+    "control_1": {
+      "run": "v53_control1",
+      "checkpoint_step": 1000,
+      "threshold": 0.5,
+      "hits_per_song": 132.3,
+      "balance_mean": 0.4393907214643946,
+      "beat_alignment": 18.598050657007327,
+      "songs": 269,
+      "timing_without_b": 0.49185848140181665
+    },
+    "control_2": {
+      "run": "v53_control2",
+      "checkpoint_step": 1000,
+      "threshold": 0.5,
+      "hits_per_song": 116.25925925925925,
+      "balance_mean": 0.38637116026780993,
+      "beat_alignment": 16.443846140012386,
+      "songs": 269,
+      "timing_without_b": 0.4931521759069086
+    },
+    "control_3": {
+      "run": "v53_control3",
+      "checkpoint_step": 1000,
+      "threshold": 0.5,
+      "hits_per_song": 91.46666666666667,
+      "balance_mean": 0.3112286247631948,
+      "beat_alignment": 12.733552125396836,
+      "songs": 269,
+      "timing_without_b": 0.49059861875656025
+    },
+    "control_5": {
+      "run": "v53_control5",
+      "checkpoint_step": 500,
+      "threshold": 0.5,
+      "hits_per_song": 113.88888888888889,
+      "balance_mean": 0.36703886292172083,
+      "beat_alignment": 15.379597928637404,
+      "songs": 269,
+      "timing_without_b": 0.5045580473219821
+    },
+    "control_6": {
+      "run": "v54_control6",
+      "checkpoint_step": 1000,
+      "threshold": 0.5,
+      "hits_per_song": 106.70370370370371,
+      "balance_mean": 0.36033217689580543,
+      "beat_alignment": 15.261395607480146,
+      "songs": 269,
+      "timing_without_b": 0.49243752747893815
+    }
+  }
+}

@@ -101,3 +101,13 @@ def make_validation_clips(sampler, path, per_song=4, seed=1234):
 
 def load_validation_clips(path):
     return json.loads(Path(path).read_text(encoding="utf-8"))
+
+
+def fixed_clips(sampler, n_songs, clips_per_song, seed):
+    """The memorisation check's fixed clips (scripts/memorise.py, locked.yaml's memorisation section): the first
+    n_songs training songs in sorted order, each drawn clips_per_song times, windows from numpy seed `seed`, no
+    stem dropout. Same order and draws as the check always used, so the same clips by construction."""
+    rng = np.random.default_rng(seed)
+    songs = sorted(sampler.songs.index)[:n_songs]
+    return songs, [sampler.clip(song, float(rng.uniform(0, sampler.songs.duration[song] - sampler.clip_s)))
+                   for song in songs * clips_per_song]

@@ -13,10 +13,10 @@
     "loss": 1e-05,
     "weights": 1e-05
   },
-  "ordinary_s_per_step": 5.339927792549133,
-  "recorded_s_per_step": 2.9575185775756836,
-  "speedup": 1.8055432797742024,
-  "record_s": 13.73662543296814,
+  "ordinary_s_per_step": 3.9105526208877563,
+  "recorded_s_per_step": 2.850365400314331,
+  "speedup": 1.3719478283228215,
+  "record_s": 11.054801940917969,
   "history_readout": {
     "steps": 10,
     "passes": true,
@@ -32,9 +32,9 @@
       "loss": 1e-05,
       "weights": 1e-05
     },
-    "ordinary_s_per_step": 4.64074981212616,
-    "recorded_s_per_step": 2.992051839828491,
-    "record_s": 12.50714921951294,
+    "ordinary_s_per_step": 3.9835087060928345,
+    "recorded_s_per_step": 2.919283866882324,
+    "record_s": 11.10429859161377,
     "losses": {
       "A": [
         1.0384570360183716,
@@ -158,9 +158,9 @@
       "loss": 1e-05,
       "weights": 1e-05
     },
-    "ordinary_s_per_step": 4.787726521492004,
-    "recorded_s_per_step": 2.9618749618530273,
-    "record_s": 12.975796222686768,
+    "ordinary_s_per_step": 3.943542003631592,
+    "recorded_s_per_step": 2.883927345275879,
+    "record_s": 10.83696699142456,
     "losses": {
       "A": [
         1.0656780004501343,
@@ -227,6 +227,6 @@
       "e_vel": 3.9863272814014635e-08
     }
   },
-  "version": "prereg-v5.2",
-  "code": "36ef4dfe36bc404b"
+  "version": "prereg-v5.3",
+  "code": "aee13a667f1d5e6c"
 }

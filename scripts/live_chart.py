@@ -131,7 +131,8 @@ def memorise_data(path):
             "points": points(steps),
             "checks": [{"step": r["step"], "loss": r["loss"], "f1": r["f1"]} for r in steps if "f1" in r],
             "sec_per_step": per, "left_s": left, "done": done or (bool(steps) and last["step"] >= total) or bool(result),
-            "result": result, "age_s": age_s(path), "run_start_ms": run_start_ms(path, steps)}
+            "result": result, "age_s": age_s(path), "run_start_ms": run_start_ms(path, steps)} | (
+                {k: meta[k] for k in ("title", "subtitle") if k in meta})   # gate_calibration.py names its own run
 
 
 def train_data(run_dir):
@@ -162,12 +163,19 @@ def memorise_pattern(name):
     return rf"{named}|{base}(?!.*--name\s).*--control\s+{m[1]}(\s|$)" if m else named
 
 
-def run_source(run=None, memorise="real"):
-    """(data function, pattern matching the run's process, machine-log path) for a train.py run name, or the
-    memorisation run called memorise."""
+def gate_pattern(size):
+    return r"scripts[\\/]gate_calibration\.py.*--size\s+" + re.escape(size) + r"(\s|$)"
+
+
+def run_source(run=None, memorise="real", gate=None):
+    """(data function, pattern matching the run's process, machine-log path) for a train.py run name, a gate
+    calibration size ("small" or "large", spec 1), or the memorisation run called memorise."""
     if run:
         return (lambda: train_data(ROOT / "runs" / run), r"scripts[\\/]train\.py.*--run\s+" + re.escape(run) + r"(\s|$)",
                 ROOT / "runs" / run / "machine_log.jsonl")
+    if gate:
+        folder = reports_dir() / "gate_calibration" / gate
+        return lambda: memorise_data(folder / "log.jsonl"), gate_pattern(gate), folder / "machine_log.jsonl"
     folder = reports_dir() / "memorise" / memorise
     return lambda: memorise_data(folder / "log.jsonl"), memorise_pattern(memorise), folder / "machine_log.jsonl"
 
@@ -316,9 +324,9 @@ class LiveChart:
     has an upload command. Call finish() when the run ends so the website keeps showing how it ended."""
 
     def __init__(self, memorise="real", run=None, port=8765, publish=None, upload=None, every_s=60, say=print,
-                 own_process=False):
-        self.name = run or memorise
-        self.data, pattern, history = run_source(run, memorise)
+                 own_process=False, gate=None):
+        self.name = run or (f"gate-{gate}" if gate else memorise)
+        self.data, pattern, history = run_source(run, memorise, gate)
         self.say, self.pub = say, None
         self.sampler = Sampler(pattern, history, own_process=own_process)
         self.port = next((p for p in range(port, port + 10) if serve(p, self.data, self.sampler)), None)

@@ -41,6 +41,9 @@ ap.add_argument("--run", required=True)
 ap.add_argument("--control", type=int, default=None)
 ap.add_argument("--device", default="cuda")
 ap.add_argument("--no-graph", action="store_true", help="the ordinary training step, not the recorded CUDA graph")
+ap.add_argument("--no-chart", action="store_true", help="no live chart and no website updates")
+ap.add_argument("--no-stop", action="store_true",
+                help="trial only (labelled in args.json): keep training when the silence rule fails; not a locked run")
 args = ap.parse_args()
 
 
@@ -111,12 +114,35 @@ use_graph, why = graph_for_training()
 graphed = GraphedStep(model, opt, first, loss_of, tc["grad_clip_norm"]) if use_graph else None
 print(f"training step: {'recorded (CUDA graph)' if use_graph else 'ordinary'}, {why}")
 log = open(run_dir / "log.jsonl", "a", encoding="utf-8")
+log.write(json.dumps({"meta": {"dials": int(model.theta.numel())}}) + "\n")   # spec 0: dial count for this network
 (run_dir / "args.json").write_text(json.dumps(vars(args) | {"version": cfg["version"], "steps": steps, "training": tc,
                                                     "eigenvalue": model.eigenvalue, "g": model.g,
                                                     "cuda_graph": use_graph}, indent=1))
 
+# Step 0 (added 11 Nov 2026): the locked silence rule at the STARTING weights, before any training. Without it, a
+# network that already fails would train until its first validation (step validate_every). A network that fails here
+# does not start; the refusal is written to its log.
+model.eval()
+start_silence = silence_test(model, val_clips[:4], cfg)
+model.train()
+start_ok = bool(start_silence["bounded"] and start_silence["settled_ratio"] < cfg["silence_test"]["settle_fraction"])
+log.write(json.dumps({"start_silence": {k: start_silence[k] for k in ["bounded", "settled_ratio", "responding_share",
+                                                                    "peak_level"]},
+                      "started": start_ok}) + "\n")
+log.flush()
+if not start_ok:
+    log.close()
+    print(f"{args.run}: refused to start: the silence rule fails at the starting weights "
+          f"(settled {start_silence['settled_ratio']:.3f}, limit {cfg['silence_test']['settle_fraction']}); no training",
+          flush=True)
+    sys.exit(2)
+
 prefetch = Prefetch(s["train"], tc["batch_clips"])    # draws batch 2 onwards, after `first`
 prefetch.start()
+chart = None
+if not args.no_chart:
+    from live_chart import LiveChart   # this run's live chart; publishes to the website (config/live.local.yaml)
+    chart = LiveChart(run=args.run, own_process=True, publish=True, say=tqdm.write)
 best = -1.0
 t0 = time.time()
 bar = tqdm(range(1, steps + 1), unit="step", desc="training")
@@ -148,9 +174,14 @@ for step in bar:
     log.flush()
     if "silence" in rec and not (rec["silence"]["bounded"]
                                  and rec["silence"]["settled_ratio"] < cfg["silence_test"]["settle_fraction"]):
-        bar.write("activity no longer settles after music: stopping the run")
-        break
+        if args.no_stop:   # labelled trial only: keep training, the failure stays in the log
+            bar.write("activity no longer settles after music: continuing (labelled trial, --no-stop)")
+        else:
+            bar.write("activity no longer settles after music: stopping the run")
+            break
 bar.close()
+if chart is not None:
+    chart.finish()
 prefetch.stop.set()
 torch.save({"model": model.state_dict(), "step": step, "opt": opt.state_dict()}, run_dir / "last.pt")
 print(f"done: {step} steps in {(time.time() - t0) / 3600:.2f} h, best mean F1 {best:.3f}; {run_dir}")

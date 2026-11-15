@@ -128,6 +128,21 @@ def test_drum_weights_capped(cfg):
     assert w[0] == pytest.approx(min((20000 - 10) / 10, 50)) and w[1] == 50
 
 
+def test_drum_weights_sqrt_mode(cfg):
+    """Fix 04 trial: ratio is the locked setting and unchanged; sqrt is the root of the same, with the cap applied
+    before the root (so at most sqrt(cap))."""
+    import pandas as pd
+    m = pd.DataFrame({"split": ["train"], "duration": [100.0], "hits_a": [10], "hits_b": [0], "hits_c": [1000]})
+    cap = cfg["loss"]["max_drum_weight"]
+    ratio = drum_weights(m, ["a", "b", "c"], 0.005, cap).numpy()
+    assert np.array_equal(ratio, drum_weights(m, ["a", "b", "c"], 0.005, cap, mode="ratio").numpy())
+    sq = drum_weights(m, ["a", "b", "c"], 0.005, cap, mode="sqrt").numpy()
+    assert sq == pytest.approx(np.sqrt(np.minimum(ratio, cap)))
+    assert sq.max() <= np.sqrt(cap) + 1e-6
+    with pytest.raises(ValueError, match="unknown drum weight mode"):
+        drum_weights(m, ["a"], 0.005, cap, mode="cube")
+
+
 @pytest.mark.gpu
 @pytest.mark.slow
 def test_memorisation():

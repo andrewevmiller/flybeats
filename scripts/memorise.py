@@ -48,10 +48,12 @@ from torch.nn import functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 from flybeats.config import load_locked, reports_dir  # noqa: E402
-from flybeats.model.loss import f1_from_counts, hit_counts, tolerance_frames  # noqa: E402
+from flybeats.data.sampler import fixed_clips  # noqa: E402
+from flybeats.model.loss import drum_weights, f1_from_counts, hit_counts, make_loss, tolerance_frames  # noqa: E402
 from flybeats.model.training import (GraphedStep, audio_blind_loss, graph_checked, make_optimiser,  # noqa: E402
                                      make_schedule, setup, to_tensors, train_step)
 from live_chart import LiveChart  # noqa: E402
+from run_naming import pair_names, refusal, run_name  # noqa: E402
 from tqdm import tqdm  # noqa: E402
 
 ap = argparse.ArgumentParser()
@@ -68,6 +70,10 @@ ap.add_argument("--wide-target", action="store_true",
                 help="trial only: train on a hit target that spans the scoring tolerance (see the top of this file)")
 ap.add_argument("--history-readout", action="store_true",
                 help="trial only: the readout history from reports/history-readout-proposal.md")
+ap.add_argument("--loss-weight", choices=["ratio", "sqrt"], default="ratio",
+                help="trial only (sqrt): the drum weight is the square root of the capped ratio (fix 04, spec 4)")
+ap.add_argument("--force", action="store_true",
+                help="start even if this run's folder already holds final.pt (overwrites those saved weights)")
 args = ap.parse_args()
 
 
@@ -79,7 +85,13 @@ def run_pair(control):
     import subprocess
     forward = ["--device", args.device] + ["--no-chart"] * args.no_chart + ["--no-graph"] * args.no_graph
     forward += ["--steps", str(args.steps)] * (args.steps is not None) + ["--songs", str(args.songs)] * (args.songs is not None)
-    runs = {"real": ["--name", "real"], f"control-{control}": ["--control", str(control)]}
+    forward += ["--loss-weight", args.loss_weight] * (args.loss_weight != "ratio")
+    real_name, control_name = pair_names(control, args.loss_weight)   # as a single run would name them
+    for n in (real_name, control_name):                 # refuse up front, before the first run uses the GPU
+        if refusal(reports_dir() / "memorise" / n, args.force):
+            sys.exit(refusal(reports_dir() / "memorise" / n, args.force))
+    forward += ["--force"] * args.force
+    runs = {real_name: ["--name", real_name], control_name: ["--control", str(control)]}
     ended = {}
     for i, (name, extra) in enumerate(runs.items(), 1):
         print(f"\n=== run {i} of {len(runs)}: {name} ===", flush=True)
@@ -105,7 +117,7 @@ def run_pair(control):
                   f"final loss {rep['final_loss']:.4f}, F1 {rep['f1']}")
         else:
             print(f"{name}: {'stopped with Ctrl+C' if stopped else f'ended without a result (exit code {code})'}")
-    return ended.get("real", (1,))[0]
+    return ended.get(real_name, (1,))[0]
 
 
 if args.pair is not None:
@@ -113,9 +125,10 @@ if args.pair is not None:
         ap.error("--pair names its two runs itself; leave out --name, --control, --wide-target, --history-readout")
     sys.exit(run_pair(args.pair))
 
-name = args.name or (("real" if args.control is None else f"control-{args.control}")
-                     + "-wide-target" * args.wide_target + "-history-readout" * args.history_readout)
+name = run_name(args.control, args.loss_weight, args.wide_target, args.history_readout, args.name)
 out_dir = reports_dir() / "memorise" / name
+if refusal(out_dir, args.force):
+    sys.exit(refusal(out_dir, args.force))
 out_dir.mkdir(parents=True, exist_ok=True)
 cfg = load_locked()
 mc = cfg["memorisation"]
@@ -124,7 +137,7 @@ if mc["schedule"] != cfg["training"]["schedule"]:
 MUST_PASS, PASS_F1 = mc["must_pass"], mc["pass_f1"]
 steps = args.steps or mc["steps"]
 as_locked = (args.steps is None and args.songs is None and not args.wide_target
-             and not args.history_readout)                  # False: a trial run, not the locked check
+             and not args.history_readout and args.loss_weight == "ratio")   # False: a trial run, not the locked check
 HISTORY = {"present": True, "blocks_ms": [50, 50, 50, 50], "profile": "per_drum", "init": "present_only",
            "velocity": "same"}                              # as in reports/history-readout-proposal.md
 if args.history_readout:
@@ -134,11 +147,14 @@ if args.history_readout:
 torch.manual_seed(cfg["model"]["init_seed"])                # the same starting weights every run, as in train.py
 s = setup("baby", args.control, args.device, cfg)
 model, loss_of, train = s["model"], s["loss"], s["train"]
+if args.loss_weight == "sqrt":                              # trial (fix 04): same cap, then the square root
+    manifest = s["manifest"]
+    s["weights"] = drum_weights(manifest, cfg["kit"]["pieces"], cfg["training_data"]["frame_ms"] / 1000,
+                                cfg["loss"]["max_drum_weight"], mode="sqrt").to(args.device)
+    loss_of = make_loss(cfg, s["weights"])
+    print(f"trial: --loss-weight sqrt, drum weights {s['weights'].tolist()}")
 
-rng = np.random.default_rng(mc["clip_seed"])
-songs = sorted(train.songs.index)[:args.songs or mc["songs"]]
-clips = [train.clip(song, float(rng.uniform(0, train.songs.duration[song] - train.clip_s)))
-         for song in songs * mc["clips_per_song"]]
+songs, clips = fixed_clips(train, args.songs or mc["songs"], mc["clips_per_song"], mc["clip_seed"])   # shared with gate_calibration.py
 batch = to_tensors(clips, args.device)                      # 8 fixed clips, 2 per song, no stem dropout
 
 
@@ -220,7 +236,8 @@ log.write(json.dumps({"meta": {"script": "memorise", "name": name, "steps": step
                                "must_pass": MUST_PASS, "pass_f1": PASS_F1, "control": args.control,
                                "version": cfg["version"], "as_locked": as_locked, "cuda_graph": use_graph,
                                "readout_inputs_at_start": at_start, "wide_target": args.wide_target,
-                               "history_readout": args.history_readout}}) + "\n")
+                               "history_readout": args.history_readout, "loss_weight": args.loss_weight,
+                               "dials": int(model.theta.numel())}}) + "\n")
 log.flush()
 
 result, step = None, 0
@@ -256,8 +273,8 @@ try:
               "readout_inputs_at_start": at_start, "passes": passed, "control": args.control,
               "audio_blind_floor": floor, "final_loss": stats["loss"], "cuda_graph": use_graph,
               "version": cfg["version"], "as_locked": as_locked, "wide_target": args.wide_target,
-              "history_readout": args.history_readout}
-    if args.history_readout:                                # each drum's learned time profile, for the write-up
+              "history_readout": args.history_readout, "loss_weight": args.loss_weight}
+    if args.history_readout:                              # each drum's learned time profile, for the write-up
         report["history_profiles"] = {"hit": dict(zip(model.pieces, model.p_hit.detach().cpu().tolist())),
                                       "velocity": dict(zip(model.pieces, model.p_vel.detach().cpu().tolist()))}
     (out_dir / "memorise.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")

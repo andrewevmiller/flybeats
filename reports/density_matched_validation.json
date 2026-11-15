@@ -1,0 +1,80 @@
+{
+  "set": "full",
+  "split": "validation",
+  "default_threshold": 0.5,
+  "target_hits_per_song": 107.27407407407408,
+  "networks": {
+    "real": {
+      "run": "v53_real",
+      "seed": null,
+      "checkpoint_step": 1000,
+      "threshold": 0.5,
+      "hits_per_song": 107.27407407407408,
+      "target_hits_per_song": 107.27407407407408,
+      "balance_mean": 0.35701865038645153,
+      "beat_alignment": 15.881956542507771,
+      "songs": 267,
+      "timing_without_b": 0.517401847894547
+    },
+    "control_1": {
+      "run": "v53_control1",
+      "seed": 1,
+      "checkpoint_step": 1000,
+      "threshold": 0.5122999849463816,
+      "hits_per_song": 107.27407407407408,
+      "target_hits_per_song": 107.27407407407408,
+      "balance_mean": 0.3728730909639992,
+      "beat_alignment": 16.5884222062104,
+      "songs": 267,
+      "timing_without_b": 0.5160874769772651
+    },
+    "control_2": {
+      "run": "v53_control2",
+      "seed": 2,
+      "checkpoint_step": 1000,
+      "threshold": 0.5034120382596738,
+      "hits_per_song": 107.27407407407408,
+      "target_hits_per_song": 107.27407407407408,
+      "balance_mean": 0.37141603375574134,
+      "beat_alignment": 16.47405912283385,
+      "songs": 267,
+      "timing_without_b": 0.5079599163983378
+    },
+    "control_3": {
+      "run": "v53_control3",
+      "seed": 3,
+      "checkpoint_step": 1000,
+      "threshold": 0.4899309425526298,
+      "hits_per_song": 107.27777777777777,
+      "target_hits_per_song": 107.27407407407408,
+      "balance_mean": 0.36636705332531194,
+      "beat_alignment": 16.027672622996388,
+      "songs": 267,
+      "timing_without_b": 0.5047724220357742
+    },
+    "control_5": {
+      "run": "v53_control5",
+      "seed": 5,
+      "checkpoint_step": 500,
+      "threshold": 0.4991188790122978,
+      "hits_per_song": 107.27777777777777,
+      "target_hits_per_song": 107.27407407407408,
+      "balance_mean": 0.36285219485200504,
+      "beat_alignment": 15.956675451742763,
+      "songs": 267,
+      "timing_without_b": 0.5097266058508387
+    },
+    "control_6": {
+      "run": "v54_control6",
+      "seed": 6,
+      "checkpoint_step": 1000,
+      "threshold": 0.4977001998233609,
+      "hits_per_song": 107.27407407407408,
+      "target_hits_per_song": 107.27407407407408,
+      "balance_mean": 0.3695605614163037,
+      "beat_alignment": 16.177786620224484,
+      "songs": 267,
+      "timing_without_b": 0.504981013213008
+    }
+  }
+}

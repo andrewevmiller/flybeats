@@ -1,0 +1,158 @@
+{
+  "real": {
+    "run": "real",
+    "gap_frames": 10,
+    "weights_step": 3000,
+    "locked_f1": {
+      "kick": 0.623,
+      "hihat_pedal": 0.649,
+      "snare": 0.352,
+      "hihat_closed": 0.52,
+      "hihat_open": 0.621,
+      "tom": 0.588,
+      "crash": 0.5,
+      "ride": 0.52
+    },
+    "min_gap_f1": {
+      "kick": 0.67,
+      "hihat_pedal": 0.667,
+      "snare": 0.385,
+      "hihat_closed": 0.61,
+      "hihat_open": 0.63,
+      "tom": 0.714,
+      "crash": 0.511,
+      "ride": 0.589
+    },
+    "min_gap_counts": {
+      "kick": {
+        "found": 126,
+        "extra": 98,
+        "missed": 26
+      },
+      "hihat_pedal": {
+        "found": 12,
+        "extra": 10,
+        "missed": 2
+      },
+      "snare": {
+        "found": 53,
+        "extra": 99,
+        "missed": 70
+      },
+      "hihat_closed": {
+        "found": 202,
+        "extra": 190,
+        "missed": 68
+      },
+      "hihat_open": {
+        "found": 17,
+        "extra": 11,
+        "missed": 9
+      },
+      "tom": {
+        "found": 10,
+        "extra": 6,
+        "missed": 2
+      },
+      "crash": {
+        "found": 12,
+        "extra": 15,
+        "missed": 8
+      },
+      "ride": {
+        "found": 33,
+        "extra": 22,
+        "missed": 24
+      }
+    },
+    "saved_f1": {
+      "kick": 0.623,
+      "hihat_pedal": 0.649,
+      "snare": 0.352,
+      "hihat_closed": 0.52,
+      "hihat_open": 0.621,
+      "tom": 0.588,
+      "crash": 0.5,
+      "ride": 0.52
+    },
+    "gap0_reproduces_saved": true
+  },
+  "control-1": {
+    "run": "control-1",
+    "gap_frames": 10,
+    "weights_step": 3000,
+    "locked_f1": {
+      "kick": 0.855,
+      "hihat_pedal": 0.903,
+      "snare": 0.752,
+      "hihat_closed": 0.88,
+      "hihat_open": 0.83,
+      "tom": 0.774,
+      "crash": 0.667,
+      "ride": 0.556
+    },
+    "min_gap_f1": {
+      "kick": 0.898,
+      "hihat_pedal": 0.903,
+      "snare": 0.781,
+      "hihat_closed": 0.9,
+      "hihat_open": 0.863,
+      "tom": 0.857,
+      "crash": 0.708,
+      "ride": 0.588
+    },
+    "min_gap_counts": {
+      "kick": {
+        "found": 146,
+        "extra": 27,
+        "missed": 6
+      },
+      "hihat_pedal": {
+        "found": 14,
+        "extra": 3,
+        "missed": 0
+      },
+      "snare": {
+        "found": 105,
+        "extra": 41,
+        "missed": 18
+      },
+      "hihat_closed": {
+        "found": 251,
+        "extra": 37,
+        "missed": 19
+      },
+      "hihat_open": {
+        "found": 22,
+        "extra": 3,
+        "missed": 4
+      },
+      "tom": {
+        "found": 12,
+        "extra": 4,
+        "missed": 0
+      },
+      "crash": {
+        "found": 17,
+        "extra": 11,
+        "missed": 3
+      },
+      "ride": {
+        "found": 35,
+        "extra": 27,
+        "missed": 22
+      }
+    },
+    "saved_f1": {
+      "kick": 0.855,
+      "hihat_pedal": 0.903,
+      "snare": 0.752,
+      "hihat_closed": 0.88,
+      "hihat_open": 0.83,
+      "tom": 0.774,
+      "crash": 0.667,
+      "ride": 0.556
+    },
+    "gap0_reproduces_saved": true
+  }
+}

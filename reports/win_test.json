@@ -1,0 +1,228 @@
+{
+  "split": "test",
+  "clips": "C:\\Users\\ricos\\Documents\\AI Databases\\flybeats\\data\\work\\data\\full\\test_clips.json",
+  "networks": {
+    "real": {
+      "run": "v53_real",
+      "seed": null,
+      "checkpoint_step": 1000,
+      "facets": {
+        "beat_alignment": {
+          "score": 19.474302875603506,
+          "songs": 150,
+          "failed_share": 0.5933333333333334
+        },
+        "tempo_following": {
+          "score": 12.060280282312268,
+          "songs": 149,
+          "failed_share": 0.8187919463087249
+        },
+        "listening": {
+          "score": 11.273230862118101,
+          "songs": 151,
+          "failed_share": 0.7947019867549668
+        },
+        "groove": {
+          "score": 6.782791360737151,
+          "songs": 151,
+          "failed_share": 0.8741721854304636
+        },
+        "style_fit": {
+          "score": 20.970002200953807,
+          "songs": 104,
+          "failed_share": 0.6826923076923077
+        }
+      },
+      "musicianship": 15.345840172573796
+    },
+    "control_1": {
+      "run": "v53_control1",
+      "seed": 1,
+      "checkpoint_step": 1000,
+      "facets": {
+        "beat_alignment": {
+          "score": 24.079452779240977,
+          "songs": 150,
+          "failed_share": 0.4666666666666667
+        },
+        "tempo_following": {
+          "score": 13.486391636510625,
+          "songs": 149,
+          "failed_share": 0.7919463087248322
+        },
+        "listening": {
+          "score": 13.418932274846563,
+          "songs": 151,
+          "failed_share": 0.7086092715231788
+        },
+        "groove": {
+          "score": 7.648213989260193,
+          "songs": 151,
+          "failed_share": 0.8741721854304636
+        },
+        "style_fit": {
+          "score": 21.190845058940372,
+          "songs": 104,
+          "failed_share": 0.6634615384615384
+        }
+      },
+      "musicianship": 17.755694380856056
+    },
+    "control_2": {
+      "run": "v53_control2",
+      "seed": 2,
+      "checkpoint_step": 1000,
+      "facets": {
+        "beat_alignment": {
+          "score": 19.003658950315877,
+          "songs": 150,
+          "failed_share": 0.6133333333333333
+        },
+        "tempo_following": {
+          "score": 14.301621729523022,
+          "songs": 149,
+          "failed_share": 0.738255033557047
+        },
+        "listening": {
+          "score": 11.672038755658283,
+          "songs": 151,
+          "failed_share": 0.7748344370860927
+        },
+        "groove": {
+          "score": 6.469765546196788,
+          "songs": 151,
+          "failed_share": 0.8807947019867549
+        },
+        "style_fit": {
+          "score": 24.55236868946281,
+          "songs": 104,
+          "failed_share": 0.6442307692307693
+        }
+      },
+      "musicianship": 16.307323736379157
+    },
+    "control_3": {
+      "run": "v53_control3",
+      "seed": 3,
+      "checkpoint_step": 1000,
+      "facets": {
+        "beat_alignment": {
+          "score": 15.40330885474208,
+          "songs": 150,
+          "failed_share": 0.76
+        },
+        "tempo_following": {
+          "score": 12.563631232840597,
+          "songs": 149,
+          "failed_share": 0.7516778523489933
+        },
+        "listening": {
+          "score": 9.340484321780336,
+          "songs": 151,
+          "failed_share": 0.847682119205298
+        },
+        "groove": {
+          "score": 5.044748078203086,
+          "songs": 151,
+          "failed_share": 0.9072847682119205
+        },
+        "style_fit": {
+          "score": 21.470517994617868,
+          "songs": 104,
+          "failed_share": 0.6634615384615384
+        }
+      },
+      "musicianship": 13.658191062649916
+    },
+    "control_5": {
+      "run": "v53_control5",
+      "seed": 5,
+      "checkpoint_step": 500,
+      "facets": {
+        "beat_alignment": {
+          "score": 17.448525877608446,
+          "songs": 150,
+          "failed_share": 0.6733333333333333
+        },
+        "tempo_following": {
+          "score": 12.787143306666676,
+          "songs": 149,
+          "failed_share": 0.7718120805369127
+        },
+        "listening": {
+          "score": 10.470563524154372,
+          "songs": 151,
+          "failed_share": 0.8145695364238411
+        },
+        "groove": {
+          "score": 6.328257014000825,
+          "songs": 151,
+          "failed_share": 0.9006622516556292
+        },
+        "style_fit": {
+          "score": 27.071207016542154,
+          "songs": 104,
+          "failed_share": 0.6153846153846154
+        }
+      },
+      "musicianship": 15.567861166334188
+    },
+    "control_6": {
+      "run": "v54_control6",
+      "seed": 6,
+      "checkpoint_step": 1000,
+      "facets": {
+        "beat_alignment": {
+          "score": 18.07610466948982,
+          "songs": 150,
+          "failed_share": 0.6533333333333333
+        },
+        "tempo_following": {
+          "score": 12.891983355154144,
+          "songs": 149,
+          "failed_share": 0.7986577181208053
+        },
+        "listening": {
+          "score": 10.437532074802327,
+          "songs": 151,
+          "failed_share": 0.8145695364238411
+        },
+        "groove": {
+          "score": 5.66569879757675,
+          "songs": 151,
+          "failed_share": 0.9139072847682119
+        },
+        "style_fit": {
+          "score": 23.690721700587094,
+          "songs": 104,
+          "failed_share": 0.6442307692307693
+        }
+      },
+      "musicianship": 15.235440419176062
+    }
+  },
+  "main_win": {
+    "wins": false,
+    "real": 19.474302875603506,
+    "best_control": 24.079452779240977,
+    "seed_spread": 3.232726855151856,
+    "margin": -7.837876758789328
+  },
+  "supporting_win": {
+    "wins": false,
+    "detail": {
+      "tempo_following": [
+        12.060280282312268,
+        12.891983355154144
+      ],
+      "listening": [
+        11.273230862118101,
+        10.470563524154372
+      ],
+      "groove": [
+        6.782791360737151,
+        6.328257014000825
+      ]
+    }
+  }
+}

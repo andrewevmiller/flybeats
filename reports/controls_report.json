@@ -53,7 +53,8 @@
       }
     },
     "largest_eigenvalue": 730.5550389296604,
-    "reciprocal_share": 0.11446409989594172
+    "reciprocal_share": 0.11446409989594172,
+    "type_pairs": 41186
   },
   "controls": {
     "1": {
@@ -113,7 +114,8 @@
         }
       },
       "accepted_swaps": 897518,
-      "largest_eigenvalue": 294.6650133940891
+      "largest_eigenvalue": 294.6650133940891,
+      "type_pairs": 83581
     },
     "2": {
       "connections": 108593,
@@ -172,7 +174,8 @@
         }
       },
       "accepted_swaps": 897931,
-      "largest_eigenvalue": 264.9433283368123
+      "largest_eigenvalue": 264.9433283368123,
+      "type_pairs": 83584
     },
     "3": {
       "connections": 108593,
@@ -231,7 +234,8 @@
         }
       },
       "accepted_swaps": 897747,
-      "largest_eigenvalue": 284.49263180940306
+      "largest_eigenvalue": 284.49263180940306,
+      "type_pairs": 83618
     },
     "4": {
       "connections": 108593,
@@ -290,7 +294,8 @@
         }
       },
       "accepted_swaps": 897110,
-      "largest_eigenvalue": 412.4095857260588
+      "largest_eigenvalue": 412.4095857260588,
+      "type_pairs": 83601
     },
     "5": {
       "connections": 108593,
@@ -349,7 +354,68 @@
         }
       },
       "accepted_swaps": 897607,
-      "largest_eigenvalue": 303.3685922273335
+      "largest_eigenvalue": 303.3685922273335,
+      "type_pairs": 83583
+    },
+    "6": {
+      "connections": 108593,
+      "total_synapses": 2287391.391729323,
+      "surviving_real_connections_share": 0.07242639949167995,
+      "reciprocal_share": 0.11446409989594172,
+      "unreachable_drums": [],
+      "drum_reach": {
+        "crash": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 2,
+          "median_hops": 2.0
+        },
+        "hihat_closed": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 3,
+          "median_hops": 3.0
+        },
+        "hihat_open": {
+          "reachable": 8,
+          "of": 8,
+          "min_hops": 2,
+          "median_hops": 2.0
+        },
+        "hihat_pedal": {
+          "reachable": 57,
+          "of": 57,
+          "min_hops": 2,
+          "median_hops": 3.0
+        },
+        "kick": {
+          "reachable": 59,
+          "of": 59,
+          "min_hops": 2,
+          "median_hops": 3.0
+        },
+        "ride": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 2,
+          "median_hops": 2.0
+        },
+        "snare": {
+          "reachable": 12,
+          "of": 12,
+          "min_hops": 3,
+          "median_hops": 3.0
+        },
+        "tom": {
+          "reachable": 13,
+          "of": 13,
+          "min_hops": 2,
+          "median_hops": 2.0
+        }
+      },
+      "accepted_swaps": 896934,
+      "largest_eigenvalue": 261.37783898741236,
+      "type_pairs": 83622
     }
   },
   "classes": {
