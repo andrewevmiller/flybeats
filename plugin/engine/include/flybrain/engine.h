@@ -58,6 +58,10 @@ public:
     int latencyHostSamples() const;
     int64_t framesProcessed() const;
     int runawayCount() const;
+    // Hits that did not fit the caller's event array (the snapshot still carries them). Never silent.
+    uint64_t droppedEventCount() const;
+    // False when the brain carried no cliff calibration and the guard runs on its hard default limits.
+    bool guardCalibrated() const;
     const BrainFile& brain() const { return brainRef; }
     const EngineConfig& config() const { return cfgCopy; }
 

@@ -29,6 +29,24 @@ void setFlushDenormals(bool on) {
 #endif
 }
 
+// Saves this thread's denormal mode, sets FTZ/DAZ, restores on exit: the host's audio thread is shared with
+// every other plugin, so the engine must leave the floating-point control word as it found it (red team, item 4).
+struct DenormalScope {
+#if defined(FLYBRAIN_X86)
+    unsigned saved;
+    explicit DenormalScope(bool on) : saved(_mm_getcsr()) { if (on) setFlushDenormals(true); }
+    ~DenormalScope() { _mm_setcsr(saved); }
+#elif defined(__aarch64__) && (defined(__GNUC__) || defined(__clang__))
+    uint64_t saved;
+    explicit DenormalScope(bool on) { __asm__ __volatile__("mrs %0, fpcr" : "=r"(saved)); if (on) setFlushDenormals(true); }
+    ~DenormalScope() { __asm__ __volatile__("msr fpcr, %0" : : "r"(saved)); }
+#else
+    explicit DenormalScope(bool) {}
+#endif
+    DenormalScope(const DenormalScope&) = delete;
+    DenormalScope& operator=(const DenormalScope&) = delete;
+};
+
 // ---------------------------------------------------------------- the precision-generic implementation
 struct EngineBase {
     virtual ~EngineBase() = default;
@@ -42,6 +60,8 @@ struct EngineBase {
     virtual int latencyHostSamples() const = 0;
     virtual int64_t framesProcessed() const = 0;
     virtual int runawayCount() const = 0;
+    virtual uint64_t droppedEventCount() const = 0;
+    virtual bool guardCalibrated() const = 0;
     Recorder recorder;
     std::atomic<double> trimDb{0.0};
     std::atomic<int> preroll{400};
@@ -71,6 +91,7 @@ struct EngineImpl : EngineBase {
     std::atomic<uint64_t> lastSerialApplied{0};
     std::mutex controlMutex;                        // serialises UI-side setControls callers only
     int runaways = 0;
+    uint64_t droppedEvents = 0;
     double trimGain = 1.0;
 
     explicit EngineImpl(const BrainFile& brain) : b(brain) {}
@@ -182,6 +203,8 @@ struct EngineImpl : EngineBase {
             s.hits[size_t(d)] = h;
             if (h && nEvents < maxEvents) {
                 out[nEvents++] = HitEvent{s.frame, d, float(decoder.decidedVel[size_t(d)]), sampleOffset};
+            } else if (h) {
+                ++droppedEvents;                    // the caller's event array was too small: counted, never silent
             }
         }
         recorder.push(s);
@@ -190,7 +213,7 @@ struct EngineImpl : EngineBase {
     }
 
     int process(const float* const* in, int nch, int ns, HitEvent* out, int maxEvents) override {
-        if (cfg.flushDenormals) setFlushDenormals(true);
+        DenormalScope denormals(cfg.flushDenormals);
         trimGain = dbToGain(trimDb.load(std::memory_order_relaxed));
         int nEvents = 0;
         const float inv = 1.0f / float(nch > 0 ? nch : 1);
@@ -214,7 +237,7 @@ struct EngineImpl : EngineBase {
     }
 
     int stepFeatures(const double* earFeatures, HitEvent* out, int maxEvents) override {
-        if (cfg.flushDenormals) setFlushDenormals(true);
+        DenormalScope denormals(cfg.flushDenormals);
         swapControlsIfAny();
         for (int k = 0; k < b.nBands; ++k) { earScaled[k] = T(earFeatures[k]); feats[k] = T(0); }
         if (!current->neutral) for (int k = 0; k < b.nBands; ++k) earScaled[k] = earScaled[k] + current->bandOffset[k];
@@ -244,6 +267,8 @@ struct EngineImpl : EngineBase {
     }
     int64_t framesProcessed() const override { return frame; }
     int runawayCount() const override { return runaways; }
+    uint64_t droppedEventCount() const override { return droppedEvents; }
+    bool guardCalibrated() const override { return guard.calibrated; }
 };
 
 struct Engine::Impl {
@@ -272,5 +297,7 @@ Recorder& Engine::recorder() { return impl->e->recorder; }
 int Engine::latencyHostSamples() const { return impl->e->latencyHostSamples(); }
 int64_t Engine::framesProcessed() const { return impl->e->framesProcessed(); }
 int Engine::runawayCount() const { return impl->e->runawayCount(); }
+uint64_t Engine::droppedEventCount() const { return impl->e->droppedEventCount(); }
+bool Engine::guardCalibrated() const { return impl->e->guardCalibrated(); }
 
 }  // namespace flybrain

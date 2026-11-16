@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 import torch
 
-from flybrain.parity import (TIE_EPS, ambiguous_hits, compare, make_model, run_perturbed, torch_hits, torch_outputs,
+from flybrain.parity import (PERTURBATIONS, TIE_EPS, ambiguous_hits, compare, make_model, run_perturbed, torch_hits, torch_outputs,
                              torch_perturbed)
 from flybrain.reference import Controls, PeakDecoder, ReferenceEngine, hit_list, run_clip
 
@@ -23,7 +23,7 @@ def test_parity_with_pytorch(brain_small, dtype):
     ref = run_clip(b, a, dtype=dtype)
     rep = compare(ref, tor)
     assert rep["passes"], rep
-    assert rep["hits_torch"] > 3                       # the test network fires
+    assert rep["genuine_hits"] >= 10, rep              # hits the ambiguity rule cannot excuse carry the contract
 
 
 def test_block_size_independence(brain_small):
@@ -52,16 +52,6 @@ def test_repeat_runs_are_identical(brain_small):
     a = audio(1.0)
     r1, r2 = run_clip(b, a), run_clip(b, a)
     assert all(np.array_equal(r1[k], r2[k]) for k in ("rates", "prob", "hits"))
-
-
-PERTURBATIONS = [
-    ("lesion", dict(targets=[40, 41, 42, 77])),
-    ("deafen", dict(ears=[0, 2, 4, 6])),
-    ("gain", dict(scale=1.3)),
-    ("tau", dict(scale=2.0)),
-    ("sign_flip", dict(targets=[50, 60])),
-    ("band_offset", dict(offset=np.linspace(-0.5, 0.5, 16))),
-]
 
 
 @pytest.mark.parametrize("kind,kw", PERTURBATIONS)

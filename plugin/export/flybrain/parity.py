@@ -43,7 +43,7 @@ def make_model(cfg, neurons, edges, seed=0, band_stats=None, lively=True):
                 if names is None or name in names:
                     p.add_(0.3 * torch.randn(p.shape, generator=g))
             model.c_hit.fill_(-2.0)
-            model.mn_std.fill_(1e-2)
+            model.mn_std.fill_(5e-2)      # 1e-2 saturated two drums at p = 1 (red team, item 2)
     return model.eval()
 
 
@@ -126,6 +126,7 @@ def compare(ref, tor, threshold=0.5):
     unexplained = diff - amb
     rep = {"frames": n, "rate_err": r_err, "rate_limit": r_lim, "band_err": b_err, "prob_err": p_err,
            "hits_torch": len(tor_hits), "hits_engine": len(ref_hits), "hit_differences": len(diff),
+           "genuine_hits": len(tor_hits - amb),            # hits the ambiguity rule cannot excuse
            "ambiguous_in_torch": len(amb), "unexplained_hit_differences": sorted(unexplained)}
     rep["passes"] = (r_err <= r_lim and b_err <= BAND_ABS and p_err <= PROB_ABS and not unexplained)
     return rep
@@ -176,6 +177,18 @@ def torch_perturbed(model, neurons, edges, cfg, kind, **kw):
         else:
             raise ValueError(kind)
     return m, ear_mask, extra
+
+
+# The perturbation test list (P0): one entry per Lab control with a PyTorch equivalent. Tests and the C++ test-data
+# generator import this list, so there is one copy.
+PERTURBATIONS = [
+    ("lesion", dict(targets=[40, 41, 42, 77])),
+    ("deafen", dict(ears=[0, 2, 4, 6])),
+    ("gain", dict(scale=1.3)),
+    ("tau", dict(scale=2.0)),
+    ("sign_flip", dict(targets=[50, 60])),
+    ("band_offset", dict(offset=np.linspace(-0.5, 0.5, 16))),
+]
 
 
 def controls_for(brain, kind, **kw):

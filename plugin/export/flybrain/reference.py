@@ -243,11 +243,17 @@ class RunawayGuard:
     """Clamp rates at a ceiling; if the mean rate stays above a limit for `frames` frames, trigger: the engine
     mutes, resets and raises a flag. Limits come from the brain's meta.runaway (set at export, per checkpoint)."""
 
+    # A brain exported without cliff calibration carries no limits; these hard defaults then apply (red team, item 1),
+    # far above any calibrated network's activity (mean rates are about 0.03 at 1x on the real network) and far
+    # below float overflow, so NaN and Inf never leave the engine. The C++ engine uses the same numbers.
+    DEFAULT_CEILING, DEFAULT_MEAN_LIMIT, DEFAULT_FRAMES = 1.0e4, 1.0e3, 20
+
     def __init__(self, brain):
         g = brain.meta.get("runaway") or {}
-        self.ceiling = float(g.get("rate_ceiling", np.inf))
-        self.mean_limit = float(g.get("mean_rate_limit", np.inf))
-        self.frames = int(g.get("frames", 20))
+        self.calibrated = "mean_rate_limit" in g
+        self.ceiling = float(g.get("rate_ceiling", self.DEFAULT_CEILING))
+        self.mean_limit = float(g.get("mean_rate_limit", self.DEFAULT_MEAN_LIMIT))
+        self.frames = int(g.get("frames", self.DEFAULT_FRAMES))
         self.reset()
 
     def reset(self):

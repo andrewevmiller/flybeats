@@ -78,9 +78,14 @@ def realised_weights(model, edges):
 
 @torch.no_grad()
 def export(model, neurons, edges, cfg, path, name="flybeats", capability="observation_only", input_task="unknown",
-           provenance=None, scoreboard=None, cliff=None, runaway=None, notes=""):
-    """Write the brain file. Returns (sha256 hex, meta). model must be on the CPU and in eval mode."""
+           provenance=None, scoreboard=None, cliff=None, runaway=None, notes="", gate_b=None):
+    """Write the brain file. Returns (sha256 hex, meta). model must be on the CPU and in eval mode.
+    capability="drum_capable" needs gate_b = {"memo", "approver", "date"} naming the chair's Gate B memo; without it
+    the call is refused, and the plugin treats every brain as observation-only until a signed scheme exists."""
     model = model.cpu().eval()
+    if capability == "drum_capable":
+        if not (isinstance(gate_b, dict) and all(gate_b.get(k) for k in ("memo", "approver", "date"))):
+            raise ValueError("capability drum_capable needs gate_b={'memo', 'approver', 'date'} from the Gate B review")
     n = model.n
     pre, post = model.pre.numpy(), model.post.numpy()
     if len(set(zip(pre.tolist(), post.tolist()))) != len(pre):
@@ -152,6 +157,7 @@ def export(model, neurons, edges, cfg, path, name="flybeats", capability="observ
         "band_range": {"low": (mean - 2 * std).tolist(), "high": (mean + 2 * std).tolist(),
                        "rule": "training mean +/- 2 standard deviations of log1p band power"},
         "runaway": runaway or {},
+        "gate_b": gate_b or {},
         "readout_history": bool(model.history_blocks),
         "silenced_count": int((arrays["alive"] == 0).sum()),
         "created": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),

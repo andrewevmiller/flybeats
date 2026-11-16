@@ -87,3 +87,7 @@ Inside the plan's 2–8 % estimate. The resampler (193 taps per output sample) i
 4. `parity.PERTURBATIONS` is defined in `test_reference.py`, not in `parity.py`; `make_data.py` carries its own copy of the list.
 5. Format: nothing needs to change in `.flybrain` v1. One wish for v2: an explicit `presumed_sign` per silenced neuron, so Wake the Modulators does not need the UI to choose a sign.
 6. The `Snapshot` is published one frame late (when the frame's hits are known) so the UI always sees hits with their frame; after `reset()` the tap can still hold the last pre-reset frame, which carries its own (older) index.
+
+## Addendum after the red team (chair, same day)
+
+Changes made to the engine after this report, all with ctest 8/8 and pytest 45/45 rerun: the runaway guard runs on hard default limits when the brain carries none (`guardCalibrated()` reports it); `process` and `stepFeatures` restore the host thread's denormal control word on exit; hits that do not fit the caller's event array are counted in `droppedEventCount()`; `test_core` has an exact decoder tie test; `test_engine` has the uncalibrated 50× sweep and the event-overflow test; the synthetic test data come from a readout that no longer saturates, and `PERTURBATIONS` is imported from `parity.py`. The numbers in the tables above were not remeasured; the memo marks which were rerun by the chair.

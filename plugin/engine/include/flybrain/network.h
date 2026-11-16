@@ -292,13 +292,20 @@ private:
 template <class T>
 class RunawayGuard {
 public:
+    // A brain exported without cliff calibration carries no limits; these hard defaults then apply (red team,
+    // item 1): far above any calibrated network's activity (mean rates about 0.03 at 1x on the real network),
+    // far below float overflow, so NaN and Inf never leave the engine. reference.py uses the same numbers.
+    static constexpr double kDefaultCeiling = 1.0e4, kDefaultMeanLimit = 1.0e3;
+    static constexpr int kDefaultFrames = 20;
     void prepare(const BrainFile& b) {
-        enabled = b.runaway.set;
-        ceiling = enabled ? T(b.runaway.rateCeiling) : std::numeric_limits<T>::infinity();
-        meanLimit = enabled ? b.runaway.meanRateLimit : std::numeric_limits<double>::infinity();
-        frames = b.runaway.frames;
+        calibrated = b.runaway.set;
+        enabled = true;
+        ceiling = T(calibrated ? b.runaway.rateCeiling : kDefaultCeiling);
+        meanLimit = calibrated ? b.runaway.meanRateLimit : kDefaultMeanLimit;
+        frames = calibrated ? b.runaway.frames : kDefaultFrames;
         reset();
     }
+    bool calibrated = false;
     void setLimits(double rateCeiling, double meanRateLimit, int nFrames) {
         enabled = true; ceiling = T(rateCeiling); meanLimit = meanRateLimit; frames = nFrames;
     }

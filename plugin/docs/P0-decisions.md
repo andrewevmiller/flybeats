@@ -20,16 +20,16 @@ Settled owner decisions carried in unchanged: D2 closed source with a JUCE-free 
 
 **ADR-7 Runaway guard limits per brain.** From the exporter's cliff calibration at gain 1.0: mean-rate limit = `bound_factor` (50, the repo's own "bounded" rule) × the music-level mean rate, held for 20 frames; per-neuron clamp at 1000 × that limit. Stored in the brain file's `runaway` block. A brain exported without calibration has no limits and the Cliff Meter shows "unmeasured".
 
-## Parity tolerances (fixed before the first run)
+## Parity tolerances (fixed before the test suite existed, not before every measurement)
 
-Constants in `plugin/export/flybrain/parity.py`. Evidence for the numbers: on the first synthetic export the reference engine differed from PyTorch by 2×10⁻⁷ of the largest rate and 1.4×10⁻⁶ in hit probability, so the limits give 30 to 50× headroom and still catch any real error.
+Constants in `plugin/export/flybrain/parity.py`. The order of events, so nobody reads more into "fixed before" than happened: one scratch measurement of the reference engine against PyTorch on a synthetic network came first (rates 2×10⁻⁷ of the largest rate, probabilities 1.4×10⁻⁶, and 16 against 7 hits in float64 where a saturated plateau broke ties differently); the constants and the ambiguity rule were then written from it, before the test suite, the drift run and the C++ engine existed; nothing was moved afterwards. The limits give 30 to 50× headroom over that measurement and still catch any real error (a flipped connection sign, an alpha 1.5× off, ear bands rolled by one, weights 1.0001×, a bias +10⁻³, a readout weight 1.01×, `mn_std` 1.001×, a one-frame shift were each caught in the red team's corruption runs; a connection whose sender never fires on the clip is not, which is why the laptop run uses 50 clips).
 
 | Quantity | Tolerance | Over |
 |---|---|---|
 | Rates | max abs error ≤ 1×10⁻⁶ + 1×10⁻⁵ × max rate | every neuron, every frame |
 | Band features | max abs error ≤ 1×10⁻⁵ | every band, every frame |
 | Hit probability | max abs error ≤ 1×10⁻⁵ | every drum, every frame |
-| Decoded hits | the sets are identical, except hits PyTorch decides by under 1×10⁻⁵ (probability within that of the threshold or of a neighbouring frame); those are listed in the report, never silently excused | whole clip |
+| Decoded hits | the sets are identical, except hits PyTorch decides by under 1×10⁻⁵ (probability within that of the threshold or of a neighbouring frame); those are listed in the report, never silently excused. The report also counts the **genuine** hits (not excusable by that rule), and a parity test passes only with at least 10 of them, so the rule cannot carry a clip on its own; tie handling itself is checked by exact decoder tests (Python and C++) with constructed plateaus | whole clip |
 | Drift | the same limits over a 10-minute clip, reported per minute | the drift run |
 | Engines against each other | C++ and numpy in the same precision: bit-identical rates, probabilities and hits (ADR-3); if a platform's floating point breaks this, the tolerance above applies and the memo says so | every test |
 | Block size and sample rate | block sizes 1, 64, 480, 4,096: bit-identical. 44.1, 48, 96 kHz: hits identical except ambiguous ones, rates within the rate tolerance after the resampler's own error is measured and reported | P2 |

@@ -1,5 +1,7 @@
 // The core, readout and decoder from the reference engine's own ear features: rates bit for bit.
 #include "data.h"
+#include "flybrain/network.h"
+using flybrain::PeakDecoder;
 
 static void compareFeatures(const BrainFile& b, const std::string& dir, const std::string& name, bool dbl, bool f32feats) {
     std::vector<double> ear;
@@ -34,7 +36,45 @@ static void compareFeatures(const BrainFile& b, const std::string& dir, const st
     CHECK_MSG(bad == 0, "%s: %d unexplained hit differences", name.c_str(), bad);
 }
 
+// The streaming decoder against the offline rule of loss.peaks on constructed probabilities: plateaus (ties),
+// equality at the threshold, a hit on the first frame, a plateau that runs into the flush. Exact expected hits,
+// no ambiguity rule (red team, item 2).
+static void decoderTies() {
+    const int nd = 3, T_ = 40;
+    std::vector<std::vector<double>> p(size_t(T_), std::vector<double>(size_t(nd), 0.1));
+    for (int t = 0; t < T_; ++t) {
+        p[size_t(t)][0] = (t >= 5 && t < 12) ? 0.9 : (t == 20 ? 0.5 : (t == 21 ? 0.5 : 0.1));   // plateau 5..11; ties at the threshold 20, 21
+        p[size_t(t)][1] = (t == 0) ? 0.7 : (t >= 30 ? 0.8 : 0.2);                               // hit at frame 0; plateau to the end
+        p[size_t(t)][2] = 0.5;                                                                   // flat at the threshold throughout
+    }
+    // offline rule: p[t] >= thr, p[t] >= p[t-1] (p[-1] = -inf), p[t] > p[t+1] (p[T] = -inf)
+    std::vector<std::vector<int>> want(size_t(T_), std::vector<int>(size_t(nd), 0));
+    for (int d = 0; d < nd; ++d)
+        for (int t = 0; t < T_; ++t) {
+            double left = t > 0 ? p[size_t(t - 1)][size_t(d)] : -1e300, right = t + 1 < T_ ? p[size_t(t + 1)][size_t(d)] : -1e300;
+            double x = p[size_t(t)][size_t(d)];
+            want[size_t(t)][size_t(d)] = (x >= 0.5 && x >= left && x > right) ? 1 : 0;
+        }
+    PeakDecoder<double> dec; dec.prepare(nd); dec.reset();
+    std::vector<std::vector<int>> got(size_t(T_), std::vector<int>(size_t(nd), -1));
+    std::vector<double> vel(size_t(nd), 0.0);
+    for (int t = 0; t < T_; ++t)
+        if (dec.push(p[size_t(t)].data(), vel.data(), t, 0.5)) {
+            CHECK(dec.decidedFrame == t - 1);
+            for (int d = 0; d < nd; ++d) got[size_t(dec.decidedFrame)][size_t(d)] = dec.hits[size_t(d)];
+        }
+    CHECK(dec.flush(0.5) && dec.decidedFrame == T_ - 1);
+    for (int d = 0; d < nd; ++d) got[size_t(T_ - 1)][size_t(d)] = dec.hits[size_t(d)];
+    int mismatches = 0, expectedHits = 0;
+    for (int t = 0; t < T_; ++t)
+        for (int d = 0; d < nd; ++d) { expectedHits += want[size_t(t)][size_t(d)]; if (got[size_t(t)][size_t(d)] != want[size_t(t)][size_t(d)]) ++mismatches; }
+    CHECK_MSG(mismatches == 0, "decoder ties: %d mismatches against the offline rule", mismatches);
+    CHECK(expectedHits == 5);   // plateau end (11), tie pair end (21), frame 0, plateau into the flush (39), flat-at-threshold end (39)
+    std::printf("decoder ties: %d expected hits, %d mismatches\n", expectedHits, mismatches);
+}
+
 int main(int, char** argv) {
+    decoderTies();
     std::string dir = argv[1];
     if (!exists(dir + "/ref64_ear.f64")) { std::printf("SKIP: no test data\n"); return 0; }
     BrainFile b = BrainFile::load(dir + "/small.flybrain");

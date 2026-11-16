@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT / "plugin" / "export"))
 from flybeats.config import load_locked  # noqa: E402
 from flybrain.brainfile import read_brain, write_brain  # noqa: E402
 from flybrain.exporter import export  # noqa: E402
-from flybrain.parity import make_model, run_perturbed  # noqa: E402
+from flybrain.parity import PERTURBATIONS, make_model, run_perturbed  # noqa: E402
 from flybrain.reference import run_clip  # noqa: E402
 from flybrain.resample import resample_fast  # noqa: E402
 from flybrain.synthetic import make_slice  # noqa: E402
@@ -81,8 +81,6 @@ for rate in (44100, 48000, 96000):
     dump(f"host{rate}", run_clip(b, y, dtype=np.float64))
 
 # perturbations: the controls as the render tool reads them, and the reference output
-PERTURBATIONS = [("lesion", dict(targets=[40, 41, 42, 77])), ("deafen", dict(ears=[0, 2, 4, 6])), ("gain", dict(scale=1.3)),
-                 ("tau", dict(scale=2.0)), ("sign_flip", dict(targets=[50, 60])), ("band_offset", dict(offset=np.linspace(-0.5, 0.5, 16)))]
 kinds = list(PERTURBATIONS) + [("unsilence", dict(targets=np.flatnonzero(neurons.silenced.to_numpy())[:2].tolist(), sign=1)),
                                ("inject", dict(neuron=int(np.flatnonzero(neurons.type.isna().to_numpy())[0]), current=2.0, start=50, frames=30, t_len=400))]
 for kind, kw in kinds:

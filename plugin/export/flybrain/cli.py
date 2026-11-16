@@ -6,7 +6,7 @@
 
 Run from the repo root with plugin/export on PYTHONPATH (or `cd plugin/export`). The checkpoint's network is
 rebuilt from the slice (real or the control's edges) with the locked settings and the set's band statistics,
-loaded strictly, run through the parity harness against PyTorch on `--clips` training clips, cliff-calibrated
+loaded strictly, run through the parity harness against PyTorch on `--clips` training clips (50, the plan's number), cliff-calibrated
 with the repo's silence test on those clips, and written with provenance hashes. Capability is always
 observation_only here: drum_capable is set only through Gate B, by hand, with the chair's memo.
 """
@@ -42,7 +42,7 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     ap.add_argument("--name", required=True)
     ap.add_argument("--control", type=int, default=None)
-    ap.add_argument("--clips", type=int, default=20, help="training clips for parity and the cliff calibration")
+    ap.add_argument("--clips", type=int, default=50, help="training clips for parity and the cliff calibration")
     ap.add_argument("--scoreboard", default=None, help="JSON with the Scoreboard payload (chair-approved)")
     ap.add_argument("--input-task", choices=["unknown", "accompaniment", "transcription"], default="unknown")
     ap.add_argument("--history", action="store_true", help="the checkpoint was trained with the history readout")

@@ -208,6 +208,39 @@ int main(int, char** argv) {
         CHECK(rates == base.rates);
     }
 
+    // 6b. the same sweep on a brain with NO calibration (the exporter's default): the hard default limits must keep
+    // NaN and Inf out of every snapshot and event (red team, item 1)
+    {
+        CHECK(!b.runaway.set);
+        std::vector<float> loud(audio.size()); for (size_t i = 0; i < loud.size(); ++i) loud[i] = audio[i] * 3.0f;
+        for (bool dbl : {true, false}) {
+            Engine e(b); EngineConfig cfg; cfg.hostRate = 16000; cfg.doublePrecision = dbl; cfg.prerollFrames = 0; e.prepare(cfg);
+            CHECK(!e.guardCalibrated());
+            Controls c(b); c.gainScale = 50.0; e.setControls(c);
+            Snapshot s; e.allocateSnapshot(s); HitEvent ev[256]; bool finite = true; double peak = 0; int frames = 0;
+            for (size_t p = 0; p + 80 <= loud.size(); p += 80) {
+                const float* ch[1] = {loud.data() + p}; int n = e.process(ch, 1, 80, ev, 256);
+                for (int k = 0; k < n; ++k) finite = finite && std::isfinite(ev[k].velocity);
+                while (e.readSnapshot(s)) { ++frames; finite = finite && allFinite(s.rates) && allFinite(s.prob) && allFinite(s.vel); peak = std::max(peak, maxAbs(s.rates)); }
+            }
+            CHECK_MSG(finite, "uncalibrated brain, gain 50x, %s: NaN or Inf reached a snapshot or event", dbl ? "double" : "float");
+            CHECK_MSG(peak <= 1.0e4, "uncalibrated brain: peak %.3g above the default ceiling", peak);
+            CHECK(frames > 0 && e.runawayCount() > 0);
+            std::printf("uncalibrated brain, gain 50x, %s: %d frames finite, peak %.4g, %d resets\n", dbl ? "double" : "float", frames, peak, e.runawayCount());
+        }
+    }
+
+    // 6c. hits beyond the caller's event array are counted, never silently lost
+    {
+        Engine e(b); EngineConfig cfg; cfg.hostRate = 16000; cfg.doublePrecision = true; cfg.prerollFrames = 0; e.prepare(cfg);
+        HitEvent ev[1]; uint64_t got = 0;
+        for (size_t p = 0; p < audio.size(); p += 4096) { const float* ch[1] = {audio.data() + p}; got += uint64_t(e.process(ch, 1, int(std::min<size_t>(4096, audio.size() - p)), ev, 1)); }
+        got += uint64_t(e.flush(ev, 1));
+        uint64_t total = 0; for (const auto& hv : base.hits) total += uint64_t(hv);
+        CHECK_MSG(got + e.droppedEventCount() >= total && e.droppedEventCount() > 0, "event overflow: got %llu, dropped %llu, baseline %llu",
+                  (unsigned long long)got, (unsigned long long)e.droppedEventCount(), (unsigned long long)total);
+    }
+
     // 7. pre-roll: hits muted for N frames after a reset, the network itself untouched
     {
         RunOptions op = o; op.preroll = 100; Run r = runEngine(b, audio, op);
