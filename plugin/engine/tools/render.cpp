@@ -124,13 +124,6 @@ int main(int argc, char** argv) {
             cfg.hostRate = rate;
         }
         engine.prepare(cfg);
-        Json ctlJson;
-        if (!controlsPath.empty()) {
-            std::vector<uint8_t> t = readFile(controlsPath);
-            ctlJson = Json::parse(std::string(t.begin(), t.end()));
-            Controls c = controlsFromJson(brain, ctlJson);
-            engine.setControls(c, ctlJson.dump());
-        }
         if (!recordPath.empty()) {
             Json info; info.type = Json::Object;
             Json s; s.type = Json::String; s.str = brain.sha256; info.obj["brain_sha256"] = s;
@@ -140,6 +133,13 @@ int main(int argc, char** argv) {
             s.str = dbl ? "double" : "float"; info.obj["precision"] = s;
             s.str = "flybrain_render"; info.obj["host"] = s;
             engine.recorder().start(recordPath, recordPath + ".json", info);
+        }
+        Json ctlJson;
+        if (!controlsPath.empty()) {
+            std::vector<uint8_t> t = readFile(controlsPath);
+            ctlJson = Json::parse(std::string(t.begin(), t.end()));
+            Controls c = controlsFromJson(brain, ctlJson);
+            engine.setControls(c, ctlJson.dump());
         }
         Snapshot snap;
         engine.allocateSnapshot(snap);

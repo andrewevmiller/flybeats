@@ -1,0 +1,7 @@
+brain synthetic-large: 3326 neurons, 109967 connections, 232 readout neurons; host 48000 Hz, block 512, 20 s each
+| precision | input | us per frame | % of one core at 200 frames/s |
+|---|---|---|---|
+| float | silence | 187.4 | 3.75 |
+| float | noise | 201.9 | 4.04 |
+| double | silence | 204.4 | 4.09 |
+| double | noise | 207.4 | 4.15 |

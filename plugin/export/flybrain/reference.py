@@ -324,8 +324,15 @@ class ReferenceEngine:
             if decided is not None:
                 out.append(self._finish(decided))
             if runaway:
-                # soft mute and reset: the state goes to zero, the decoder forgets, the frame counter continues
-                self.core.reset(); self.readout.reset(); self.decoder.reset(); self.ear.reset()
+                # soft mute and reset: the state goes to zero, the frame just pushed is published with no hits,
+                # the decoder forgets, the ear keeps the samples pending toward its next hop (so the result does
+                # not depend on the block size), and the frame counter continues
+                last = self.decoder.flush(self.controls.threshold)
+                if last is not None:
+                    idx, _, vel = last
+                    out.append(self._finish((idx, np.zeros(self.decoder.n, bool), vel)))
+                self.core.reset(); self.readout.reset(); self.decoder.reset()
+                self.ear.buf[:] = 0
                 self.frames_since_reset = 0
                 self.reset_flag = True
         return out

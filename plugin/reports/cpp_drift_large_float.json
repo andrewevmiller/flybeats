@@ -1,0 +1,30 @@
+{
+ "label": "large float 10 min",
+ "frames": 120000,
+ "rates_exact": false,
+ "per_minute_rate_err": [
+  5.7220458984375e-06,
+  5.7220458984375e-06,
+  5.7220458984375e-06,
+  5.7220458984375e-06,
+  7.62939453125e-06,
+  7.62939453125e-06,
+  7.62939453125e-06,
+  5.7220458984375e-06,
+  7.62939453125e-06,
+  7.62939453125e-06
+ ],
+ "rate_limit": 0.00022486287689208985,
+ "prob_err": 4.470348358154297e-06,
+ "hits_cpp": 18,
+ "hits_ref": 18,
+ "unexplained": [],
+ "runaways": 0,
+ "pytorch_vs_reference": {
+  "rate_err": 6.416688556498684e-06,
+  "prob_err": 2.6623897524391538e-06,
+  "hits_torch": 18,
+  "hits_engine": 19,
+  "passes": true
+ }
+}

@@ -202,6 +202,7 @@ int main(int, char** argv) {
         CHECK(e.runawayCount() > 0);
         Controls n(g); e.setControls(n); e.reset();
         Snapshot s; e.allocateSnapshot(s); std::vector<double> rates;
+        while (e.readSnapshot(s)) {}                 // the snapshot tap still holds the last frame before the reset
         for (size_t p = 0; p + 80 <= audio.size(); p += 80) { const float* ch[1] = {audio.data() + p}; e.process(ch, 1, 80, ev, 256); while (e.readSnapshot(s)) rates.insert(rates.end(), s.rates.begin(), s.rates.end()); }
         e.flush(ev, 256); while (e.readSnapshot(s)) rates.insert(rates.end(), s.rates.begin(), s.rates.end());
         CHECK(rates == base.rates);

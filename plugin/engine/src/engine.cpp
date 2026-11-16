@@ -126,6 +126,7 @@ struct EngineImpl : EngineBase {
 
     // One frame from raw log1p band powers (double). Returns the number of hit events written.
     int stepRaw(const double* raw, int sampleOffset, HitEvent* out, int maxEvents) {
+        swapControlsIfAny();                       // a control block takes effect at a frame boundary, ear included
         for (int k = 0; k < b.nBands; ++k) feats[k] = (T(raw[k]) - bandMean[k]) / bandStd[k];
         return stepNormalised(sampleOffset, out, maxEvents);
     }
@@ -137,7 +138,6 @@ struct EngineImpl : EngineBase {
     }
 
     int stepEar(int sampleOffset, HitEvent* out, int maxEvents) {
-        swapControlsIfAny();
         for (int e = 0; e < b.nEars(); ++e) earIn[e] = earScaled[size_t(b.earBand[e])];
         core.step(earIn.data(), frame);
         bool runaway = guard.check(core.v, core.r);
@@ -215,6 +215,7 @@ struct EngineImpl : EngineBase {
 
     int stepFeatures(const double* earFeatures, HitEvent* out, int maxEvents) override {
         if (cfg.flushDenormals) setFlushDenormals(true);
+        swapControlsIfAny();
         for (int k = 0; k < b.nBands; ++k) { earScaled[k] = T(earFeatures[k]); feats[k] = T(0); }
         if (!current->neutral) for (int k = 0; k < b.nBands; ++k) earScaled[k] = earScaled[k] + current->bandOffset[k];
         return stepEar(0, out, maxEvents);

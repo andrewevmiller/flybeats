@@ -1,7 +1,7 @@
-# large generated artefacts of the drift and parity runs
-plugin/reports/*.npy
-plugin/reports/*.flybrain
-plugin/reports/*.bin
-plugin/engine/build*/
-plugin/s0/build*/
-plugin/s0/_deps/
+# large generated artefacts of the drift and parity runs, and build trees
+reports/*.npy
+reports/*.flybrain
+reports/*.bin
+engine/build*/
+s0/build*/
+s0/_deps/
