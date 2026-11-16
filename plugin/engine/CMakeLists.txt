@@ -1,0 +1,43 @@
+cmake_minimum_required(VERSION 3.20)
+project(flybrain_engine LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+option(FLYBRAIN_SANITIZE "Build with address and undefined-behaviour sanitizers" OFF)
+option(FLYBRAIN_BUILD_TESTS "Build the tests" ON)
+
+# Rounding must be the IEEE operation-by-operation result: no fused multiply-add, no fast math.
+if(MSVC)
+  set(FLYBRAIN_FP_FLAGS /fp:precise)
+else()
+  set(FLYBRAIN_FP_FLAGS -ffp-contract=off -fno-fast-math)
+endif()
+
+add_library(flybrain_engine STATIC
+  src/util.cpp src/brainfile.cpp src/dsp.cpp src/recorder.cpp src/engine.cpp)
+target_include_directories(flybrain_engine PUBLIC include)
+target_compile_options(flybrain_engine PUBLIC ${FLYBRAIN_FP_FLAGS})
+if(NOT MSVC)
+  target_compile_options(flybrain_engine PRIVATE -Wall -Wextra)
+endif()
+find_package(Threads REQUIRED)
+target_link_libraries(flybrain_engine PUBLIC Threads::Threads)
+if(FLYBRAIN_SANITIZE AND NOT MSVC)
+  target_compile_options(flybrain_engine PUBLIC -fsanitize=address,undefined -fno-omit-frame-pointer)
+  target_link_options(flybrain_engine PUBLIC -fsanitize=address,undefined)
+endif()
+
+add_executable(flybrain_render tools/render.cpp)
+target_link_libraries(flybrain_render flybrain_engine)
+add_executable(flybrain_bench tools/bench.cpp)
+target_link_libraries(flybrain_bench flybrain_engine)
+
+if(FLYBRAIN_BUILD_TESTS)
+  enable_testing()
+  foreach(t test_brainfile test_resampler test_ear test_core test_engine test_bus test_recorder test_alloc)
+    add_executable(${t} tests/${t}.cpp)
+    target_link_libraries(${t} flybrain_engine)
+    add_test(NAME ${t} COMMAND ${t} ${CMAKE_SOURCE_DIR}/tests/data)
+  endforeach()
+endif()
