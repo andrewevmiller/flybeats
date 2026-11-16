@@ -1,1 +1,28 @@
-network: 3326 neurons, 109967 connections, exported in 2.5s
+network: 3326 neurons, 109967 connections, exported in 2.7s
+pytorch: 289.0s
+reference engine (f64): 36.3s
+{
+ "frames": 120000,
+ "rate_err": 6.416688556498684e-06,
+ "rate_limit": 0.0002248628387451172,
+ "band_err": 9.578570381307827e-07,
+ "prob_err": 2.6623897524391538e-06,
+ "hits_torch": 18,
+ "hits_engine": 19,
+ "hit_differences": 1,
+ "ambiguous_in_torch": 359867,
+ "unexplained_hit_differences": [],
+ "passes": true,
+ "network": {
+  "neurons": 3326,
+  "edges": 109967,
+  "brain_sha256": "3fc3ef21c10ed96aa2a3e7c64c0834a48c847ad8804b54e4e70ddd2e78ac43f9"
+ },
+ "minutes": 10.0,
+ "dtype": "f64",
+ "seconds": {
+  "pytorch": 289.0,
+  "reference": 37.4
+ }
+}
+PASS
