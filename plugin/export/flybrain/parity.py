@@ -36,8 +36,12 @@ def make_model(cfg, neurons, edges, seed=0, band_stats=None, lively=True):
     if lively:
         with torch.no_grad():
             g = torch.Generator().manual_seed(seed)
-            for p in model.parameters():
-                p.add_(0.3 * torch.randn(p.shape, generator=g))
+            # "readout": only the readout moves, so the network itself stays at its critical gain (stable);
+            # True: every parameter moves, which can push a large network past its cliff (the first drift run did)
+            names = {"w_hit", "u_vel", "c_hit", "e_vel", "p_hit", "p_vel"} if lively == "readout" else None
+            for name, p in model.named_parameters():
+                if names is None or name in names:
+                    p.add_(0.3 * torch.randn(p.shape, generator=g))
             model.c_hit.fill_(-2.0)
             model.mn_std.fill_(1e-2)
     return model.eval()
